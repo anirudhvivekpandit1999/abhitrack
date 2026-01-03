@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculated Columns - AbhiStat User Manual</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/print.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>AbhiStat User Manual</h2>
+                <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+            </div>
+            
+            <!-- Search Functionality -->
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search documentation...">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+            
+            <!-- Table of Contents -->
+            <div class="toc" id="tableOfContents">
+                <ul class="toc-list">
+                    <li class="toc-item">
+                        <a href="index.html" class="toc-link">Home</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="getting-started.html" class="toc-link toc-expandable">1. Getting Started</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="getting-started.html#authentication" class="toc-link">1.1 Authentication & Account Creation</a></li>
+                            <li class="toc-item"><a href="getting-started.html#platform-overview" class="toc-link">1.2 Platform Overview</a></li>
+                            <li class="toc-item"><a href="getting-started.html#navigation-guide" class="toc-link">1.3 Navigation Guide</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-management.html" class="toc-link toc-expandable">2. Data Management</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="data-management.html#upload-process" class="toc-link">2.1 File Upload Process</a></li>
+                            <li class="toc-item"><a href="data-management.html#data-validation" class="toc-link">2.2 Data Validation & Preview</a></li>
+                            <li class="toc-item"><a href="session-management.html" class="toc-link">2.3 Session Management</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="calculated-columns.html" class="toc-link toc-expandable active">3. Calculated Columns</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="#interface-overview" class="toc-link">3.1 Formula Builder Interface</a></li>
+                            <li class="toc-item"><a href="#operators-reference" class="toc-link">3.2 Available Functions & Operators</a></li>
+                            <li class="toc-item"><a href="#column-management" class="toc-link">3.3 Column Management</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="dependency-modeling.html" class="toc-link toc-expandable">4. Dependency Modeling</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="dependency-modeling.html#variable-selection" class="toc-link">4.1 Variable Selection</a></li>
+                            <li class="toc-item"><a href="dependency-modeling.html#drag-drop-interface" class="toc-link">4.2 Drag & Drop Interface</a></li>
+                            <li class="toc-item"><a href="dependency-modeling.html#statistical-analysis" class="toc-link">4.3 Statistical Analysis</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-visualization.html" class="toc-link toc-expandable">5. Data Visualization</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="data-visualization.html#distribution-curves" class="toc-link">5.1 Distribution Curves</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#scatter-plots" class="toc-link">5.2 Scatter Plots</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#multivariate-analysis" class="toc-link">5.3 Multi-variate Analysis</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#bootstrapping" class="toc-link">5.4 Bootstrapping</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#advanced-features" class="toc-link">5.5 Advanced Features</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="troubleshooting.html" class="toc-link toc-expandable">6. Troubleshooting & Best Practices</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="troubleshooting.html#common-issues" class="toc-link">6.1 Common Issues</a></li>
+                            <li class="toc-item"><a href="troubleshooting.html#performance-optimization" class="toc-link">6.2 Performance Optimization</a></li>
+                            <li class="toc-item"><a href="troubleshooting.html#data-preparation" class="toc-link">6.3 Data Preparation Guidelines</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="technical-reference.html" class="toc-link toc-expandable">7. Technical Reference</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="technical-reference.html#system-architecture" class="toc-link">7.1 System Architecture</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#api-endpoints" class="toc-link">7.2 API Documentation</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#authentication" class="toc-link">7.3 Authentication System</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#session-management" class="toc-link">7.4 Session Management</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#file-cleanup" class="toc-link">7.5 Administrative Functions</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="main-content" id="mainContent">
+            <div class="breadcrumb">
+                <a href="index.html">Home</a> > <span>Calculated Columns</span>
+            </div>
+
+            <article>
+                <header>
+                    <h1>Calculated Columns</h1>
+                    <p class="lead">Create custom calculated columns using formulas to enhance your data analysis with derived parameters and statistical calculations.</p>
+                </header>
+
+                <section id="overview">
+                    <h2>Overview</h2>
+                    <p>The Calculated Columns feature is Step 2 in the AbhiStat workflow, allowing you to create customized parameters by building formulas that combine existing columns with mathematical operations. This powerful feature enables you to derive new insights from your data before proceeding to dependency modeling and visualization.</p>
+                    
+                    <div class="info-box">
+                        <h3>What You'll Learn</h3>
+                        <ul>
+                            <li>How to use the Formula Builder interface</li>
+                            <li>Available operators and mathematical functions</li>
+                            <li>Column reference syntax and validation</li>
+                            <li>Step-by-step formula creation process</li>
+                            <li>Common statistical formula examples</li>
+                            <li>Error handling and troubleshooting</li>
+                        </ul>
+                    </div>
+
+                    <div class="workflow-context">
+                        <h3>Workflow Context</h3>
+                        <p>Calculated Columns is the second step in the four-step AbhiStat analysis process:</p>
+                        <ol>
+                            <li>Data File Checks (Upload and validate your data)</li>
+                            <li><strong>Calculated Columns (Create custom parameters) ← You are here</strong></li>
+                            <li>Dependency Modeling (Analyze variable relationships)</li>
+                            <li>Data Visualization (Create charts and statistical plots)</li>
+                        </ol>
+                    </div>
+                </section>
+
+                <section id="interface-overview">
+                    <h2>Formula Builder Interface</h2>
+                    <p>The Formula Builder provides two main approaches for creating calculated columns:</p>
+
+                    <div class="interface-grid">
+                        <div class="interface-card">
+                            <h3>Expression Builder</h3>
+                            <p>Build formulas step-by-step using individual components:</p>
+                            <ul>
+                                <li>Select columns from dropdown menus</li>
+                                <li>Add mathematical operators (+, -, ×, ÷)</li>
+                                <li>Include custom numbers and parentheses</li>
+                                <li>Real-time formula validation</li>
+                            </ul>
+                        </div>
+
+                        <div class="interface-card">
+                            <h3>Function Builder</h3>
+                            <p>Use pre-built statistical functions for common calculations:</p>
+                            <ul>
+                                <li>Statistical functions (AVG, SUM, PRODUCT)</li>
+                                <li>Advanced operations (WEIGHTED_AVG, LINEAR_COMBO)</li>
+                                <li>Mathematical transformations (SQUARE, CUBE)</li>
+                                <li>Ratio and percentage calculations</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="step-by-step-guide">
+                    <h2>Step-by-Step Formula Creation</h2>
+                    <p>Follow these steps to create your first calculated column:</p>
+
+                    <div class="step-container">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h3>Enter Column Name</h3>
+                                <p>In the "Column Name" field, enter a descriptive name for your new calculated column.</p>
+                                <div class="example">
+                                    <strong>Examples:</strong> "Total_Score", "Efficiency_Ratio", "Normalized_Value"
+                                </div>
+                                <div class="tip-box">
+                                    <strong>Tip:</strong> Use descriptive names that clearly indicate what the column represents. Avoid spaces and special characters.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h3>Choose Builder Mode</h3>
+                                <p>Select between "Expression Builder" and "Function Builder" tabs based on your needs:</p>
+                                <ul>
+                                    <li><strong>Expression Builder:</strong> For custom mathematical expressions</li>
+                                    <li><strong>Function Builder:</strong> For pre-defined statistical functions</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h3>Build Your Formula</h3>
+                                <p><strong>For Expression Builder:</strong></p>
+                                <ul>
+                                    <li>Select columns from the searchable dropdown</li>
+                                    <li>Click operator buttons to add +, -, ×, ÷, (, )</li>
+                                    <li>Enter custom numbers in the number field</li>
+                                    <li>Use "Clear All" or "Remove Last" to modify</li>
+                                </ul>
+                                <p><strong>For Function Builder:</strong></p>
+                                <ul>
+                                    <li>Click on a function button (AVG, SUM, etc.)</li>
+                                    <li>Select the required columns for the function</li>
+                                    <li>Enter additional parameters if needed (weights, coefficients)</li>
+                                    <li>Click "Add Function to Formula"</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h3>Validate and Preview</h3>
+                                <p>The system automatically validates your formula and shows:</p>
+                                <ul>
+                                    <li><strong>Green "Formula is valid":</strong> Formula syntax is correct</li>
+                                    <li><strong>Red error message:</strong> Syntax issues that need fixing</li>
+                                    <li><strong>Preview button:</strong> Appears when formula is valid</li>
+                                </ul>
+                                <p>Click "Preview Results" to see how your formula will be applied to the actual data.</p>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">5</div>
+                            <div class="step-content">
+                                <h3>Add Column</h3>
+                                <p>Once satisfied with your formula:</p>
+                                <ul>
+                                    <li>Click "Add Column" to add it to your list</li>
+                                    <li>The column appears in the "Calculated Columns List" on the left</li>
+                                    <li>Status shows as "Pending" until you save and apply</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">6</div>
+                            <div class="step-content">
+                                <h3>Save and Apply</h3>
+                                <p>After creating all desired columns:</p>
+                                <ul>
+                                    <li>Click "Save & Apply All Columns" in the left panel</li>
+                                    <li>The system processes your formulas against both data files</li>
+                                    <li>Successful columns become available for dependency modeling</li>
+                                    <li>Any errors are displayed for correction</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="operators-reference">
+                    <h2>Available Operators and Functions</h2>
+                    <p>AbhiStat provides a comprehensive set of mathematical operators and statistical functions for creating calculated columns. This reference guide covers all available operations with detailed explanations and examples.</p>
+                    
+                    <h3>Mathematical Operators</h3>
+                    <p>Basic arithmetic operators form the foundation of formula building. These operators follow standard mathematical precedence rules.</p>
+                    
+                    <div class="operator-grid">
+                        <div class="operator-card">
+                            <h4>Addition (+)</h4>
+                            <p><strong>Purpose:</strong> Adds two or more values together</p>
+                            <p><strong>Syntax:</strong> value1 + value2</p>
+                            <div class="example">Column_A + Column_B + 10</div>
+                            <div class="use-case"><strong>Common Use:</strong> Combining totals, aggregating scores</div>
+                        </div>
+
+                        <div class="operator-card">
+                            <h4>Subtraction (-)</h4>
+                            <p><strong>Purpose:</strong> Subtracts the second value from the first</p>
+                            <p><strong>Syntax:</strong> value1 - value2</p>
+                            <div class="example">After_Value - Before_Value</div>
+                            <div class="use-case"><strong>Common Use:</strong> Calculating differences, changes over time</div>
+                        </div>
+
+                        <div class="operator-card">
+                            <h4>Multiplication (×)</h4>
+                            <p><strong>Purpose:</strong> Multiplies two or more values</p>
+                            <p><strong>Syntax:</strong> value1 × value2 (displayed as ×, stored as *)</p>
+                            <div class="example">Length × Width × Height</div>
+                            <div class="use-case"><strong>Common Use:</strong> Calculating areas, volumes, scaling values</div>
+                        </div>
+
+                        <div class="operator-card">
+                            <h4>Division (÷)</h4>
+                            <p><strong>Purpose:</strong> Divides the first value by the second</p>
+                            <p><strong>Syntax:</strong> value1 ÷ value2 (displayed as ÷, stored as /)</p>
+                            <div class="example">Total_Sales ÷ Number_of_Units</div>
+                            <div class="use-case"><strong>Common Use:</strong> Calculating rates, ratios, averages</div>
+                            <div class="warning"><strong>Warning:</strong> Division by zero will cause errors</div>
+                        </div>
+
+                        <div class="operator-card">
+                            <h4>Parentheses ( )</h4>
+                            <p><strong>Purpose:</strong> Controls order of operations (precedence)</p>
+                            <p><strong>Syntax:</strong> (expression)</p>
+                            <div class="example">(Revenue - Costs) ÷ Revenue × 100</div>
+                            <div class="use-case"><strong>Common Use:</strong> Ensuring correct calculation order in complex formulas</div>
+                        </div>
+
+                        <div class="operator-card">
+                            <h4>Numbers</h4>
+                            <p><strong>Purpose:</strong> Custom numeric constants in formulas</p>
+                            <p><strong>Syntax:</strong> Any valid number (integer or decimal)</p>
+                            <div class="example">Column_A × 1.5 + 100</div>
+                            <div class="use-case"><strong>Common Use:</strong> Scaling factors, constants, thresholds</div>
+                        </div>
+                    </div>
+
+                    <h3>Column Reference Syntax</h3>
+                    <div class="syntax-guide">
+                        <h4>How to Reference Columns</h4>
+                        <p>When building formulas, columns are automatically referenced using their exact names from your dataset:</p>
+                        <ul>
+                            <li><strong>Automatic Formatting:</strong> When you select a column from the dropdown, it's automatically formatted correctly</li>
+                            <li><strong>Case Sensitive:</strong> Column names must match exactly as they appear in your data</li>
+                            <li><strong>Special Characters:</strong> Columns with spaces or special characters are handled automatically</li>
+                            <li><strong>Calculated Columns:</strong> Previously created calculated columns can be referenced in new formulas</li>
+                        </ul>
+                        
+                        <div class="syntax-examples">
+                            <h5>Valid Column References:</h5>
+                            <div class="code-example">
+                                <strong>Simple names:</strong> Temperature, Pressure, Flow_Rate<br>
+                                <strong>With spaces:</strong> "Total Sales", "Customer Count"<br>
+                                <strong>With numbers:</strong> Value_1, Test_2024, Score_Final<br>
+                                <strong>Calculated columns:</strong> Efficiency_Ratio, Normalized_Score
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3>Statistical Functions</h3>
+                    <p>Pre-built statistical functions provide common calculations with proper mathematical implementation. Each function has specific requirements for the number and type of columns.</p>
+                    
+                    <div class="function-reference">
+                        <div class="function-item">
+                            <h4>AVG (Average)</h4>
+                            <p><strong>Purpose:</strong> Calculates the arithmetic mean of selected columns</p>
+                            <p><strong>Requirements:</strong> 1 or more columns</p>
+                            <p><strong>Formula Generated:</strong> (Col1 + Col2 + ... + ColN) ÷ N</p>
+                            <div class="example">
+                                <strong>Input:</strong> AVG of [Score1, Score2, Score3]<br>
+                                <strong>Output:</strong> (Score1 + Score2 + Score3) ÷ 3
+                            </div>
+                            <div class="use-case"><strong>Statistical Use:</strong> Central tendency, performance averaging, data smoothing</div>
+                        </div>
+
+                        <div class="function-item">
+                            <h4>SUM</h4>
+                            <p><strong>Purpose:</strong> Adds all selected columns together</p>
+                            <p><strong>Requirements:</strong> 1 or more columns</p>
+                            <p><strong>Formula Generated:</strong> Col1 + Col2 + ... + ColN</p>
+                            <div class="example">
+                                <strong>Input:</strong> SUM of [Q1_Sales, Q2_Sales, Q3_Sales, Q4_Sales]<br>
+                                <strong>Output:</strong> Q1_Sales + Q2_Sales + Q3_Sales + Q4_Sales
+                            </div>
+                            <div class="use-case"><strong>Statistical Use:</strong> Total aggregation, cumulative values, composite scores</div>
+                        </div>
+
+                        <div class="function-item">
+                            <h4>PRODUCT</h4>
+                            <p><strong>Purpose:</strong> Multiplies all selected columns together</p>
+                            <p><strong>Requirements:</strong> 1 or more columns</p>
+                            <p><strong>Formula Generated:</strong> Col1 × Col2 × ... × ColN</p>
+                            <div class="example">
+                                <strong>Input:</strong> PRODUCT of [Length, Width, Height]<br>
+                                <strong>Output:</strong> Length × Width × Height
+                            </div>
+                            <div class="use-case"><strong>Statistical Use:</strong> Volume calculations, compound growth rates, probability combinations</div>
+                        </div>
+
+                        <div class="function-item">
+                            <h4>DIFF (Difference)</h4>
+                            <p><strong>Purpose:</strong> Calculates the difference between exactly two columns</p>
+                            <p><strong>Requirements:</strong> Exactly 2 columns</p>
+                            <p><strong>Formula Generated:</strong> Col1 - Col2</p>
+                            <div class="example">
+                                <strong>Input:</strong> DIFF of [Post_Test, Pre_Test]<br>
+                                <strong>Output:</strong> Post_Test - Pre_Test
+                            </div>
+                            <div class="use-case"><strong>Statistical Use:</strong> Change measurement, improvement analysis, before/after comparisons</div>
+                        </div>
+
+                        <div class="function-item">
+                            <h4>SCALED_SUM</h4>
+                            <p><strong>Purpose:</strong> Multiplies the sum of columns by a scale factor</p>
+                            <p><strong>Requirements:</strong> 1 or more columns + scale factor (k)</p>
+                            <p><strong>Formula Generated:</strong> k × (Col1 + Col2 + ... + ColN)</p>
+                            <div class="example">
+                                <strong>Input:</strong> SCALED_SUM of [Cost1, Cost2, Cost3] with k=1.15<br>
+                                <strong>Output:</strong> 1.15 × (Cost1 + Cost2 + Cost3)
+                            </div>
+                            <div class="use-case"><strong>Statistical Use:</strong> Applying tax rates, inflation adjustments, scaling totals</div>
+                        </div>
+
+                        <div class="function-item">
+                            <h4>WEIGHTED_AVG</h4>
+                            <p><strong>Purpose:</strong> Calculates weighted average with specified weights for each column</p>
+                            <p><strong>Requirements:</strong> 1 or more columns + weight for each column</p>
+                            <p><strong>Formula Generated:</strong> (Col1×W1 + Col2×W2 + ... + ColN×WN) ÷ (W1 + W2 + ... + WN)</p>
+                            <div class="example">
+                                <strong>Input:</strong> WEIGHTED_AVG of [Exam1, Exam2, Final] with weights [0.25, 0.25, 0.50]<br>
+                                <strong>Output:</strong> (Exam1×0.25 + Exam2×0.25 + Final×0.50) ÷ (0.25 + 0.25 + 0.50)
+                            </div>
+                            <div class="use-case"><strong>Statistical Use:</strong> Grade calculations, performance indices, importance-weighted averages</div>
+                        </div>
+
+                        <div class="function-item">
+                            <h4>PERCENT</h4>
+                            <p><strong>Purpose:</strong> Calculates percentage ratio between two columns</p>
+                            <p><strong>Requirements:</strong> Exactly 2 columns (numerator, denominator)</p>
+                            <p><strong>Formula Generated:</strong> (Col1 ÷ Col2) × 100</p>
+                            <div class="example">
+                                <strong>Input:</strong> PERCENT of [Actual_Sales, Target_Sales]<br>
+                                <strong>Output:</strong> (Actual_Sales ÷ Target_Sales) × 100
+                            </div>
+                            <div class="use-case"><strong>Statistical Use:</strong> Performance percentages, completion rates, efficiency metrics</div>
+                        </div>
+
+                        <div class="function-item">
+                            <h4>RATIO</h4>
+                            <p><strong>Purpose:</strong> Calculates simple ratio between two columns</p>
+                            <p><strong>Requirements:</strong> Exactly 2 columns</p>
+                            <p><strong>Formula Generated:</strong> Col1 ÷ Col2</p>
+                            <div class="example">
+                                <strong>Input:</strong> RATIO of [Revenue, Expenses]<br>
+                                <strong>Output:</strong> Revenue ÷ Expenses
+                            </div>
+                            <div class="use-case"><strong>Statistical Use:</strong> Financial ratios, efficiency measures, comparative analysis</div>
+                        </div>
+
+                        <div class="function-item">
+                            <h4>SQUARE</h4>
+                            <p><strong>Purpose:</strong> Squares a single column value (raises to power of 2)</p>
+                            <p><strong>Requirements:</strong> Exactly 1 column</p>
+                            <p><strong>Formula Generated:</strong> Col × Col</p>
+                            <div class="example">
+                                <strong>Input:</strong> SQUARE of [Distance]<br>
+                                <strong>Output:</strong> Distance × Distance
+                            </div>
+                            <div class="use-case"><strong>Statistical Use:</strong> Area calculations, variance components, quadratic relationships</div>
+                        </div>
+
+                        <div class="function-item">
+                            <h4>CUBE</h4>
+                            <p><strong>Purpose:</strong> Cubes a single column value (raises to power of 3)</p>
+                            <p><strong>Requirements:</strong> Exactly 1 column</p>
+                            <p><strong>Formula Generated:</strong> Col × Col × Col</p>
+                            <div class="example">
+                                <strong>Input:</strong> CUBE of [Side_Length]<br>
+                                <strong>Output:</strong> Side_Length × Side_Length × Side_Length
+                            </div>
+                            <div class="use-case"><strong>Statistical Use:</strong> Volume calculations, cubic relationships, polynomial modeling</div>
+                        </div>
+
+                        <div class="function-item">
+                            <h4>LINEAR_COMBO</h4>
+                            <p><strong>Purpose:</strong> Creates linear combination with custom coefficients and offset</p>
+                            <p><strong>Requirements:</strong> 1 or more columns + coefficient for each column + offset value</p>
+                            <p><strong>Formula Generated:</strong> Col1×C1 + Col2×C2 + ... + ColN×CN + Offset</p>
+                            <div class="example">
+                                <strong>Input:</strong> LINEAR_COMBO of [Speed, Accuracy, Quality] with coefficients [2.5, 1.8, 3.0] and offset 10<br>
+                                <strong>Output:</strong> Speed×2.5 + Accuracy×1.8 + Quality×3.0 + 10
+                            </div>
+                            <div class="use-case"><strong>Statistical Use:</strong> Custom scoring systems, regression models, weighted indices</div>
+                        </div>
+                    </div>
+
+                    <h3>Function Parameter Guidelines</h3>
+                    <div class="parameter-guide">
+                        <h4>Weight and Coefficient Entry</h4>
+                        <ul>
+                            <li><strong>Decimal Values:</strong> Use decimal notation (0.5, 1.25, -2.3)</li>
+                            <li><strong>Negative Values:</strong> Supported for coefficients and offsets</li>
+                            <li><strong>Zero Values:</strong> Valid but may affect calculations</li>
+                            <li><strong>Validation:</strong> System checks for valid numeric input</li>
+                        </ul>
+
+                        <h4>Column Selection Tips</h4>
+                        <ul>
+                            <li><strong>Multiple Selection:</strong> Use Ctrl/Cmd+click for multiple columns</li>
+                            <li><strong>Order Matters:</strong> For functions like DIFF and PERCENT, column order affects results</li>
+                            <li><strong>Data Types:</strong> Ensure selected columns contain numeric data</li>
+                            <li><strong>Missing Values:</strong> Functions handle NaN/null values appropriately</li>
+                        </ul>
+                    </div>
+
+                    <h3>Advanced Formula Combinations</h3>
+                    <div class="advanced-examples">
+                        <h4>Combining Functions with Operators</h4>
+                        <p>You can combine function outputs with additional operators for complex calculations:</p>
+                        
+                        <div class="combination-example">
+                            <h5>Normalized Weighted Score</h5>
+                            <div class="code-example">
+                                Step 1: Create WEIGHTED_AVG of [Test1, Test2, Final] with weights [0.3, 0.3, 0.4]<br>
+                                Step 2: Add operators: ( WEIGHTED_AVG_result - 50 ) ÷ 15<br>
+                                Result: Standardized score with mean 0, std dev ~1
+                            </div>
+                        </div>
+
+                        <div class="combination-example">
+                            <h5>Efficiency Index with Penalty</h5>
+                            <div class="code-example">
+                                Step 1: Create RATIO of [Output, Input]<br>
+                                Step 2: Add penalty: RATIO_result × ( 1 - Error_Rate ÷ 100 )<br>
+                                Result: Efficiency adjusted for error rate
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="formula-examples">
+                    <h2>Real-World Statistical Formula Examples</h2>
+                    <p>This section provides practical examples of calculated columns commonly used in statistical analysis. Each example includes the business context, step-by-step creation process, and interpretation guidelines.</p>
+
+                    <div class="example-categories">
+                        <h3>Performance and Efficiency Metrics</h3>
+                        
+                        <div class="example-card detailed">
+                            <h4>Operational Efficiency Ratio</h4>
+                            <div class="example-meta">
+                                <span class="complexity">Complexity: Basic</span>
+                                <span class="function-type">Function: RATIO</span>
+                            </div>
+                            <p><strong>Business Context:</strong> Measure how efficiently resources are converted to outputs</p>
+                            <div class="step-by-step">
+                                <h5>Creation Steps:</h5>
+                                <ol>
+                                    <li>Column Name: <code>Efficiency_Ratio</code></li>
+                                    <li>Function Builder → RATIO</li>
+                                    <li>Select columns: [Output_Units, Input_Resources]</li>
+                                    <li>Result: Output_Units ÷ Input_Resources</li>
+                                </ol>
+                            </div>
+                            <div class="interpretation">
+                                <strong>Interpretation:</strong> Values > 1.0 indicate efficient operations; values < 1.0 suggest inefficiency
+                            </div>
+                            <div class="statistical-use">
+                                <strong>Statistical Applications:</strong> Benchmarking, process optimization, comparative analysis
+                            </div>
+                        </div>
+
+                        <div class="example-card detailed">
+                            <h4>Percentage Change Analysis</h4>
+                            <div class="example-meta">
+                                <span class="complexity">Complexity: Intermediate</span>
+                                <span class="function-type">Function: Expression Builder</span>
+                            </div>
+                            <p><strong>Business Context:</strong> Measure growth, decline, or change between time periods</p>
+                            <div class="step-by-step">
+                                <h5>Creation Steps:</h5>
+                                <ol>
+                                    <li>Column Name: <code>Percent_Change</code></li>
+                                    <li>Expression Builder</li>
+                                    <li>Formula: ( ( New_Value - Old_Value ) ÷ Old_Value ) × 100</li>
+                                    <li>Use parentheses to ensure correct order of operations</li>
+                                </ol>
+                            </div>
+                            <div class="interpretation">
+                                <strong>Interpretation:</strong> Positive values = growth; negative values = decline; magnitude indicates rate of change
+                            </div>
+                            <div class="statistical-use">
+                                <strong>Statistical Applications:</strong> Trend analysis, growth rate studies, before/after comparisons
+                            </div>
+                        </div>
+
+                        <div class="example-card detailed">
+                            <h4>Composite Performance Score</h4>
+                            <div class="example-meta">
+                                <span class="complexity">Complexity: Advanced</span>
+                                <span class="function-type">Function: WEIGHTED_AVG</span>
+                            </div>
+                            <p><strong>Business Context:</strong> Combine multiple performance indicators with different importance levels</p>
+                            <div class="step-by-step">
+                                <h5>Creation Steps:</h5>
+                                <ol>
+                                    <li>Column Name: <code>Performance_Score</code></li>
+                                    <li>Function Builder → WEIGHTED_AVG</li>
+                                    <li>Select columns: [Quality_Score, Speed_Score, Cost_Efficiency]</li>
+                                    <li>Enter weights: [0.5, 0.3, 0.2] (Quality=50%, Speed=30%, Cost=20%)</li>
+                                    <li>Result: (Quality×0.5 + Speed×0.3 + Cost×0.2) ÷ 1.0</li>
+                                </ol>
+                            </div>
+                            <div class="interpretation">
+                                <strong>Interpretation:</strong> Single score reflecting overall performance with quality weighted most heavily
+                            </div>
+                            <div class="statistical-use">
+                                <strong>Statistical Applications:</strong> Multi-criteria decision analysis, performance ranking, KPI development
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="example-categories">
+                        <h3>Statistical Standardization and Normalization</h3>
+                        
+                        <div class="example-card detailed">
+                            <h4>Z-Score Standardization</h4>
+                            <div class="example-meta">
+                                <span class="complexity">Complexity: Intermediate</span>
+                                <span class="function-type">Function: Expression Builder</span>
+                            </div>
+                            <p><strong>Business Context:</strong> Standardize values to compare across different scales or distributions</p>
+                            <div class="step-by-step">
+                                <h5>Creation Steps:</h5>
+                                <ol>
+                                    <li>Column Name: <code>Z_Score</code></li>
+                                    <li>First, calculate mean and standard deviation of your data</li>
+                                    <li>Expression Builder</li>
+                                    <li>Formula: ( Raw_Value - 75.3 ) ÷ 12.8 (using calculated mean=75.3, std=12.8)</li>
+                                </ol>
+                            </div>
+                            <div class="interpretation">
+                                <strong>Interpretation:</strong> Values near 0 = average; positive = above average; negative = below average
+                            </div>
+                            <div class="statistical-use">
+                                <strong>Statistical Applications:</strong> Outlier detection, data normalization, comparative analysis across different metrics
+                            </div>
+                        </div>
+
+                        <div class="example-card detailed">
+                            <h4>Min-Max Normalization</h4>
+                            <div class="example-meta">
+                                <span class="complexity">Complexity: Intermediate</span>
+                                <span class="function-type">Function: Expression Builder</span>
+                            </div>
+                            <p><strong>Business Context:</strong> Scale values to a 0-1 range for comparison and analysis</p>
+                            <div class="step-by-step">
+                                <h5>Creation Steps:</h5>
+                                <ol>
+                                    <li>Column Name: <code>Normalized_Value</code></li>
+                                    <li>Identify min and max values in your dataset</li>
+                                    <li>Expression Builder</li>
+                                    <li>Formula: ( Raw_Value - 10 ) ÷ ( 100 - 10 ) (min=10, max=100)</li>
+                                </ol>
+                            </div>
+                            <div class="interpretation">
+                                <strong>Interpretation:</strong> All values scaled between 0 (minimum) and 1 (maximum)
+                            </div>
+                            <div class="statistical-use">
+                                <strong>Statistical Applications:</strong> Feature scaling for machine learning, creating indices, data visualization
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="example-categories">
+                        <h3>Financial and Business Calculations</h3>
+                        
+                        <div class="example-card detailed">
+                            <h4>Return on Investment (ROI)</h4>
+                            <div class="example-meta">
+                                <span class="complexity">Complexity: Basic</span>
+                                <span class="function-type">Function: PERCENT</span>
+                            </div>
+                            <p><strong>Business Context:</strong> Calculate return on investment as a percentage</p>
+                            <div class="step-by-step">
+                                <h5>Creation Steps:</h5>
+                                <ol>
+                                    <li>Column Name: <code>ROI_Percent</code></li>
+                                    <li>First create: Profit = Revenue - Investment</li>
+                                    <li>Function Builder → PERCENT</li>
+                                    <li>Select columns: [Profit, Investment]</li>
+                                    <li>Result: (Profit ÷ Investment) × 100</li>
+                                </ol>
+                            </div>
+                            <div class="interpretation">
+                                <strong>Interpretation:</strong> Positive values indicate profitable investments; higher values = better returns
+                            </div>
+                            <div class="statistical-use">
+                                <strong>Statistical Applications:</strong> Investment analysis, project evaluation, financial performance measurement
+                            </div>
+                        </div>
+
+                        <div class="example-card detailed">
+                            <h4>Total Cost with Tax and Overhead</h4>
+                            <div class="example-meta">
+                                <span class="complexity">Complexity: Intermediate</span>
+                                <span class="function-type">Function: SCALED_SUM</span>
+                            </div>
+                            <p><strong>Business Context:</strong> Calculate total project cost including all components and overhead</p>
+                            <div class="step-by-step">
+                                <h5>Creation Steps:</h5>
+                                <ol>
+                                    <li>Column Name: <code>Total_Cost_With_Overhead</code></li>
+                                    <li>Function Builder → SCALED_SUM</li>
+                                    <li>Select columns: [Material_Cost, Labor_Cost, Equipment_Cost]</li>
+                                    <li>Scale factor k: 1.15 (15% overhead)</li>
+                                    <li>Result: 1.15 × (Material + Labor + Equipment)</li>
+                                </ol>
+                            </div>
+                            <div class="interpretation">
+                                <strong>Interpretation:</strong> Total cost including 15% overhead for administration and contingency
+                            </div>
+                            <div class="statistical-use">
+                                <strong>Statistical Applications:</strong> Cost estimation, budget planning, financial modeling
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="example-categories">
+                        <h3>Scientific and Engineering Applications</h3>
+                        
+                        <div class="example-card detailed">
+                            <h4>Volume Calculation</h4>
+                            <div class="example-meta">
+                                <span class="complexity">Complexity: Basic</span>
+                                <span class="function-type">Function: PRODUCT</span>
+                            </div>
+                            <p><strong>Business Context:</strong> Calculate volume from dimensional measurements</p>
+                            <div class="step-by-step">
+                                <h5>Creation Steps:</h5>
+                                <ol>
+                                    <li>Column Name: <code>Volume_Cubic_Units</code></li>
+                                    <li>Function Builder → PRODUCT</li>
+                                    <li>Select columns: [Length, Width, Height]</li>
+                                    <li>Result: Length × Width × Height</li>
+                                </ol>
+                            </div>
+                            <div class="interpretation">
+                                <strong>Interpretation:</strong> Volume in cubic units of the original measurements
+                            </div>
+                            <div class="statistical-use">
+                                <strong>Statistical Applications:</strong> Capacity planning, material estimation, geometric analysis
+                            </div>
+                        </div>
+
+                        <div class="example-card detailed">
+                            <h4>Improvement Index</h4>
+                            <div class="example-meta">
+                                <span class="complexity">Complexity: Advanced</span>
+                                <span class="function-type">Function: LINEAR_COMBO</span>
+                            </div>
+                            <p><strong>Business Context:</strong> Create custom improvement metric combining multiple factors</p>
+                            <div class="step-by-step">
+                                <h5>Creation Steps:</h5>
+                                <ol>
+                                    <li>Column Name: <code>Improvement_Index</code></li>
+                                    <li>Function Builder → LINEAR_COMBO</li>
+                                    <li>Select columns: [Quality_Improvement, Speed_Improvement, Cost_Reduction]</li>
+                                    <li>Coefficients: [3.0, 2.0, 2.5] (different importance weights)</li>
+                                    <li>Offset: 100 (baseline index value)</li>
+                                    <li>Result: Quality×3.0 + Speed×2.0 + Cost×2.5 + 100</li>
+                                </ol>
+                            </div>
+                            <div class="interpretation">
+                                <strong>Interpretation:</strong> Higher values indicate better overall improvement; baseline = 100
+                            </div>
+                            <div class="statistical-use">
+                                <strong>Statistical Applications:</strong> Process improvement tracking, multi-factor optimization, custom scoring systems
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="example-categories">
+                        <h3>Quality Control and Testing</h3>
+                        
+                        <div class="example-card detailed">
+                            <h4>Test Score Difference</h4>
+                            <div class="example-meta">
+                                <span class="complexity">Complexity: Basic</span>
+                                <span class="function-type">Function: DIFF</span>
+                            </div>
+                            <p><strong>Business Context:</strong> Measure improvement between pre-test and post-test scores</p>
+                            <div class="step-by-step">
+                                <h5>Creation Steps:</h5>
+                                <ol>
+                                    <li>Column Name: <code>Score_Improvement</code></li>
+                                    <li>Function Builder → DIFF</li>
+                                    <li>Select columns: [Post_Test_Score, Pre_Test_Score]</li>
+                                    <li>Result: Post_Test_Score - Pre_Test_Score</li>
+                                </ol>
+                            </div>
+                            <div class="interpretation">
+                                <strong>Interpretation:</strong> Positive values = improvement; negative values = decline; zero = no change
+                            </div>
+                            <div class="statistical-use">
+                                <strong>Statistical Applications:</strong> Educational assessment, training effectiveness, intervention analysis
+                            </div>
+                        </div>
+
+                        <div class="example-card detailed">
+                            <h4>Defect Rate Calculation</h4>
+                            <div class="example-meta">
+                                <span class="complexity">Complexity: Basic</span>
+                                <span class="function-type">Function: PERCENT</span>
+                            </div>
+                            <p><strong>Business Context:</strong> Calculate percentage of defective items in production</p>
+                            <div class="step-by-step">
+                                <h5>Creation Steps:</h5>
+                                <ol>
+                                    <li>Column Name: <code>Defect_Rate_Percent</code></li>
+                                    <li>Function Builder → PERCENT</li>
+                                    <li>Select columns: [Defective_Units, Total_Units_Produced]</li>
+                                    <li>Result: (Defective_Units ÷ Total_Units_Produced) × 100</li>
+                                </ol>
+                            </div>
+                            <div class="interpretation">
+                                <strong>Interpretation:</strong> Lower percentages indicate better quality; target typically < 1-5%
+                            </div>
+                            <div class="statistical-use">
+                                <strong>Statistical Applications:</strong> Quality control, process monitoring, Six Sigma analysis
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="formula-best-practices">
+                        <h3>Best Practices for Formula Creation</h3>
+                        <div class="best-practices-grid">
+                            <div class="practice-item">
+                                <h4>Naming Conventions</h4>
+                                <ul>
+                                    <li>Use descriptive names that indicate the calculation purpose</li>
+                                    <li>Include units when relevant (e.g., "Volume_Cubic_Meters")</li>
+                                    <li>Use consistent naming patterns across related calculations</li>
+                                    <li>Avoid spaces and special characters in column names</li>
+                                </ul>
+                            </div>
+
+                            <div class="practice-item">
+                                <h4>Formula Validation</h4>
+                                <ul>
+                                    <li>Always use the Preview feature to verify calculations</li>
+                                    <li>Test with known values to confirm formula accuracy</li>
+                                    <li>Check for division by zero scenarios</li>
+                                    <li>Verify order of operations with parentheses</li>
+                                </ul>
+                            </div>
+
+                            <div class="practice-item">
+                                <h4>Statistical Considerations</h4>
+                                <ul>
+                                    <li>Consider the distribution of your data when choosing functions</li>
+                                    <li>Document the business logic behind complex formulas</li>
+                                    <li>Use appropriate precision for your domain (financial vs. scientific)</li>
+                                    <li>Consider outliers and their impact on calculations</li>
+                                </ul>
+                            </div>
+
+                            <div class="practice-item">
+                                <h4>Performance Tips</h4>
+                                <ul>
+                                    <li>Create simpler formulas first, then build complexity</li>
+                                    <li>Use functions instead of manual expressions when possible</li>
+                                    <li>Test formulas on small datasets before applying to large data</li>
+                                    <li>Consider creating intermediate calculated columns for complex multi-step calculations</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="validation-errors">
+                    <h2>Formula Validation and Error Messages</h2>
+                    <p>AbhiStat provides real-time validation to ensure your formulas are syntactically correct:</p>
+
+                    <h3>Validation States</h3>
+                    <div class="validation-states">
+                        <div class="validation-state success">
+                            <h4>✓ Formula is valid</h4>
+                            <p>Your formula syntax is correct and ready to use. The "Preview Results" button becomes available.</p>
+                        </div>
+
+                        <div class="validation-state info">
+                            <h4>ℹ Start building your formula</h4>
+                            <p>Initial state when no formula elements have been added yet.</p>
+                        </div>
+
+                        <div class="validation-state error">
+                            <h4>✗ Invalid formula: [error message]</h4>
+                            <p>There's a syntax error in your formula that needs to be corrected.</p>
+                        </div>
+                    </div>
+
+                    <h3>Common Validation Errors</h3>
+                    <div class="error-reference">
+                        <div class="error-item">
+                            <h4>Empty Expression</h4>
+                            <div class="error-message">Invalid formula: Empty expression</div>
+                            <p><strong>Cause:</strong> No formula elements have been added</p>
+                            <p><strong>Solution:</strong> Add at least one column or number to your formula</p>
+                        </div>
+
+                        <div class="error-item">
+                            <h4>Invalid Start/End</h4>
+                            <div class="error-message">Invalid formula: Formula must start with a number or open parenthesis</div>
+                            <p><strong>Cause:</strong> Formula starts or ends with an operator</p>
+                            <p><strong>Solution:</strong> Ensure formula starts and ends with a column, number, or parenthesis</p>
+                        </div>
+
+                        <div class="error-item">
+                            <h4>Adjacent Operators</h4>
+                            <div class="error-message">Invalid formula: operators cannot be adjacent</div>
+                            <p><strong>Cause:</strong> Two operators placed next to each other (e.g., + ×)</p>
+                            <p><strong>Solution:</strong> Add a column or number between operators</p>
+                        </div>
+
+                        <div class="error-item">
+                            <h4>Adjacent Numbers</h4>
+                            <div class="error-message">Invalid formula: numbers must be separated by operators</div>
+                            <p><strong>Cause:</strong> Two numbers placed next to each other without an operator</p>
+                            <p><strong>Solution:</strong> Add an operator between numbers</p>
+                        </div>
+
+                        <div class="error-item">
+                            <h4>Unbalanced Parentheses</h4>
+                            <div class="error-message">Invalid formula: Unbalanced parentheses</div>
+                            <p><strong>Cause:</strong> Missing opening or closing parentheses</p>
+                            <p><strong>Solution:</strong> Ensure every opening parenthesis has a matching closing parenthesis</p>
+                        </div>
+
+                        <div class="error-item">
+                            <h4>Division by Zero</h4>
+                            <div class="error-message">Invalid formula: Division by zero</div>
+                            <p><strong>Cause:</strong> Attempting to divide by zero in the formula</p>
+                            <p><strong>Solution:</strong> Check your formula for division by zero or add conditional logic</p>
+                        </div>
+
+                        <div class="error-item">
+                            <h4>Invalid Number</h4>
+                            <div class="error-message">Invalid formula: Invalid number: [value]</div>
+                            <p><strong>Cause:</strong> Non-numeric value entered in number field</p>
+                            <p><strong>Solution:</strong> Enter only valid numeric values</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="preview-feature">
+                    <h2>Formula Preview Feature</h2>
+                    <p>The Preview Results feature allows you to see how your formula will be applied to your actual data before saving:</p>
+
+                    <h3>How Preview Works</h3>
+                    <ol>
+                        <li><strong>Availability:</strong> Preview button appears when formula is valid and column name is entered</li>
+                        <li><strong>Sample Calculation:</strong> Shows results for the first 10 rows of your data</li>
+                        <li><strong>Both Datasets:</strong> Displays results for both "without product" and "with product" files</li>
+                        <li><strong>Error Detection:</strong> Identifies any runtime errors (like division by zero in actual data)</li>
+                    </ol>
+
+                    <h3>Preview Information Displayed</h3>
+                    <ul>
+                        <li><strong>Formula String:</strong> Shows the complete formula as it will be executed</li>
+                        <li><strong>Sample Results:</strong> First 10 calculated values from each dataset</li>
+                        <li><strong>Data Types:</strong> Confirms the output will be numeric</li>
+                        <li><strong>Error Indicators:</strong> Highlights any rows where calculation fails</li>
+                    </ul>
+
+                    <div class="tip-box">
+                        <h4>Best Practices for Preview</h4>
+                        <ul>
+                            <li>Always preview complex formulas before adding them</li>
+                            <li>Check that results make sense for your data</li>
+                            <li>Verify that no unexpected errors occur in the sample</li>
+                            <li>Use preview to fine-tune formula parameters</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="column-management">
+                    <h2>Managing Calculated Columns</h2>
+                    <p>The Calculated Columns List on the left side of the interface helps you manage your created columns:</p>
+
+                    <h3>Column Status Types</h3>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <h4>Pending</h4>
+                            <p>Newly created columns that haven't been saved and applied yet. These exist only in the interface.</p>
+                        </div>
+
+                        <div class="status-item">
+                            <h4>Updated</h4>
+                            <p>Previously saved columns that have been modified. Changes need to be saved and applied.</p>
+                        </div>
+
+                        <div class="status-item">
+                            <h4>Applied</h4>
+                            <p>Successfully processed columns that are now part of your dataset and available for analysis.</p>
+                        </div>
+                    </div>
+
+                    <h3>Column Management Actions</h3>
+                    <ul>
+                        <li><strong>Remove Column:</strong> Delete a column from your list (red X button)</li>
+                        <li><strong>Save & Apply All:</strong> Process all pending/updated columns against your data</li>
+                        <li><strong>View Formula:</strong> See the complete formula for each column</li>
+                        <li><strong>Status Tracking:</strong> Monitor which columns are pending, updated, or applied</li>
+                    </ul>
+
+                    <div class="warning-box">
+                        <h3>Important Notes</h3>
+                        <ul>
+                            <li>You must save and apply all columns before proceeding to dependency modeling</li>
+                            <li>Removing a column permanently deletes it from your analysis</li>
+                            <li>Column names must be unique within your analysis</li>
+                            <li>Applied columns become part of your dataset for subsequent steps</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="troubleshooting">
+                    <h2>Troubleshooting Common Issues</h2>
+
+                    <div class="troubleshooting-section">
+                        <h3>Column Not Found Errors</h3>
+                        <p><strong>Problem:</strong> Error message about missing columns when saving</p>
+                        <p><strong>Causes:</strong></p>
+                        <ul>
+                            <li>Column name changed in source data</li>
+                            <li>Typo in column reference</li>
+                            <li>Column exists in only one of the two files</li>
+                        </ul>
+                        <p><strong>Solutions:</strong></p>
+                        <ul>
+                            <li>Verify column names match exactly (case-sensitive)</li>
+                            <li>Check that referenced columns exist in both data files</li>
+                            <li>Use the column dropdown to ensure correct spelling</li>
+                        </ul>
+                    </div>
+
+                    <div class="troubleshooting-section">
+                        <h3>Calculation Errors in Data</h3>
+                        <p><strong>Problem:</strong> Formula works in preview but fails when applied</p>
+                        <p><strong>Causes:</strong></p>
+                        <ul>
+                            <li>Division by zero in some data rows</li>
+                            <li>Non-numeric values in referenced columns</li>
+                            <li>Missing/null values in calculations</li>
+                        </ul>
+                        <p><strong>Solutions:</strong></p>
+                        <ul>
+                            <li>Check your source data for null or non-numeric values</li>
+                            <li>Add conditional logic to handle edge cases</li>
+                            <li>Clean your data before creating calculated columns</li>
+                        </ul>
+                    </div>
+
+                    <div class="troubleshooting-section">
+                        <h3>Performance Issues</h3>
+                        <p><strong>Problem:</strong> Slow processing when saving columns</p>
+                        <p><strong>Causes:</strong></p>
+                        <ul>
+                            <li>Large datasets with complex formulas</li>
+                            <li>Multiple calculated columns being processed</li>
+                            <li>Network connectivity issues</li>
+                        </ul>
+                        <p><strong>Solutions:</strong></p>
+                        <ul>
+                            <li>Process columns in smaller batches</li>
+                            <li>Simplify complex formulas where possible</li>
+                            <li>Ensure stable internet connection</li>
+                            <li>Be patient with large datasets</li>
+                        </ul>
+                    </div>
+
+                    <div class="troubleshooting-section">
+                        <h3>Function Parameter Errors</h3>
+                        <p><strong>Problem:</strong> Function builder shows parameter errors</p>
+                        <p><strong>Common Issues:</strong></p>
+                        <ul>
+                            <li>DIFF function requires exactly 2 columns</li>
+                            <li>WEIGHTED_AVG needs weights for each column</li>
+                            <li>LINEAR_COMBO requires coefficients for all columns plus offset</li>
+                            <li>SQUARE/CUBE functions work with only 1 column</li>
+                        </ul>
+                        <p><strong>Solutions:</strong></p>
+                        <ul>
+                            <li>Read function requirements carefully</li>
+                            <li>Provide all required parameters</li>
+                            <li>Use valid numeric values for weights and coefficients</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <div class="navigation-footer">
+                    <a href="data-management.html" class="nav-button prev">← Data Management</a>
+                    <a href="dependency-modeling.html" class="nav-button next">Dependency Modeling →</a>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <script src="assets/js/navigation.js"></script>
+</body>
+</html>

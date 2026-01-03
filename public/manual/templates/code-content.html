@@ -1,0 +1,248 @@
+<!-- Code Content Template -->
+<!-- Use this template for sections that include code examples, formulas, and technical references -->
+
+<div class="content-section" id="section-id">
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb">
+        <span class="breadcrumb-item"><a href="#home">Home</a></span>
+        <span class="breadcrumb-item"><a href="#parent-section">Parent Section</a></span>
+        <span class="breadcrumb-item">Current Section</span>
+    </nav>
+
+    <!-- Main Heading -->
+    <h1>Code Examples and Technical Reference</h1>
+    
+    <!-- Introduction -->
+    <p>This section provides code examples, formulas, and technical implementation details for [specific feature].</p>
+
+    <!-- Basic Syntax Example -->
+    <h2>Basic Syntax</h2>
+    <p>The basic syntax for creating formulas follows this pattern:</p>
+    
+    <pre><code>// Basic formula structure
+column_name = expression
+
+percentage = (value / total) * 100</code></pre>
+
+    <!-- Available Operators -->
+    <h3>Available Operators</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Operator</th>
+                <th>Description</th>
+                <th>Example</th>
+                <th>Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>+</code></td>
+                <td>Addition</td>
+                <td><code>5 + 3</code></td>
+                <td>8</td>
+            </tr>
+            <tr>
+                <td><code>-</code></td>
+                <td>Subtraction</td>
+                <td><code>10 - 4</code></td>
+                <td>6</td>
+            </tr>
+            <tr>
+                <td><code>*</code></td>
+                <td>Multiplication</td>
+                <td><code>6 * 7</code></td>
+                <td>42</td>
+            </tr>
+            <tr>
+                <td><code>/</code></td>
+                <td>Division</td>
+                <td><code>15 / 3</code></td>
+                <td>5</td>
+            </tr>
+            <tr>
+                <td><code>**</code></td>
+                <td>Exponentiation</td>
+                <td><code>2 ** 3</code></td>
+                <td>8</td>
+            </tr>
+            <tr>
+                <td><code>%</code></td>
+                <td>Modulo</td>
+                <td><code>10 % 3</code></td>
+                <td>1</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Mathematical Functions -->
+    <h3>Mathematical Functions</h3>
+    <p>The following mathematical functions are available for use in formulas:</p>
+
+    <h4>Basic Functions</h4>
+    <pre><code>// Absolute value
+abs_value = abs(column_name)
+
+sqrt_value = sqrt(column_name)
+
+log_value = log(column_name)
+
+log10_value = log10(column_name)</code></pre>
+
+    <h4>Trigonometric Functions</h4>
+    <pre><code>// Sine, cosine, tangent
+sin_value = sin(angle_in_radians)
+cos_value = cos(angle_in_radians)
+tan_value = tan(angle_in_radians)
+
+asin_value = asin(value)
+acos_value = acos(value)
+atan_value = atan(value)</code></pre>
+
+    <!-- Statistical Functions -->
+    <h3>Statistical Functions</h3>
+    <p>Use these functions for statistical calculations:</p>
+
+    <pre><code>// Mean calculation
+mean_value = mean(column_name)
+
+std_value = std(column_name)
+
+var_value = var(column_name)
+
+min_value = min(column_name)
+max_value = max(column_name)
+
+percentile_25 = percentile(column_name, 25)
+percentile_75 = percentile(column_name, 75)</code></pre>
+
+    <!-- Complex Formula Examples -->
+    <h2>Complex Formula Examples</h2>
+    
+    <h3>Example 1: Z-Score Calculation</h3>
+    <p>Calculate the z-score for standardizing data:</p>
+    <pre><code>// Z-score formula: (value - mean) / standard_deviation
+z_score = (data_column - mean(data_column)) / std(data_column)</code></pre>
+
+    <h3>Example 2: Percentage Change</h3>
+    <p>Calculate percentage change between two values:</p>
+    <pre><code>// Percentage change formula: ((new_value - old_value) / old_value) * 100
+percentage_change = ((new_column - old_column) / old_column) * 100</code></pre>
+
+    <h3>Example 3: Conditional Logic</h3>
+    <p>Use conditional statements in formulas:</p>
+    <pre><code>// If-then-else logic
+category = if(value > 100, "High", if(value > 50, "Medium", "Low"))
+
+status = if(score >= 90, "Excellent", 
+          if(score >= 80, "Good", 
+          if(score >= 70, "Average", "Below Average")))</code></pre>
+
+    <!-- Column References -->
+    <h3>Column References</h3>
+    <p>Reference other columns in your formulas using these methods:</p>
+
+    <pre><code>// Direct column reference (use column name)
+result = column_a + column_b
+
+result = "Column A" + "Column B"
+
+result = [Column-A] + [Column_B]</code></pre>
+
+    <!-- Error Handling -->
+    <h3>Error Handling</h3>
+    <p>Handle potential errors in your formulas:</p>
+
+    <pre><code>// Handle division by zero
+safe_division = if(denominator != 0, numerator / denominator, 0)
+
+clean_value = if(isnull(column_name), 0, column_name)
+
+safe_log = if(value > 0, log(value), null)</code></pre>
+
+    <!-- API Code Examples -->
+    <h2>API Integration Examples</h2>
+    <p>For advanced users, here are examples of API interactions:</p>
+
+    <h3>Python Example</h3>
+    <pre><code>import requests
+import json
+
+# API endpoint
+url = "https://api.abhistat.com/v1/calculate"
+
+# Request payload
+payload = {
+    "session_id": "your_session_id",
+    "formula": "result = column_a * 2 + column_b",
+    "column_name": "calculated_result"
+}
+
+# Make request
+response = requests.post(url, json=payload)
+
+# Handle response
+if response.status_code == 200:
+    result = response.json()
+    print("Calculation successful:", result)
+else:
+    print("Error:", response.text)</code></pre>
+
+    <h3>JavaScript Example</h3>
+    <pre><code>// Fetch API example
+const calculateColumn = async (formula, columnName) => {
+    try {
+        const response = await fetch('/api/calculate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                session_id: sessionId,
+                formula: formula,
+                column_name: columnName
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('Calculation successful:', result);
+            return result;
+        } else {
+            throw new Error('Calculation failed');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+};</code></pre>
+
+    <!-- Best Practices -->
+    <div class="alert alert-success">
+        <strong>Best Practices:</strong>
+        <ul>
+            <li>Always validate your formulas before applying them to large datasets</li>
+            <li>Use descriptive names for calculated columns</li>
+            <li>Handle edge cases like null values and division by zero</li>
+            <li>Test formulas with sample data first</li>
+        </ul>
+    </div>
+
+    <!-- Common Errors -->
+    <div class="alert alert-danger">
+        <strong>Common Errors:</strong>
+        <ul>
+            <li><code>SyntaxError</code>: Check parentheses and operator placement</li>
+            <li><code>NameError</code>: Verify column names are spelled correctly</li>
+            <li><code>TypeError</code>: Ensure data types are compatible</li>
+            <li><code>ZeroDivisionError</code>: Add checks for division by zero</li>
+        </ul>
+    </div>
+
+    <!-- Related Technical References -->
+    <h3>Related Technical References</h3>
+    <ul>
+        <li><a href="#api-documentation">API Documentation</a></li>
+        <li><a href="#data-types-reference">Data Types Reference</a></li>
+        <li><a href="#error-codes">Error Codes Reference</a></li>
+    </ul>
+</div>

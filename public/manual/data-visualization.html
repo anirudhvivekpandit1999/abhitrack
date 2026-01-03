@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Visualization - AbhiStat User Manual</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/print.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>AbhiStat User Manual</h2>
+                <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+            </div>
+            
+            <!-- Search Functionality -->
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search documentation...">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+            
+            <!-- Table of Contents -->
+            <div class="toc" id="tableOfContents">
+                <ul class="toc-list">
+                    <li class="toc-item">
+                        <a href="getting-started.html" class="toc-link">1. Getting Started</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-management.html" class="toc-link">2. Data Management</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="calculated-columns.html" class="toc-link">3. Calculated Columns</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="dependency-modeling.html" class="toc-link">4. Dependency Modeling</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-visualization.html" class="toc-link toc-active toc-expandable">5. Data Visualization</a>
+                        <ul class="toc-sublist toc-expanded">
+                            <li class="toc-item"><a href="#distribution-curves" class="toc-link">5.1 Distribution Curves</a></li>
+                            <li class="toc-item"><a href="#scatter-plots" class="toc-link">5.2 Scatter Plots</a></li>
+                            <li class="toc-item"><a href="#multivariate-analysis" class="toc-link">5.3 Multi-variate Analysis</a></li>
+                            <li class="toc-item"><a href="#bootstrapping" class="toc-link">5.4 Bootstrapping</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="#troubleshooting" class="toc-link">6. Troubleshooting & Best Practices</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="#technical-reference" class="toc-link">7. Technical Reference</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content" id="mainContent">
+            <div class="content-wrapper">
+                <!-- Breadcrumb Navigation -->
+                <div class="breadcrumb-container">
+                    <nav class="breadcrumb" id="breadcrumbs">
+                        <a href="index.html" class="breadcrumb-item">Home</a>
+                        <span class="breadcrumb-separator">></span>
+                        <span class="breadcrumb-item active">Data Visualization</span>
+                    </nav>
+                </div>
+                
+                <!-- Content Area -->
+                <div id="content-area">
+                    <h1>Data Visualization</h1>
+                    <p class="lead">Create powerful statistical visualizations to analyze and interpret your data relationships and distributions.</p>
+                    
+                    <div class="alert alert-info">
+                        <strong>Overview:</strong> The Data Visualization module is the fourth and final step in the AbhiStat workflow. After completing dependency modeling, you can create various types of charts and plots to visualize your statistical analysis results.
+                    </div>
+
+                    <!-- Distribution Curves Section -->
+                    <section id="distribution-curves" class="content-section">
+                        <h2>5.1 Distribution Curves</h2>
+                        <p>Distribution curves help you visualize the frequency distribution of your data, comparing patterns between "with product" and "without product" conditions.</p>
+
+                        <h3>Accessing Distribution Curves</h3>
+                        <ol>
+                            <li>Complete the dependency modeling step</li>
+                            <li>Navigate to the "Visualize Data" page</li>
+                            <li>Select the "Distribution Curves" tab (first tab)</li>
+                        </ol>
+
+                        <h3>Creating Distribution Curves</h3>
+                        
+                        <h4>Step 1: Column Selection</h4>
+                        <ol>
+                            <li>Use the <strong>Column Selection</strong> dropdown to choose the variable you want to analyze</li>
+                            <li>The dropdown contains all available numeric columns from your dataset</li>
+                            <li>The chart will automatically update when you select a different column</li>
+                        </ol>
+
+                        <div class="code-block">
+                            <h5>Available Column Types:</h5>
+                            <ul>
+                                <li>Numeric columns from your original dataset</li>
+                                <li>Calculated columns created in the previous step</li>
+                                <li>Dependent and independent variables from dependency modeling</li>
+                            </ul>
+                        </div>
+
+                        <h4>Step 2: View Mode Selection</h4>
+                        <p>Choose how to display your distribution data:</p>
+                        <ul>
+                            <li><strong>Combined View:</strong> Shows both datasets on the same chart for easy comparison</li>
+                            <li><strong>Separate Views:</strong> Displays "with product" and "without product" data in separate charts</li>
+                            <li><strong>Single View:</strong> Shows only one dataset at a time</li>
+                        </ul>
+
+                        <h4>Step 3: Chart Customization</h4>
+                        <p>Click the <strong>Settings</strong> icon to customize your chart:</p>
+                        <ul>
+                            <li><strong>Legend Labels:</strong> Customize the names displayed in the chart legend</li>
+                            <li><strong>Axis Labels:</strong> Set custom X and Y axis labels</li>
+                            <li><strong>Colors:</strong> Choose different colors for each dataset</li>
+                            <li><strong>Bin Count:</strong> Adjust the number of bins for the histogram (default: 20)</li>
+                            <li><strong>Grid Lines:</strong> Toggle grid lines on/off</li>
+                            <li><strong>Area Opacity:</strong> Adjust the transparency of the distribution curves</li>
+                        </ul>
+
+                        <h3>Understanding Distribution Curves</h3>
+                        
+                        <h4>Chart Elements</h4>
+                        <ul>
+                            <li><strong>X-Axis:</strong> Shows the range of values for the selected variable</li>
+                            <li><strong>Y-Axis:</strong> Shows the frequency percentage for each bin</li>
+                            <li><strong>Colored Areas:</strong> Represent the distribution shape for each dataset</li>
+                            <li><strong>Legend:</strong> Identifies which color represents which dataset</li>
+                        </ul>
+
+                        <h4>Statistical Insights Panel</h4>
+                        <p>Click the <strong>Distribution Analysis</strong> panel to view detailed statistics:</p>
+                        <ul>
+                            <li><strong>Mean:</strong> Average value for each dataset</li>
+                            <li><strong>Standard Deviation:</strong> Measure of data spread</li>
+                            <li><strong>Skewness:</strong> Indicates if the distribution is symmetric or skewed</li>
+                            <li><strong>Data Quality Score:</strong> Overall assessment of data completeness and outliers</li>
+                        </ul>
+
+                        <h4>Distribution Summary Cards</h4>
+                        <p>The summary cards provide quick insights:</p>
+                        <ul>
+                            <li><strong>Total Data Points:</strong> Number of observations in each dataset</li>
+                            <li><strong>Distribution Shape:</strong> Symmetric, right-skewed, or left-skewed</li>
+                            <li><strong>Tail Behavior:</strong> Normal, heavy-tailed, or light-tailed</li>
+                            <li><strong>Data Quality:</strong> Score from 0-100 based on completeness and outliers</li>
+                        </ul>
+
+                        <h3>Interpreting Distribution Curves</h3>
+                        
+                        <h4>Shape Analysis</h4>
+                        <ul>
+                            <li><strong>Normal Distribution:</strong> Bell-shaped curve, symmetric around the mean</li>
+                            <li><strong>Right-Skewed:</strong> Tail extends to the right, most data on the left</li>
+                            <li><strong>Left-Skewed:</strong> Tail extends to the left, most data on the right</li>
+                            <li><strong>Bimodal:</strong> Two peaks, indicating two different populations</li>
+                        </ul>
+
+                        <h4>Comparison Analysis</h4>
+                        <ul>
+                            <li><strong>Similar Shapes:</strong> Suggests consistent behavior between conditions</li>
+                            <li><strong>Different Means:</strong> Indicates a shift in central tendency</li>
+                            <li><strong>Different Spreads:</strong> Shows variation in data consistency</li>
+                            <li><strong>Different Shapes:</strong> Suggests fundamental differences in behavior</li>
+                        </ul>
+
+                        <h3>Export and Sharing</h3>
+                        <ul>
+                            <li><strong>Download PNG:</strong> Click the download icon to save charts as high-resolution images</li>
+                            <li><strong>Watermark:</strong> All exported charts include the AbhiStat watermark</li>
+                            <li><strong>File Naming:</strong> Charts are automatically named with the variable and chart type</li>
+                        </ul>
+                    </section>
+
+                    <!-- Scatter Plots Section -->
+                    <section id="scatter-plots" class="content-section">
+                        <h2>5.2 Scatter Plots</h2>
+                        <p>Scatter plots visualize the relationship between two continuous variables, helping you identify correlations, trends, and outliers.</p>
+
+                        <h3>Creating Scatter Plots</h3>
+                        
+                        <h4>Step 1: Variable Selection</h4>
+                        <ol>
+                            <li>Navigate to the <strong>Scatter Plot</strong> tab</li>
+                            <li>Select the <strong>Independent Variable</strong> (X-axis) from the dropdown</li>
+                            <li>Select the <strong>Dependent Variable</strong> (Y-axis) from the dropdown</li>
+                            <li>Variables are automatically populated from your dependency modeling results</li>
+                        </ol>
+
+                        <h4>Step 2: Dataset View Selection</h4>
+                        <p>Choose which datasets to display:</p>
+                        <ul>
+                            <li><strong>Both:</strong> Shows both "with product" and "without product" data</li>
+                            <li><strong>With Product:</strong> Shows only the "with product" dataset</li>
+                            <li><strong>Without Product:</strong> Shows only the "without product" dataset</li>
+                        </ul>
+
+                        <h4>Step 3: Chart Customization</h4>
+                        <p>Use the settings panel to customize your scatter plot:</p>
+                        <ul>
+                            <li><strong>Point Size:</strong> Adjust the size of data points (4-16 pixels)</li>
+                            <li><strong>Opacity:</strong> Control point transparency (30-100%)</li>
+                            <li><strong>Colors:</strong> Set different colors for each dataset</li>
+                            <li><strong>Trend Lines:</strong> Toggle linear regression lines on/off</li>
+                            <li><strong>Grid Lines:</strong> Show/hide background grid</li>
+                            <li><strong>Outliers:</strong> Highlight outlier points in orange</li>
+                        </ul>
+
+                        <h3>Interactive Features</h3>
+                        
+                        <h4>Zoom and Pan</h4>
+                        <ul>
+                            <li><strong>Mouse Wheel:</strong> Zoom in and out of the plot</li>
+                            <li><strong>Click and Drag:</strong> Pan around the zoomed plot</li>
+                            <li><strong>Zoom Controls:</strong> Use the zoom in/out buttons</li>
+                            <li><strong>Reset Zoom:</strong> Click the center focus button to reset view</li>
+                        </ul>
+
+                        <h4>Axis Range Controls</h4>
+                        <ul>
+                            <li><strong>Auto Range:</strong> Automatically fits all data points</li>
+                            <li><strong>Custom Range:</strong> Set specific minimum and maximum values</li>
+                            <li><strong>Date/Time Support:</strong> Handles date and time variables automatically</li>
+                            <li><strong>Reset Button:</strong> Return to automatic scaling</li>
+                        </ul>
+
+                        <h4>Data Point Interaction</h4>
+                        <ul>
+                            <li><strong>Hover Tooltips:</strong> View exact values by hovering over points</li>
+                            <li><strong>Point Highlighting:</strong> Points enlarge when hovered</li>
+                            <li><strong>Dataset Identification:</strong> Tooltips show which dataset each point belongs to</li>
+                        </ul>
+
+                        <h3>Statistical Analysis Features</h3>
+                        
+                        <h4>Correlation Analysis</h4>
+                        <p>The insights panel provides correlation statistics:</p>
+                        <ul>
+                            <li><strong>Correlation Coefficient:</strong> Measures linear relationship strength (-1 to +1)</li>
+                            <li><strong>R-Squared Value:</strong> Percentage of variance explained by the relationship</li>
+                            <li><strong>Regression Equation:</strong> Mathematical formula for the trend line</li>
+                        </ul>
+
+                        <h4>Outlier Detection</h4>
+                        <ul>
+                            <li><strong>IQR Method:</strong> Uses interquartile range to identify outliers</li>
+                            <li><strong>Visual Highlighting:</strong> Outliers appear in orange with larger size</li>
+                            <li><strong>Outlier Count:</strong> Statistics panel shows number of outliers detected</li>
+                        </ul>
+
+                        <h4>Data Quality Assessment</h4>
+                        <ul>
+                            <li><strong>Quality Score:</strong> Overall data quality rating (0-100)</li>
+                            <li><strong>Completeness:</strong> Percentage of valid data points</li>
+                            <li><strong>Correlation Strength:</strong> Weak, moderate, or strong relationship</li>
+                        </ul>
+
+                        <h3>Interpreting Scatter Plots</h3>
+                        
+                        <h4>Relationship Patterns</h4>
+                        <ul>
+                            <li><strong>Positive Correlation:</strong> Points trend upward from left to right</li>
+                            <li><strong>Negative Correlation:</strong> Points trend downward from left to right</li>
+                            <li><strong>No Correlation:</strong> Points appear randomly scattered</li>
+                            <li><strong>Non-linear Relationships:</strong> Curved or complex patterns</li>
+                        </ul>
+
+                        <h4>Trend Line Analysis</h4>
+                        <ul>
+                            <li><strong>Slope:</strong> Steepness indicates strength of relationship</li>
+                            <li><strong>R-Squared:</strong> Higher values indicate better fit</li>
+                            <li><strong>Intercept:</strong> Y-value when X equals zero</li>
+                        </ul>
+
+                        <h4>Comparative Analysis</h4>
+                        <ul>
+                            <li><strong>Different Slopes:</strong> Indicates different relationship strengths</li>
+                            <li><strong>Parallel Lines:</strong> Similar relationships with different baselines</li>
+                            <li><strong>Intersecting Lines:</strong> Relationships change at different variable levels</li>
+                        </ul>
+                    </section>
+
+                    <!-- Multi-variate Analysis Section -->
+                    <section id="multivariate-analysis" class="content-section">
+                        <h2>5.3 Multi-variate Analysis</h2>
+                        <p>Multi-variate scatter plots allow you to analyze relationships between multiple variables simultaneously, creating comprehensive visualizations of complex data interactions.</p>
+
+                        <h3>Setting Up Multi-variate Plots</h3>
+                        
+                        <h4>Step 1: Variable Selection</h4>
+                        <ol>
+                            <li>Navigate to the <strong>Multi-Variate Scatter Plot</strong> tab</li>
+                            <li>Select multiple <strong>X (Independent) Variables</strong> using the multi-select dropdown</li>
+                            <li>Select multiple <strong>Y (Dependent) Variables</strong> using the multi-select dropdown</li>
+                            <li>The system automatically creates all possible X-Y combinations</li>
+                        </ol>
+
+                        <h4>Step 2: Pair Management</h4>
+                        <ul>
+                            <li><strong>Active Pairs:</strong> Check/uncheck variable pairs to include in the visualization</li>
+                            <li><strong>Color Coding:</strong> Each pair gets a unique color for identification</li>
+                            <li><strong>Pair Labels:</strong> Clearly labeled as "X Variable vs Y Variable"</li>
+                        </ul>
+
+                        <h4>Step 3: Performance Optimization</h4>
+                        <p>For large datasets (>2000 points), the system automatically:</p>
+                        <ul>
+                            <li><strong>Reduces Point Size:</strong> Smaller points for better visibility</li>
+                            <li><strong>Adjusts Opacity:</strong> Lower opacity to prevent overplotting</li>
+                            <li><strong>Uses Canvas Rendering:</strong> Faster rendering for many points</li>
+                            <li><strong>Spatial Indexing:</strong> Efficient hover detection</li>
+                        </ul>
+
+                        <h3>Advanced Customization</h3>
+                        
+                        <h4>Point Appearance Settings</h4>
+                        <ul>
+                            <li><strong>Point Size:</strong> Adjustable from 4-16 pixels</li>
+                            <li><strong>Opacity:</strong> Control transparency from 30-100%</li>
+                            <li><strong>Color Override:</strong> Customize colors for specific variable pairs</li>
+                        </ul>
+
+                        <h4>Dataset Blending</h4>
+                        <ul>
+                            <li><strong>Color Blending:</strong> Combines pair colors with dataset colors</li>
+                            <li><strong>Visual Distinction:</strong> Different shades for "with" vs "without" product</li>
+                            <li><strong>Blend Ratio:</strong> 70% pair color, 30% dataset color</li>
+                        </ul>
+
+                        <h3>Interactive Navigation</h3>
+                        
+                        <h4>Zoom and Pan Controls</h4>
+                        <ul>
+                            <li><strong>Zoom In/Out:</strong> Dedicated buttons for precise control</li>
+                            <li><strong>Reset Zoom:</strong> Return to original view</li>
+                            <li><strong>Mouse Interaction:</strong> Scroll to zoom, drag to pan</li>
+                        </ul>
+
+                        <h4>Axis Range Management</h4>
+                        <ul>
+                            <li><strong>Auto-scaling:</strong> Automatically fits all data points</li>
+                            <li><strong>Manual Range:</strong> Set custom X and Y axis limits</li>
+                            <li><strong>Range Reset:</strong> Quick return to auto-scaling</li>
+                        </ul>
+
+                        <h3>Performance Features</h3>
+                        
+                        <h4>Efficient Rendering</h4>
+                        <ul>
+                            <li><strong>Canvas-based:</strong> High-performance rendering for large datasets</li>
+                            <li><strong>Grid Indexing:</strong> Fast spatial queries for hover detection</li>
+                            <li><strong>Throttled Updates:</strong> Smooth interaction even with many points</li>
+                        </ul>
+
+                        <h4>Memory Management</h4>
+                        <ul>
+                            <li><strong>Lazy Loading:</strong> Only renders visible data</li>
+                            <li><strong>Efficient Data Structures:</strong> Optimized for large datasets</li>
+                            <li><strong>Garbage Collection:</strong> Automatic cleanup of unused resources</li>
+                        </ul>
+
+                        <h3>Analysis Capabilities</h3>
+                        
+                        <h4>Pattern Recognition</h4>
+                        <ul>
+                            <li><strong>Cluster Identification:</strong> Spot groups of similar data points</li>
+                            <li><strong>Relationship Comparison:</strong> Compare correlations across variable pairs</li>
+                            <li><strong>Outlier Detection:</strong> Identify unusual data points across multiple dimensions</li>
+                        </ul>
+
+                        <h4>Comparative Analysis</h4>
+                        <ul>
+                            <li><strong>Cross-Variable Relationships:</strong> See how different variables interact</li>
+                            <li><strong>Dataset Differences:</strong> Compare patterns between conditions</li>
+                            <li><strong>Variable Importance:</strong> Identify which variables show strongest relationships</li>
+                        </ul>
+
+                        <h3>Export and Documentation</h3>
+                        <ul>
+                            <li><strong>High-Resolution Export:</strong> PNG format with 2x scaling</li>
+                            <li><strong>Automatic Watermarking:</strong> AbhiStat branding included</li>
+                            <li><strong>Descriptive Filenames:</strong> Includes variable information and timestamp</li>
+                        </ul>
+                    </section>
+
+                    <!-- Bootstrapping Section -->
+                    <section id="bootstrapping" class="content-section">
+                        <h2>5.4 Bootstrapping</h2>
+                        <p>Bootstrap analysis provides statistical confidence intervals for mean differences between "with product" and "without product" conditions using resampling techniques.</p>
+
+                        <h3>Understanding Bootstrap Analysis</h3>
+                        
+                        <h4>What is Bootstrapping?</h4>
+                        <ul>
+                            <li><strong>Resampling Method:</strong> Creates thousands of simulated samples from your data</li>
+                            <li><strong>Statistical Inference:</strong> Estimates confidence intervals without assumptions about data distribution</li>
+                            <li><strong>10,000 Samples:</strong> AbhiStat uses 10,000 bootstrap samples for robust results</li>
+                            <li><strong>Mean Difference Focus:</strong> Analyzes differences between group means</li>
+                        </ul>
+
+                        <h4>Key Concepts</h4>
+                        <ul>
+                            <li><strong>Mean Difference:</strong> Average difference between "with" and "without" product groups</li>
+                            <li><strong>Confidence Interval:</strong> Range of likely values for the true mean difference</li>
+                            <li><strong>Statistical Significance:</strong> Whether the confidence interval excludes zero</li>
+                            <li><strong>Bootstrap Distribution:</strong> Distribution of mean differences from resampling</li>
+                        </ul>
+
+                        <h3>Using the Bootstrap Interface</h3>
+                        
+                        <h4>Column Selection</h4>
+                        <ol>
+                            <li>Navigate to the <strong>Bootstrapping</strong> tab</li>
+                            <li>Use the <strong>Select Column for Analysis</strong> dropdown</li>
+                            <li>Choose any numeric variable from your dataset</li>
+                            <li>The analysis results update automatically</li>
+                        </ol>
+
+                        <h4>Results Overview</h4>
+                        <p>The summary panel shows:</p>
+                        <ul>
+                            <li><strong>Total columns analyzed:</strong> Number of variables processed</li>
+                            <li><strong>Significant impact:</strong> Variables with confidence intervals not including zero</li>
+                            <li><strong>No significant impact:</strong> Variables with confidence intervals including zero</li>
+                        </ul>
+
+                        <h3>Interpreting Bootstrap Results</h3>
+                        
+                        <h4>Statistics Table</h4>
+                        <p>For each selected column, view:</p>
+                        <ul>
+                            <li><strong>Mean Difference:</strong> Average difference between groups</li>
+                            <li><strong>Standard Deviation:</strong> Variability of the bootstrap distribution</li>
+                            <li><strong>95% Confidence Interval:</strong> Range containing the true difference with 95% confidence</li>
+                            <li><strong>Lower Bound (2.5%):</strong> Bottom of the confidence interval</li>
+                            <li><strong>Upper Bound (97.5%):</strong> Top of the confidence interval</li>
+                        </ul>
+
+                        <h4>Significance Determination</h4>
+                        <ul>
+                            <li><strong>Significant Impact:</strong> Confidence interval does not include zero</li>
+                            <li><strong>No Significant Impact:</strong> Confidence interval includes zero</li>
+                            <li><strong>Color Coding:</strong> Red chips for significant, green chips for non-significant</li>
+                        </ul>
+
+                        <h3>Managing Results</h3>
+                        
+                        <h4>View Options</h4>
+                        <ul>
+                            <li><strong>Grid View:</strong> Displays variables as colored chips</li>
+                            <li><strong>List View:</strong> Shows variables in a table with mean differences</li>
+                            <li><strong>Sorting:</strong> Order by impact magnitude or alphabetically</li>
+                            <li><strong>Pagination:</strong> Navigate through large numbers of variables</li>
+                        </ul>
+
+                        <h4>Items Per Page</h4>
+                        <ul>
+                            <li><strong>10, 20, 50, or 100:</strong> Choose how many variables to display</li>
+                            <li><strong>Separate Pagination:</strong> Independent controls for significant and non-significant results</li>
+                        </ul>
+
+                        <h3>Export Capabilities</h3>
+                        
+                        <h4>Excel Export</h4>
+                        <p>Click "Export Excel" to download comprehensive results:</p>
+                        <ul>
+                            <li><strong>Column Selection:</strong> Choose specific variables to include</li>
+                            <li><strong>Statistic Selection:</strong> Pick which statistics to export</li>
+                            <li><strong>Custom Filename:</strong> Set your preferred file name</li>
+                            <li><strong>Timestamp:</strong> Automatic date/time stamp added</li>
+                        </ul>
+
+                        <h4>PNG Export</h4>
+                        <ul>
+                            <li><strong>Statistics Table:</strong> Download the current table as a high-resolution image</li>
+                            <li><strong>Watermarked:</strong> Includes AbhiStat branding</li>
+                            <li><strong>Print-Ready:</strong> Suitable for reports and presentations</li>
+                        </ul>
+
+                        <h3>Statistical Interpretation Guide</h3>
+                        
+                        <h4>Confidence Interval Analysis</h4>
+                        <ul>
+                            <li><strong>Narrow Intervals:</strong> More precise estimates, larger sample sizes</li>
+                            <li><strong>Wide Intervals:</strong> Less precise estimates, more variability</li>
+                            <li><strong>Positive Range:</strong> "With product" group has higher values</li>
+                            <li><strong>Negative Range:</strong> "Without product" group has higher values</li>
+                        </ul>
+
+                        <h4>Effect Size Interpretation</h4>
+                        <ul>
+                            <li><strong>Small Effect:</strong> Mean difference less than 0.2 standard deviations</li>
+                            <li><strong>Medium Effect:</strong> Mean difference around 0.5 standard deviations</li>
+                            <li><strong>Large Effect:</strong> Mean difference greater than 0.8 standard deviations</li>
+                        </ul>
+
+                        <h4>Practical Significance</h4>
+                        <ul>
+                            <li><strong>Statistical vs Practical:</strong> Significant results may not always be practically important</li>
+                            <li><strong>Context Matters:</strong> Consider the real-world meaning of the difference</li>
+                            <li><strong>Sample Size Effects:</strong> Large samples can detect very small differences</li>
+                        </ul>
+                    </section>
+
+                    <!-- Advanced Features Section -->
+                    <section id="advanced-features" class="content-section">
+                        <h2>5.5 Advanced Visualization Features</h2>
+                        <p>AbhiStat provides sophisticated customization and export capabilities to create publication-ready visualizations.</p>
+
+                        <h3>Chart Settings Modal</h3>
+                        <p>Access advanced customization through the settings icon (⚙️) available on all visualization tabs.</p>
+
+                        <h4>Opening Chart Settings</h4>
+                        <ol>
+                            <li>Navigate to any visualization tab</li>
+                            <li>Click the <strong>Settings</strong> icon in the toolbar</li>
+                            <li>The Chart Settings modal opens with multiple customization sections</li>
+                            <li>Changes are previewed in real-time</li>
+                        </ol>
+
+                        <h4>Settings Modal Features</h4>
+                        <ul>
+                            <li><strong>Tabbed Interface:</strong> Organized sections for different customization types</li>
+                            <li><strong>Real-time Preview:</strong> See changes immediately</li>
+                            <li><strong>Reset Option:</strong> Return to default settings anytime</li>
+                            <li><strong>Apply/Cancel:</strong> Control when changes take effect</li>
+                        </ul>
+
+                        <h3>Point Appearance Customization</h3>
+                        
+                        <h4>Point Size Control</h4>
+                        <ul>
+                            <li><strong>Range:</strong> 4-16 pixels diameter</li>
+                            <li><strong>Interactive Slider:</strong> Real-time adjustment with visual feedback</li>
+                            <li><strong>Performance Optimization:</strong> Automatic size reduction for large datasets</li>
+                            <li><strong>Hover Effects:</strong> Points enlarge on mouse hover</li>
+                        </ul>
+
+                        <h4>Opacity Settings</h4>
+                        <ul>
+                            <li><strong>Range:</strong> 30-100% transparency</li>
+                            <li><strong>Overplotting Prevention:</strong> Lower opacity helps with dense data</li>
+                            <li><strong>Layer Visibility:</strong> Control how overlapping points appear</li>
+                            <li><strong>Performance Mode:</strong> Automatic opacity reduction for >2000 points</li>
+                        </ul>
+
+                        <h3>Color Customization System</h3>
+                        
+                        <h4>Gradient Color Picker</h4>
+                        <ul>
+                            <li><strong>Predefined Palette:</strong> 10 carefully selected colors</li>
+                            <li><strong>Color Harmony:</strong> Colors chosen for visual distinction</li>
+                            <li><strong>Accessibility:</strong> High contrast ratios for readability</li>
+                            <li><strong>Consistent Branding:</strong> Professional color schemes</li>
+                        </ul>
+
+                        <h4>Variable Pair Colors</h4>
+                        <p>For multi-variate plots:</p>
+                        <ul>
+                            <li><strong>Unique Assignment:</strong> Each X-Y pair gets a distinct color</li>
+                            <li><strong>Override Capability:</strong> Customize specific pair colors</li>
+                            <li><strong>Color Blending:</strong> Combines pair colors with dataset colors</li>
+                            <li><strong>Visual Legend:</strong> Clear identification of each pair</li>
+                        </ul>
+
+                        <h4>Dataset Color Coding</h4>
+                        <ul>
+                            <li><strong>With Product:</strong> Default blue (#1976d2)</li>
+                            <li><strong>Without Product:</strong> Default orange (#ff6b35)</li>
+                            <li><strong>Customizable:</strong> Change colors to match your branding</li>
+                            <li><strong>Consistent Application:</strong> Colors maintained across all charts</li>
+                        </ul>
+
+                        <h3>Export and Sharing Capabilities</h3>
+                        
+                        <h4>High-Resolution PNG Export</h4>
+                        <ul>
+                            <li><strong>2x Scaling:</strong> Double resolution for crisp printing</li>
+                            <li><strong>White Background:</strong> Clean appearance for documents</li>
+                            <li><strong>Automatic Watermarking:</strong> AbhiStat branding included</li>
+                            <li><strong>Descriptive Filenames:</strong> Includes chart type and variable names</li>
+                        </ul>
+
+                        <h4>Watermark System</h4>
+                        <ul>
+                            <li><strong>Professional Branding:</strong> "Powered by Abhitech's AbhiStat"</li>
+                            <li><strong>Logo Integration:</strong> Company logo included</li>
+                            <li><strong>Non-intrusive Placement:</strong> Positioned to avoid data obscuring</li>
+                            <li><strong>Consistent Styling:</strong> Matches across all export formats</li>
+                        </ul>
+
+                        <h4>File Naming Convention</h4>
+                        <ul>
+                            <li><strong>Chart Type:</strong> Distribution, Scatter, MultiVariate, etc.</li>
+                            <li><strong>Variable Names:</strong> Includes selected variables</li>
+                            <li><strong>Timestamp:</strong> Date and time of export</li>
+                            <li><strong>Format:</strong> ChartType_Variable_YYYY-MM-DD_HH-MM-SS.png</li>
+                        </ul>
+
+                        <h3>Performance Optimization Features</h3>
+                        
+                        <h4>Large Dataset Handling</h4>
+                        <ul>
+                            <li><strong>Automatic Detection:</strong> Identifies datasets >2000 points</li>
+                            <li><strong>Canvas Rendering:</strong> Switches to high-performance rendering</li>
+                            <li><strong>Point Size Reduction:</strong> Smaller points for better visibility</li>
+                            <li><strong>Opacity Adjustment:</strong> Lower opacity to prevent overplotting</li>
+                        </ul>
+
+                        <h4>Spatial Indexing</h4>
+                        <ul>
+                            <li><strong>Grid-based System:</strong> Divides plot area into cells</li>
+                            <li><strong>Fast Hover Detection:</strong> Efficient point identification</li>
+                            <li><strong>Memory Efficient:</strong> Optimized data structures</li>
+                            <li><strong>Smooth Interaction:</strong> Maintains responsiveness</li>
+                        </ul>
+
+                        <h4>Rendering Optimization</h4>
+                        <ul>
+                            <li><strong>Lazy Loading:</strong> Only renders visible elements</li>
+                            <li><strong>Throttled Updates:</strong> Prevents excessive re-rendering</li>
+                            <li><strong>Memory Management:</strong> Automatic cleanup of unused resources</li>
+                            <li><strong>Progressive Enhancement:</strong> Adds features based on performance</li>
+                        </ul>
+
+                        <h3>Interactive Enhancement Features</h3>
+                        
+                        <h4>Zoom and Pan System</h4>
+                        <ul>
+                            <li><strong>Mouse Wheel Zoom:</strong> Intuitive zooming with scroll</li>
+                            <li><strong>Drag to Pan:</strong> Click and drag to move around</li>
+                            <li><strong>Zoom Controls:</strong> Dedicated buttons for precise control</li>
+                            <li><strong>Reset Functionality:</strong> Quick return to original view</li>
+                        </ul>
+
+                        <h4>Tooltip System</h4>
+                        <ul>
+                            <li><strong>Hover Activation:</strong> Appears on mouse hover</li>
+                            <li><strong>Contextual Information:</strong> Shows relevant data values</li>
+                            <li><strong>Dataset Identification:</strong> Indicates which group the point belongs to</li>
+                            <li><strong>Formatted Values:</strong> Proper number formatting and units</li>
+                        </ul>
+
+                        <h4>Grid and Axis Controls</h4>
+                        <ul>
+                            <li><strong>Toggle Grid Lines:</strong> Show/hide background grid</li>
+                            <li><strong>Custom Axis Ranges:</strong> Set specific min/max values</li>
+                            <li><strong>Auto-scaling:</strong> Automatic range adjustment</li>
+                            <li><strong>Date/Time Support:</strong> Proper formatting for temporal data</li>
+                        </ul>
+
+                        <h3>Best Practices for Visualization</h3>
+                        
+                        <h4>Color Selection Guidelines</h4>
+                        <ul>
+                            <li><strong>High Contrast:</strong> Ensure colors are distinguishable</li>
+                            <li><strong>Colorblind Friendly:</strong> Avoid red-green combinations</li>
+                            <li><strong>Print Compatibility:</strong> Colors that work in grayscale</li>
+                            <li><strong>Brand Consistency:</strong> Match your organization's colors</li>
+                        </ul>
+
+                        <h4>Point Size and Opacity</h4>
+                        <ul>
+                            <li><strong>Data Density:</strong> Smaller points for dense data</li>
+                            <li><strong>Visibility Balance:</strong> Ensure all points are visible</li>
+                            <li><strong>Overplotting Prevention:</strong> Use transparency for overlapping points</li>
+                            <li><strong>Focus Areas:</strong> Larger points for important data</li>
+                        </ul>
+
+                        <h4>Export Preparation</h4>
+                        <ul>
+                            <li><strong>Clean Layout:</strong> Remove unnecessary elements</li>
+                            <li><strong>Clear Labels:</strong> Ensure all text is readable</li>
+                            <li><strong>Appropriate Size:</strong> Consider final use case</li>
+                            <li><strong>Quality Check:</strong> Preview before final export</li>
+                        </ul>
+
+                        <h3>Troubleshooting Visualization Issues</h3>
+                        
+                        <h4>Performance Problems</h4>
+                        <ul>
+                            <li><strong>Large Datasets:</strong> System automatically optimizes for >2000 points</li>
+                            <li><strong>Slow Rendering:</strong> Reduce point size and increase transparency</li>
+                            <li><strong>Memory Issues:</strong> Close other browser tabs and applications</li>
+                            <li><strong>Browser Compatibility:</strong> Use modern browsers for best performance</li>
+                        </ul>
+
+                        <h4>Display Issues</h4>
+                        <ul>
+                            <li><strong>Missing Points:</strong> Check axis ranges and zoom level</li>
+                            <li><strong>Overlapping Labels:</strong> Adjust chart size or font settings</li>
+                            <li><strong>Color Problems:</strong> Verify color settings and monitor calibration</li>
+                            <li><strong>Export Quality:</strong> Ensure sufficient resolution for intended use</li>
+                        </ul>
+
+                        <h4>Interaction Problems</h4>
+                        <ul>
+                            <li><strong>Zoom Not Working:</strong> Click on chart area first to focus</li>
+                            <li><strong>Tooltips Not Appearing:</strong> Hover directly over data points</li>
+                            <li><strong>Settings Not Saving:</strong> Click "Apply Changes" before closing modal</li>
+                            <li><strong>Reset Issues:</strong> Use the reset button to return to defaults</li>
+                        </ul>
+                    </section>
+
+                    <!-- Navigation -->
+                    <div class="navigation-section">
+                        <div class="nav-buttons">
+                            <a href="dependency-modeling.html" class="nav-button nav-button-prev">
+                                ← Previous: Dependency Modeling
+                            </a>
+                            <a href="#troubleshooting" class="nav-button nav-button-next">
+                                Next: Troubleshooting & Best Practices →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="assets/js/navigation.js"></script>
+</body>
+</html>

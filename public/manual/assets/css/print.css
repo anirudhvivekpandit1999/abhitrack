@@ -1,0 +1,275 @@
+/* Print Styles for PDF Generation */
+
+@media print {
+    /* Reset for print */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Page setup */
+    @page {
+        size: A4;
+        margin: 2cm 1.5cm;
+        
+        @top-center {
+            content: "AbhiStat User Manual";
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        @bottom-right {
+            content: "Page " counter(page);
+            font-size: 10pt;
+            color: #666;
+        }
+    }
+
+    /* Hide navigation and interactive elements */
+    .sidebar,
+    .sidebar-toggle,
+    .search-container,
+    .breadcrumb-container,
+    .skip-to-content,
+    .feedback-section,
+    .interactive-element {
+        display: none !important;
+    }
+
+    /* Adjust main content for print */
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    .content-wrapper {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Typography adjustments */
+    body {
+        font-size: 11pt;
+        line-height: 1.4;
+        color: #000;
+        background: white;
+    }
+
+    h1 {
+        font-size: 18pt;
+        margin-bottom: 12pt;
+        page-break-after: avoid;
+        color: #2c3e50;
+    }
+
+    h2 {
+        font-size: 16pt;
+        margin-top: 18pt;
+        margin-bottom: 10pt;
+        page-break-after: avoid;
+        color: #2c3e50;
+    }
+
+    h3 {
+        font-size: 14pt;
+        margin-top: 14pt;
+        margin-bottom: 8pt;
+        page-break-after: avoid;
+        color: #2c3e50;
+    }
+
+    h4, h5, h6 {
+        font-size: 12pt;
+        margin-top: 12pt;
+        margin-bottom: 6pt;
+        page-break-after: avoid;
+        color: #2c3e50;
+    }
+
+    p {
+        margin-bottom: 8pt;
+        orphans: 3;
+        widows: 3;
+    }
+
+    /* Lists */
+    ul, ol {
+        margin-bottom: 8pt;
+        padding-left: 20pt;
+    }
+
+    li {
+        margin-bottom: 4pt;
+    }
+
+    /* Code blocks */
+    .code-block,
+    pre,
+    code {
+        font-family: 'Courier New', monospace;
+        font-size: 9pt;
+        background: #f8f9fa;
+        border: 1pt solid #dee2e6;
+        padding: 6pt;
+        margin: 8pt 0;
+        page-break-inside: avoid;
+    }
+
+    .code-block {
+        border-left: 3pt solid #3498db;
+    }
+
+    /* Tables */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12pt 0;
+        font-size: 10pt;
+        page-break-inside: avoid;
+    }
+
+    th, td {
+        border: 1pt solid #dee2e6;
+        padding: 6pt;
+        text-align: left;
+    }
+
+    th {
+        background: #f8f9fa;
+        font-weight: bold;
+    }
+
+    /* Alerts and callouts */
+    .alert {
+        border: 1pt solid #dee2e6;
+        padding: 8pt;
+        margin: 8pt 0;
+        page-break-inside: avoid;
+    }
+
+    .alert-info {
+        background: #e3f2fd;
+        border-color: #2196f3;
+    }
+
+    .alert-warning {
+        background: #fff3e0;
+        border-color: #ff9800;
+    }
+
+    .alert-danger {
+        background: #ffebee;
+        border-color: #f44336;
+    }
+
+    .alert-success {
+        background: #e8f5e8;
+        border-color: #4caf50;
+    }
+
+    /* Images */
+    img {
+        max-width: 100%;
+        height: auto;
+        page-break-inside: avoid;
+    }
+
+    .screenshot {
+        border: 1pt solid #dee2e6;
+        margin: 8pt 0;
+        page-break-inside: avoid;
+    }
+
+    /* Page breaks */
+    .page-break {
+        page-break-before: always;
+    }
+
+    .no-break {
+        page-break-inside: avoid;
+    }
+
+    /* Links */
+    a {
+        color: #2c3e50;
+        text-decoration: none;
+    }
+
+    a[href]:after {
+        content: " (" attr(href) ")";
+        font-size: 9pt;
+        color: #666;
+    }
+
+    /* Don't show URLs for internal links */
+    a[href^="#"]:after,
+    a[href^="/"]:after,
+    a[href*="abhistat"]:after {
+        content: "";
+    }
+
+    /* Table of contents for print */
+    .print-toc {
+        display: block !important;
+        page-break-after: always;
+    }
+
+    .print-toc h2 {
+        margin-bottom: 16pt;
+    }
+
+    .print-toc ul {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    .print-toc li {
+        margin-bottom: 4pt;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .print-toc a {
+        text-decoration: none;
+        color: #2c3e50;
+    }
+
+    .print-toc .page-number {
+        font-weight: normal;
+    }
+
+    /* Step numbers */
+    .step-number {
+        font-weight: bold;
+        color: #3498db;
+    }
+
+    /* Ensure proper spacing */
+    .section {
+        margin-bottom: 24pt;
+    }
+
+    .subsection {
+        margin-bottom: 16pt;
+    }
+}
+
+/* Screen styles for PDF preview */
+.pdf-preview {
+    max-width: 210mm;
+    margin: 0 auto;
+    background: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    padding: 2cm 1.5cm;
+}
+
+.pdf-preview .sidebar {
+    display: none;
+}
+
+.pdf-preview .main-content {
+    margin-left: 0;
+    width: 100%;
+}

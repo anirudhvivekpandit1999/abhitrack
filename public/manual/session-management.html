@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Management & Troubleshooting - AbhiStat User Manual</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>AbhiStat Manual</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="getting-started.html">Getting Started</a></li>
+                <li><a href="data-management.html">Data Management</a></li>
+                <li><a href="session-management.html" class="active">Session Management</a></li>
+                <li><a href="calculated-columns.html">Calculated Columns</a></li>
+                <li><a href="dependency-modeling.html">Dependency Modeling</a></li>
+                <li><a href="#" class="disabled">Data Visualization</a></li>
+                <li><a href="#" class="disabled">Troubleshooting</a></li>
+                <li><a href="#" class="disabled">Technical Reference</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <div class="breadcrumb">
+                <a href="index.html">Home</a> > <span>Session Management & Troubleshooting</span>
+            </div>
+
+            <article>
+                <header>
+                    <h1>Session Management & Troubleshooting</h1>
+                    <p class="lead">Understand how AbhiStat manages your data sessions and learn to resolve common issues effectively.</p>
+                </header>
+
+                <section id="session-overview">
+                    <h2>Understanding Sessions</h2>
+                    <p>AbhiStat uses a session-based system to manage your data and analysis workflow. Each session maintains your uploaded files, calculated columns, and analysis results throughout your work session.</p>
+
+                    <div class="info-box">
+                        <h3>What is a Session?</h3>
+                        <p>A session is a temporary workspace that:</p>
+                        <ul>
+                            <li>Stores your uploaded data files securely</li>
+                            <li>Maintains calculated columns and formulas</li>
+                            <li>Preserves your analysis progress</li>
+                            <li>Enables seamless navigation between workflow steps</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="session-lifecycle">
+                    <h2>Session Lifecycle</h2>
+                    <p>Understanding how sessions work helps you manage your data effectively:</p>
+
+                    <div class="lifecycle-steps">
+                        <div class="lifecycle-step">
+                            <h3>1. Session Creation</h3>
+                            <p><strong>When:</strong> Automatically created when you upload your first data file</p>
+                            <p><strong>What happens:</strong></p>
+                            <ul>
+                                <li>Unique session ID is generated</li>
+                                <li>Temporary storage directory is created</li>
+                                <li>Session cookie is set in your browser</li>
+                                <li>Files are securely stored on the server</li>
+                            </ul>
+                        </div>
+
+                        <div class="lifecycle-step">
+                            <h3>2. Active Session</h3>
+                            <p><strong>Duration:</strong> While you're actively using AbhiStat</p>
+                            <p><strong>What's maintained:</strong></p>
+                            <ul>
+                                <li>Original uploaded files</li>
+                                <li>Processed and validated data</li>
+                                <li>Calculated columns and formulas</li>
+                                <li>Analysis results and visualizations</li>
+                            </ul>
+                        </div>
+
+                        <div class="lifecycle-step">
+                            <h3>3. Session Expiration</h3>
+                            <p><strong>When:</strong> After 24 hours of inactivity</p>
+                            <p><strong>What happens:</strong></p>
+                            <ul>
+                                <li>Temporary files are automatically deleted</li>
+                                <li>Session data is cleared from server memory</li>
+                                <li>Browser session storage is maintained locally</li>
+                                <li>You'll need to re-upload files to continue</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="warning-box">
+                        <h3>Important Session Notes</h3>
+                        <ul>
+                            <li><strong>24-Hour Limit:</strong> Sessions automatically expire after 24 hours for security and storage management</li>
+                            <li><strong>Browser Dependency:</strong> Sessions are tied to your browser - switching browsers requires re-uploading</li>
+                            <li><strong>No Permanent Storage:</strong> AbhiStat doesn't permanently store your data - download results before session expires</li>
+                            <li><strong>Privacy Protection:</strong> Automatic cleanup ensures your data isn't retained longer than necessary</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="session-management">
+                    <h2>Managing Your Session</h2>
+                    <p>Best practices for effective session management:</p>
+
+                    <h3>Monitoring Session Status</h3>
+                    <ul>
+                        <li><strong>Active Indicators:</strong> Green status indicators show when your session is active</li>
+                        <li><strong>Data Persistence:</strong> Your progress is automatically saved as you work</li>
+                        <li><strong>Navigation Freedom:</strong> Move between workflow steps without losing data</li>
+                    </ul>
+
+                    <h3>Session Recovery</h3>
+                    <p>If you encounter session issues:</p>
+                    <ol>
+                        <li><strong>Check Browser Storage:</strong> Some data may be cached locally</li>
+                        <li><strong>Refresh the Page:</strong> Sometimes resolves temporary connection issues</li>
+                        <li><strong>Clear Cache:</strong> Use the "Clear Data" button to reset completely</li>
+                        <li><strong>Re-upload Files:</strong> Start fresh if session has expired</li>
+                    </ol>
+
+                    <h3>Extending Your Work Session</h3>
+                    <div class="tip-box">
+                        <h4>Tips for Long Analysis Sessions</h4>
+                        <ul>
+                            <li>Keep the browser tab active to maintain session</li>
+                            <li>Periodically interact with the interface to prevent timeout</li>
+                            <li>Download intermediate results as you progress</li>
+                            <li>Save important formulas and settings externally</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="troubleshooting">
+                    <h2>Common Issues and Solutions</h2>
+                    <p>Resolve common session and data management problems:</p>
+
+                    <div class="troubleshooting-section">
+                        <h3>Session Expired Errors</h3>
+                        <div class="error-example">
+                            <strong>Error:</strong> "Session not found or expired. Please upload files first."
+                        </div>
+                        <p><strong>Cause:</strong> Your session has exceeded the 24-hour limit or server has been restarted.</p>
+                        <p><strong>Solution:</strong></p>
+                        <ol>
+                            <li>Return to the Data Upload step</li>
+                            <li>Re-upload your data files</li>
+                            <li>Recreate any calculated columns</li>
+                            <li>Continue with your analysis</li>
+                        </ol>
+                    </div>
+
+                    <div class="troubleshooting-section">
+                        <h3>File Upload Failures</h3>
+                        <div class="error-example">
+                            <strong>Error:</strong> "Server error. Please try again."
+                        </div>
+                        <p><strong>Possible Causes:</strong></p>
+                        <ul>
+                            <li>Network connectivity issues</li>
+                            <li>File size too large</li>
+                            <li>Server temporarily unavailable</li>
+                            <li>File format corruption</li>
+                        </ul>
+                        <p><strong>Solutions:</strong></p>
+                        <ol>
+                            <li>Check your internet connection</li>
+                            <li>Try uploading smaller files or compress large datasets</li>
+                            <li>Wait a few minutes and retry</li>
+                            <li>Verify file integrity and format</li>
+                            <li>Try a different browser if issues persist</li>
+                        </ol>
+                    </div>
+
+                    <div class="troubleshooting-section">
+                        <h3>Data Processing Errors</h3>
+                        <div class="error-example">
+                            <strong>Error:</strong> Various data validation and processing errors
+                        </div>
+                        <p><strong>Common Scenarios:</strong></p>
+                        <ul>
+                            <li>Incompatible file formats</li>
+                            <li>Missing or corrupted data</li>
+                            <li>Encoding issues with special characters</li>
+                            <li>Memory limitations with very large files</li>
+                        </ul>
+                        <p><strong>Solutions:</strong></p>
+                        <ol>
+                            <li>Verify file format compatibility (CSV, Excel, Parquet)</li>
+                            <li>Check for and fix data corruption</li>
+                            <li>Ensure proper UTF-8 encoding for text data</li>
+                            <li>Consider splitting very large datasets</li>
+                        </ol>
+                    </div>
+
+                    <div class="troubleshooting-section">
+                        <h3>Browser Compatibility Issues</h3>
+                        <div class="error-example">
+                            <strong>Symptoms:</strong> Interface not loading properly, upload failures, session issues
+                        </div>
+                        <p><strong>Recommended Browsers:</strong></p>
+                        <ul>
+                            <li>Google Chrome (latest version)</li>
+                            <li>Mozilla Firefox (latest version)</li>
+                            <li>Microsoft Edge (latest version)</li>
+                            <li>Safari (latest version)</li>
+                        </ul>
+                        <p><strong>Browser Settings:</strong></p>
+                        <ul>
+                            <li>Enable JavaScript</li>
+                            <li>Allow cookies from abhistat.com</li>
+                            <li>Disable ad blockers that might interfere</li>
+                            <li>Clear browser cache if experiencing issues</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="best-practices">
+                    <h2>Data Preparation Best Practices</h2>
+                    <p>Optimize your data for successful analysis in AbhiStat:</p>
+
+                    <h3>File Preparation Guidelines</h3>
+                    <div class="best-practices-grid">
+                        <div class="practice-item">
+                            <h4>Column Headers</h4>
+                            <ul>
+                                <li>Use clear, descriptive column names</li>
+                                <li>Avoid special characters and spaces</li>
+                                <li>Ensure headers are in the first row</li>
+                                <li>Remove or rename "Unnamed" columns</li>
+                            </ul>
+                        </div>
+
+                        <div class="practice-item">
+                            <h4>Data Consistency</h4>
+                            <ul>
+                                <li>Maintain consistent column names across files</li>
+                                <li>Use consistent data types (numeric vs. text)</li>
+                                <li>Standardize date formats</li>
+                                <li>Handle missing values consistently</li>
+                            </ul>
+                        </div>
+
+                        <div class="practice-item">
+                            <h4>File Organization</h4>
+                            <ul>
+                                <li>Keep data in tabular format</li>
+                                <li>Avoid merged cells in Excel files</li>
+                                <li>Place data starting from cell A1</li>
+                                <li>Remove unnecessary formatting</li>
+                            </ul>
+                        </div>
+
+                        <div class="practice-item">
+                            <h4>Performance Optimization</h4>
+                            <ul>
+                                <li>Remove unnecessary columns before upload</li>
+                                <li>Consider using CSV for large datasets</li>
+                                <li>Compress files if they're very large</li>
+                                <li>Test with smaller samples first</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h3>Data Quality Checklist</h3>
+                    <div class="checklist">
+                        <label><input type="checkbox"> Column names are descriptive and consistent</label>
+                        <label><input type="checkbox"> No unnamed or empty columns</label>
+                        <label><input type="checkbox"> Data types are appropriate (numbers as numbers, text as text)</label>
+                        <label><input type="checkbox"> Missing values are handled appropriately</label>
+                        <label><input type="checkbox"> File format is supported (CSV, Excel, Parquet)</label>
+                        <label><input type="checkbox"> Both files have compatible structures</label>
+                        <label><input type="checkbox"> Files are not password-protected</label>
+                        <label><input type="checkbox"> Data is clean and free of corruption</label>
+                    </div>
+                </section>
+
+                <section id="getting-help">
+                    <h2>Getting Additional Help</h2>
+                    <p>If you continue to experience issues after following this guide:</p>
+
+                    <div class="help-options">
+                        <div class="help-option">
+                            <h3>Check System Status</h3>
+                            <p>Verify that AbhiStat services are running normally and there are no known outages.</p>
+                        </div>
+
+                        <div class="help-option">
+                            <h3>Review Error Messages</h3>
+                            <p>Carefully read error messages - they often contain specific guidance for resolution.</p>
+                        </div>
+
+                        <div class="help-option">
+                            <h3>Try Different Approaches</h3>
+                            <p>Test with different file formats, smaller datasets, or different browsers to isolate issues.</p>
+                        </div>
+
+                        <div class="help-option">
+                            <h3>Contact Support</h3>
+                            <p>For persistent issues, contact the AbhiStat support team with specific error messages and file details.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="navigation-footer">
+                    <a href="data-management.html" class="nav-button prev">← Data Management</a>
+                    <a href="calculated-columns.html" class="nav-button next">Calculated Columns →</a>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <script src="assets/js/navigation.js"></script>
+</body>
+</html>

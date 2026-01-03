@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AbhiStat Quick Reference Guide</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/print.css">
+    <style>
+        .quick-ref-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .quick-ref-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .quick-ref-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .quick-ref-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        .quick-ref-list {
+            list-style: none;
+            padding: 0;
+        }
+        .quick-ref-list li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        .quick-ref-list li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #3498db;
+            font-weight: bold;
+        }
+        .formula-example {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            margin: 5px 0;
+        }
+        .shortcut-key {
+            background: #e9ecef;
+            border: 1px solid #adb5bd;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        @media print {
+            .print-button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button" onclick="window.print()">Print Quick Reference</button>
+    
+    <div class="quick-ref-container">
+        <header style="text-align: center; margin-bottom: 40px;">
+            <h1>AbhiStat Quick Reference Guide</h1>
+            <p class="lead">Essential information for efficient statistical analysis</p>
+        </header>
+
+        <div class="quick-ref-grid">
+            <!-- Getting Started -->
+            <div class="quick-ref-card">
+                <h3>🚀 Getting Started</h3>
+                <ul class="quick-ref-list">
+                    <li><strong>Login:</strong> Use Abhitech credentials or Google OAuth</li>
+                    <li><strong>Workflow:</strong> Upload → Calculate → Model → Visualize</li>
+                    <li><strong>File Types:</strong> CSV, Excel (.xlsx), Parquet</li>
+                    <li><strong>Max File Size:</strong> Check with administrator</li>
+                    <li><strong>Session Duration:</strong> Files expire after inactivity</li>
+                </ul>
+            </div>
+
+            <!-- Data Upload -->
+            <div class="quick-ref-card">
+                <h3>📁 Data Upload</h3>
+                <ul class="quick-ref-list">
+                    <li><strong>Supported Formats:</strong> CSV, XLSX, Parquet</li>
+                    <li><strong>Excel Sheets:</strong> Select specific sheet during upload</li>
+                    <li><strong>Data Preview:</strong> Review first 10 rows before processing</li>
+                    <li><strong>Validation:</strong> Check for missing values and data types</li>
+                    <li><strong>Multiple Files:</strong> Upload up to 2 files for comparison</li>
+                </ul>
+            </div>
+
+            <!-- Formula Builder -->
+            <div class="quick-ref-card">
+                <h3>🧮 Formula Builder</h3>
+                <ul class="quick-ref-list">
+                    <li><strong>Column Reference:</strong> Use column names in square brackets</li>
+                    <li><strong>Basic Operators:</strong> +, -, *, /, %, ^</li>
+                    <li><strong>Functions:</strong> ABS(), SQRT(), LOG(), EXP()</li>
+                    <li><strong>Validation:</strong> Real-time syntax checking</li>
+                </ul>
+                <div class="formula-example">
+                    Example: [Column A] * 1.2 + [Column B]
+                </div>
+                <div class="formula-example">
+                    Advanced: SQRT([Value]^2 + [Error]^2)
+                </div>
+            </div>
+
+            <!-- Dependency Modeling -->
+            <div class="quick-ref-card">
+                <h3>📊 Dependency Modeling</h3>
+                <ul class="quick-ref-list">
+                    <li><strong>Drag & Drop:</strong> Move variables between columns</li>
+                    <li><strong>Independent:</strong> Variables that influence the outcome</li>
+                    <li><strong>Dependent:</strong> Variables being analyzed</li>
+                    <li><strong>Not Used:</strong> Variables excluded from analysis</li>
+                    <li><strong>Results:</strong> Confidence intervals and significance</li>
+                </ul>
+            </div>
+
+            <!-- Visualization -->
+            <div class="quick-ref-card">
+                <h3>📈 Data Visualization</h3>
+                <ul class="quick-ref-list">
+                    <li><strong>Scatter Plots:</strong> X-Y relationship analysis</li>
+                    <li><strong>Distribution Curves:</strong> Data distribution patterns</li>
+                    <li><strong>Multi-variate:</strong> Multiple variable relationships</li>
+                    <li><strong>Bootstrapping:</strong> Statistical resampling analysis</li>
+                    <li><strong>Export:</strong> Save charts as images</li>
+                </ul>
+            </div>
+
+            <!-- Keyboard Shortcuts -->
+            <div class="quick-ref-card">
+                <h3>⌨️ Keyboard Shortcuts</h3>
+                <ul class="quick-ref-list">
+                    <li><span class="shortcut-key">Ctrl + S</span> Save current work</li>
+                    <li><span class="shortcut-key">Ctrl + Z</span> Undo last action</li>
+                    <li><span class="shortcut-key">Ctrl + F</span> Search documentation</li>
+                    <li><span class="shortcut-key">Esc</span> Close modal dialogs</li>
+                    <li><span class="shortcut-key">Tab</span> Navigate between fields</li>
+                </ul>
+            </div>
+
+            <!-- Common Issues -->
+            <div class="quick-ref-card">
+                <h3>⚠️ Common Issues</h3>
+                <ul class="quick-ref-list">
+                    <li><strong>File Upload Fails:</strong> Check file format and size</li>
+                    <li><strong>Session Expired:</strong> Re-upload files and restart</li>
+                    <li><strong>Formula Error:</strong> Check column names and syntax</li>
+                    <li><strong>No Data Preview:</strong> Verify file has valid data</li>
+                    <li><strong>Slow Performance:</strong> Reduce data size or complexity</li>
+                </ul>
+            </div>
+
+            <!-- Statistical Concepts -->
+            <div class="quick-ref-card">
+                <h3>📐 Statistical Concepts</h3>
+                <ul class="quick-ref-list">
+                    <li><strong>Confidence Interval:</strong> Range of likely values</li>
+                    <li><strong>P-value:</strong> Statistical significance measure</li>
+                    <li><strong>Mean Difference:</strong> Average change between groups</li>
+                    <li><strong>Percent Change:</strong> Relative change calculation</li>
+                    <li><strong>Bootstrapping:</strong> Resampling for robust estimates</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Formula Reference Table -->
+        <div class="quick-ref-card" style="grid-column: 1 / -1;">
+            <h3>📋 Formula Reference</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="border: 1px solid #dee2e6; padding: 10px;">Function</th>
+                        <th style="border: 1px solid #dee2e6; padding: 10px;">Description</th>
+                        <th style="border: 1px solid #dee2e6; padding: 10px;">Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;"><code>ABS(x)</code></td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;">Absolute value</td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;"><code>ABS([Error])</code></td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;"><code>SQRT(x)</code></td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;">Square root</td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;"><code>SQRT([Variance])</code></td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;"><code>LOG(x)</code></td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;">Natural logarithm</td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;"><code>LOG([Concentration])</code></td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;"><code>EXP(x)</code></td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;">Exponential function</td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;"><code>EXP([Log Value])</code></td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;"><code>x^y</code></td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;">Power function</td>
+                        <td style="border: 1px solid #dee2e6; padding: 8px;"><code>[Base]^2</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="quick-ref-card" style="grid-column: 1 / -1; text-align: center; background: #f8f9fa;">
+            <h3>📞 Support & Contact</h3>
+            <p>For technical support or questions about AbhiStat:</p>
+            <ul class="quick-ref-list" style="display: inline-block; text-align: left;">
+                <li><strong>Documentation:</strong> Full user manual available online</li>
+                <li><strong>Technical Issues:</strong> Contact your system administrator</li>
+                <li><strong>Feature Requests:</strong> Submit through internal channels</li>
+                <li><strong>Training:</strong> Available upon request</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer style="text-align: center; margin-top: 40px; padding: 20px; border-top: 1px solid #dee2e6; color: #666;">
+        <p>AbhiStat Quick Reference Guide | Version 1.0 | © Abhitech</p>
+        <p>Generated on: <span id="current-date"></span></p>
+    </footer>
+
+    <script>
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString();
+    </script>
+</body>
+</html>

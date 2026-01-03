@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AbhiStat User Manual</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+</head>
+<body>
+    <a href="#content-area" class="skip-to-content">Skip to main content</a>
+    <div class="container">
+        <!-- Navigation Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>AbhiStat User Manual</h2>
+                <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+            </div>
+            
+            <!-- Search Functionality -->
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search documentation...">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+            
+            <!-- Table of Contents -->
+            <div class="toc" id="tableOfContents">
+                <ul class="toc-list">
+                    <li class="toc-item">
+                        <a href="getting-started.html" class="toc-link toc-expandable">1. Getting Started</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="#account-creation" class="toc-link">1.1 Account Creation & Authentication</a></li>
+                            <li class="toc-item"><a href="#platform-overview" class="toc-link">1.2 Platform Overview</a></li>
+                            <li class="toc-item"><a href="#navigation-guide" class="toc-link">1.3 Navigation Guide</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-management.html" class="toc-link toc-expandable">2. Data Management</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="data-management.html#upload-process" class="toc-link">2.1 File Upload Process</a></li>
+                            <li class="toc-item"><a href="data-management.html#data-validation" class="toc-link">2.2 Data Validation & Preview</a></li>
+                            <li class="toc-item"><a href="session-management.html" class="toc-link">2.3 Session Management</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="calculated-columns.html" class="toc-link toc-expandable">3. Calculated Columns</a></li>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="calculated-columns.html#interface-overview" class="toc-link">3.1 Formula Builder Interface</a></li>
+                            <li class="toc-item"><a href="calculated-columns.html#operators-reference" class="toc-link">3.2 Available Functions & Operators</a></li>
+                            <li class="toc-item"><a href="calculated-columns.html#column-management" class="toc-link">3.3 Column Management</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="dependency-modeling.html" class="toc-link toc-expandable">4. Dependency Modeling</a></li>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="#variable-selection" class="toc-link">4.1 Variable Selection</a></li>
+                            <li class="toc-item"><a href="#drag-drop-interface" class="toc-link">4.2 Drag & Drop Interface</a></li>
+                            <li class="toc-item"><a href="#statistical-analysis" class="toc-link">4.3 Statistical Analysis</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-visualization.html" class="toc-link toc-expandable">5. Data Visualization</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="data-visualization.html#distribution-curves" class="toc-link">5.1 Distribution Curves</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#scatter-plots" class="toc-link">5.2 Scatter Plots</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#multivariate-analysis" class="toc-link">5.3 Multi-variate Analysis</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#bootstrapping" class="toc-link">5.4 Bootstrapping</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#advanced-features" class="toc-link">5.5 Advanced Features</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="troubleshooting.html" class="toc-link toc-expandable">6. Troubleshooting & Best Practices</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="troubleshooting.html#common-issues" class="toc-link">6.1 Common Issues</a></li>
+                            <li class="toc-item"><a href="troubleshooting.html#performance-optimization" class="toc-link">6.2 Performance Optimization</a></li>
+                            <li class="toc-item"><a href="troubleshooting.html#data-preparation" class="toc-link">6.3 Data Preparation Guidelines</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="technical-reference.html" class="toc-link toc-expandable">7. Technical Reference</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="technical-reference.html#system-architecture" class="toc-link">7.1 System Architecture</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#api-endpoints" class="toc-link">7.2 API Documentation</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#authentication" class="toc-link">7.3 Authentication System</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#session-management" class="toc-link">7.4 Session Management</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#file-cleanup" class="toc-link">7.5 Administrative Functions</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content" id="mainContent">
+            <div class="content-wrapper">
+                <!-- Breadcrumb Navigation -->
+                <div class="breadcrumb-container">
+                    <nav class="breadcrumb" id="breadcrumbs">
+                        <span class="breadcrumb-item active">Home</span>
+                    </nav>
+                </div>
+                
+                <!-- Content will be loaded here -->
+                <div id="content-area">
+                    <h1>Welcome to AbhiStat User Manual</h1>
+                    <p class="lead">Your comprehensive guide to using AbhiStat's statistical analysis platform.</p>
+                    
+                    <div class="alert alert-info">
+                        <strong>Getting Started:</strong> Use the navigation menu on the left to explore different sections of the manual. You can also use the search functionality to quickly find specific topics.
+                    </div>
+                    
+                    <h2>Quick Navigation</h2>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h3>For New Users</h3>
+                            <ul>
+                                <li><a href="getting-started.html" class="quick-nav-link">Getting Started Guide</a></li>
+                                <li><a href="#account-creation" class="quick-nav-link">Account Creation</a></li>
+                                <li><a href="#platform-overview" class="quick-nav-link">Platform Overview</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h3>Core Features</h3>
+                            <ul>
+                                <li><a href="data-management.html" class="quick-nav-link">Data Management</a></li>
+                                <li><a href="calculated-columns.html" class="quick-nav-link">Calculated Columns</a></li>
+                                <li><a href="dependency-modeling.html" class="quick-nav-link">Dependency Modeling</a></li>
+                                <li><a href="data-visualization.html" class="quick-nav-link">Data Visualization</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-success">
+                        <h3>📄 Documentation Resources</h3>
+                        <div class="resource-links">
+                            <a href="quick-reference.html" class="btn btn-primary" target="_blank">
+                                ⚡ Quick Reference Guide
+                            </a>
+                            <button id="generate-pdf-home" class="btn btn-secondary">
+                                📄 Generate PDF Manual
+                            </button>
+                            <a href="deploy.html" class="btn btn-info">
+                                🚀 Deployment Information
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="assets/js/navigation.js"></script>
+    <script src="assets/js/pdf-generator.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const generatePdfBtn = document.getElementById('generate-pdf-home');
+            if (generatePdfBtn) {
+                generatePdfBtn.addEventListener('click', async () => {
+                    if (typeof pdfGenerator !== 'undefined') {
+                        const success = await pdfGenerator.generateCompletePDF();
+                        if (!success) {
+                            alert('There was an issue generating the PDF. Please try again.');
+                        }
+                    } else {
+                        alert('PDF generator is loading. Please try again in a moment.');
+                    }
+                });
+            }
+        });
+    </script>
+    
+    <style>
+        .resource-links {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: #138496;
+        }
+    </style>
+</body>
+</html>

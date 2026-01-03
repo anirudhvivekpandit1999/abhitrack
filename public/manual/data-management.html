@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Management - AbhiStat User Manual</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/print.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>AbhiStat User Manual</h2>
+                <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+            </div>
+            
+            <!-- Search Functionality -->
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search documentation...">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+            
+            <!-- Table of Contents -->
+            <div class="toc" id="tableOfContents">
+                <ul class="toc-list">
+                    <li class="toc-item">
+                        <a href="index.html" class="toc-link">Home</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="getting-started.html" class="toc-link toc-expandable">1. Getting Started</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="getting-started.html#authentication" class="toc-link">1.1 Authentication & Account Creation</a></li>
+                            <li class="toc-item"><a href="getting-started.html#platform-overview" class="toc-link">1.2 Platform Overview</a></li>
+                            <li class="toc-item"><a href="getting-started.html#navigation-guide" class="toc-link">1.3 Navigation Guide</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-management.html" class="toc-link toc-expandable active">2. Data Management</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="#upload-process" class="toc-link">2.1 File Upload Process</a></li>
+                            <li class="toc-item"><a href="#data-validation" class="toc-link">2.2 Data Validation & Preview</a></li>
+                            <li class="toc-item"><a href="session-management.html" class="toc-link">2.3 Session Management</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="calculated-columns.html" class="toc-link toc-expandable">3. Calculated Columns</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="calculated-columns.html#interface-overview" class="toc-link">3.1 Formula Builder Interface</a></li>
+                            <li class="toc-item"><a href="calculated-columns.html#operators-reference" class="toc-link">3.2 Available Functions & Operators</a></li>
+                            <li class="toc-item"><a href="calculated-columns.html#column-management" class="toc-link">3.3 Column Management</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="dependency-modeling.html" class="toc-link toc-expandable">4. Dependency Modeling</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="dependency-modeling.html#variable-selection" class="toc-link">4.1 Variable Selection</a></li>
+                            <li class="toc-item"><a href="dependency-modeling.html#drag-drop-interface" class="toc-link">4.2 Drag & Drop Interface</a></li>
+                            <li class="toc-item"><a href="dependency-modeling.html#statistical-analysis" class="toc-link">4.3 Statistical Analysis</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-visualization.html" class="toc-link toc-expandable">5. Data Visualization</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="data-visualization.html#distribution-curves" class="toc-link">5.1 Distribution Curves</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#scatter-plots" class="toc-link">5.2 Scatter Plots</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#multivariate-analysis" class="toc-link">5.3 Multi-variate Analysis</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#bootstrapping" class="toc-link">5.4 Bootstrapping</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#advanced-features" class="toc-link">5.5 Advanced Features</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="troubleshooting.html" class="toc-link toc-expandable">6. Troubleshooting & Best Practices</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="troubleshooting.html#common-issues" class="toc-link">6.1 Common Issues</a></li>
+                            <li class="toc-item"><a href="troubleshooting.html#performance-optimization" class="toc-link">6.2 Performance Optimization</a></li>
+                            <li class="toc-item"><a href="troubleshooting.html#data-preparation" class="toc-link">6.3 Data Preparation Guidelines</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="technical-reference.html" class="toc-link toc-expandable">7. Technical Reference</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="technical-reference.html#system-architecture" class="toc-link">7.1 System Architecture</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#api-endpoints" class="toc-link">7.2 API Documentation</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#authentication" class="toc-link">7.3 Authentication System</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#session-management" class="toc-link">7.4 Session Management</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#file-cleanup" class="toc-link">7.5 Administrative Functions</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="main-content" id="mainContent">
+            <div class="breadcrumb">
+                <a href="index.html">Home</a> > <span>Data Management</span>
+            </div>
+
+            <article>
+                <header>
+                    <h1>Data Management</h1>
+                    <p class="lead">Learn how to upload, validate, and manage your data files in AbhiStat for statistical analysis.</p>
+                </header>
+
+                <section id="overview">
+                    <h2>Overview</h2>
+                    <p>Data management is the first and most crucial step in your AbhiStat workflow. This section covers everything you need to know about uploading files, understanding validation processes, and managing your data sessions effectively.</p>
+                    
+                    <div class="info-box">
+                        <h3>What You'll Learn</h3>
+                        <ul>
+                            <li>Supported file formats and requirements</li>
+                            <li>Step-by-step file upload process</li>
+                            <li>Data validation and preview features</li>
+                            <li>Excel sheet selection capabilities</li>
+                            <li>Session management and file lifecycle</li>
+                            <li>Common troubleshooting scenarios</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="supported-formats">
+                    <h2>Supported File Formats</h2>
+                    <p>AbhiStat supports three main file formats for data upload:</p>
+
+                    <div class="format-grid">
+                        <div class="format-card">
+                            <h3>CSV Files (.csv)</h3>
+                            <p><strong>Best for:</strong> Simple tabular data with comma-separated values</p>
+                            <ul>
+                                <li>Lightweight and fast to process</li>
+                                <li>Universal compatibility</li>
+                                <li>Ideal for large datasets</li>
+                            </ul>
+                            <div class="example">
+                                <strong>Example:</strong> data.csv, measurements.csv
+                            </div>
+                        </div>
+
+                        <div class="format-card">
+                            <h3>Excel Files (.xlsx, .xls)</h3>
+                            <p><strong>Best for:</strong> Structured data with multiple sheets or complex formatting</p>
+                            <ul>
+                                <li>Support for multiple worksheets</li>
+                                <li>Preserves data types and formatting</li>
+                                <li>Interactive sheet selection</li>
+                            </ul>
+                            <div class="example">
+                                <strong>Example:</strong> analysis.xlsx, report.xls
+                            </div>
+                        </div>
+
+                        <div class="format-card">
+                            <h3>Parquet Files (.parquet)</h3>
+                            <p><strong>Best for:</strong> Large datasets requiring efficient storage and processing</p>
+                            <ul>
+                                <li>Optimized for analytical workloads</li>
+                                <li>Compressed file size</li>
+                                <li>Fast read/write operations</li>
+                            </ul>
+                            <div class="example">
+                                <strong>Example:</strong> dataset.parquet, analytics.parquet
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="upload-process">
+                    <h2>File Upload Process</h2>
+                    <p>AbhiStat requires two data files for comparative statistical analysis:</p>
+
+                    <div class="step-container">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h3>Navigate to Data Upload</h3>
+                                <p>From the AbhiStat dashboard, click on "Start Analysis" or navigate to the "Data File Checks" section. This is Step 1 of the four-step analysis workflow.</p>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h3>Upload "Without Product" File</h3>
+                                <p>Click on the left upload area labeled "Upload file for without product" or drag and drop your baseline/control data file.</p>
+                                <ul>
+                                    <li>This represents your baseline or control group data</li>
+                                    <li>Supported formats: CSV, Excel, or Parquet</li>
+                                    <li>File size limit: Reasonable for web processing</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h3>Upload "With Product" File</h3>
+                                <p>Click on the right upload area labeled "Upload file for with product" or drag and drop your treatment/experimental data file.</p>
+                                <ul>
+                                    <li>This represents your treatment or experimental group data</li>
+                                    <li>Must have compatible column structure with the first file</li>
+                                    <li>Same format requirements as the first file</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h3>File Processing and Validation</h3>
+                                <p>Once both files are uploaded, AbhiStat automatically processes and validates them:</p>
+                                <ul>
+                                    <li>Checks for compatible column structures</li>
+                                    <li>Validates data types and formats</li>
+                                    <li>Identifies and handles unnamed columns</li>
+                                    <li>Generates data preview for verification</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="warning-box">
+                        <h3>Important Notes</h3>
+                        <ul>
+                            <li>Both files must be uploaded before processing begins</li>
+                            <li>Files are processed simultaneously for column compatibility</li>
+                            <li>Large files may take longer to process - please be patient</li>
+                            <li>Ensure stable internet connection during upload</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="excel-sheets">
+                    <h2>Excel Sheet Selection</h2>
+                    <p>When uploading Excel files with multiple worksheets, AbhiStat provides an interactive sheet selection interface:</p>
+
+                    <div class="feature-explanation">
+                        <h3>How Sheet Selection Works</h3>
+                        <ol>
+                            <li><strong>Automatic Detection:</strong> AbhiStat automatically detects all available worksheets in your Excel file</li>
+                            <li><strong>Sheet Selector:</strong> A dropdown menu appears showing all available sheets</li>
+                            <li><strong>Default Selection:</strong> The first sheet is selected by default (marked as "default")</li>
+                            <li><strong>Confirmation:</strong> Click "Confirm" to proceed with the selected sheet</li>
+                        </ol>
+
+                        <div class="tip-box">
+                            <h4>Best Practices for Excel Files</h4>
+                            <ul>
+                                <li>Place your main data in the first worksheet for automatic selection</li>
+                                <li>Use descriptive sheet names (e.g., "Raw Data", "Measurements")</li>
+                                <li>Ensure data starts from the first row with column headers</li>
+                                <li>Avoid merged cells or complex formatting in data areas</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="data-validation">
+                    <h2>Data Validation and Preview</h2>
+                    <p>AbhiStat performs comprehensive validation to ensure your data is ready for analysis:</p>
+
+                    <h3>Validation Checks</h3>
+                    <div class="validation-grid">
+                        <div class="validation-item">
+                            <h4>Column Structure Compatibility</h4>
+                            <p>Ensures both files have matching column names and structures for comparative analysis.</p>
+                        </div>
+
+                        <div class="validation-item">
+                            <h4>Unnamed Column Detection</h4>
+                            <p>Identifies columns with names like "Unnamed: 0" that may cause processing issues.</p>
+                        </div>
+
+                        <div class="validation-item">
+                            <h4>Data Type Validation</h4>
+                            <p>Verifies that numeric columns contain valid numerical data for statistical calculations.</p>
+                        </div>
+
+                        <div class="validation-item">
+                            <h4>Missing Data Assessment</h4>
+                            <p>Identifies null values and provides guidance on handling missing data.</p>
+                        </div>
+                    </div>
+
+                    <h3>Data Preview Features</h3>
+                    <p>After successful validation, AbhiStat provides a comprehensive preview of your data:</p>
+                    
+                    <ul>
+                        <li><strong>File Information Summary:</strong> Shows file names, sizes, row counts, and column counts</li>
+                        <li><strong>Column List:</strong> Displays all column names from both files</li>
+                        <li><strong>Data Sample:</strong> Shows the first 10 rows of each dataset</li>
+                        <li><strong>Data Types:</strong> Indicates whether columns contain numeric or text data</li>
+                        <li><strong>Processing Status:</strong> Confirms successful validation and readiness for next steps</li>
+                    </ul>
+                </section>
+
+                <section id="common-errors">
+                    <h2>Common Validation Errors</h2>
+                    <p>Understanding and resolving common validation errors:</p>
+
+                    <div class="error-section">
+                        <h3>Unnamed Columns Error</h3>
+                        <div class="error-example">
+                            <strong>Error Message:</strong> "Unnamed columns detected: File 'data.xlsx' has unnamed columns at indexes [0, 5]."
+                        </div>
+                        <p><strong>Cause:</strong> Excel files often have empty column headers that get named "Unnamed: 0", "Unnamed: 1", etc.</p>
+                        <p><strong>Solution:</strong> AbhiStat can automatically remove these columns, or you can fix them in your source file by adding proper column headers.</p>
+                    </div>
+
+                    <div class="error-section">
+                        <h3>Mismatched Columns Error</h3>
+                        <div class="error-example">
+                            <strong>Error Message:</strong> "Mismatched columns detected: Columns only in 'file1.csv': ['Temperature']. Columns only in 'file2.csv': ['Temp']."
+                        </div>
+                        <p><strong>Cause:</strong> The two files have different column names or structures.</p>
+                        <p><strong>Solution:</strong> Either standardize column names in your source files, or use AbhiStat's option to work with common columns only.</p>
+                    </div>
+
+                    <div class="error-section">
+                        <h3>File Format Error</h3>
+                        <div class="error-example">
+                            <strong>Error Message:</strong> "Invalid file type. Please upload a CSV, Excel, or Parquet file."
+                        </div>
+                        <p><strong>Cause:</strong> Uploaded file is not in a supported format.</p>
+                        <p><strong>Solution:</strong> Convert your file to CSV, Excel (.xlsx/.xls), or Parquet format before uploading.</p>
+                    </div>
+
+                    <div class="error-section">
+                        <h3>File Reading Error</h3>
+                        <div class="error-example">
+                            <strong>Error Message:</strong> "Error reading file: [specific error details]"
+                        </div>
+                        <p><strong>Cause:</strong> File may be corrupted, password-protected, or have formatting issues.</p>
+                        <p><strong>Solution:</strong> Verify file integrity, remove password protection, and ensure proper formatting.</p>
+                    </div>
+                </section>
+
+                <div class="navigation-footer">
+                    <a href="getting-started.html" class="nav-button prev">← Getting Started</a>
+                    <a href="calculated-columns.html" class="nav-button next">Calculated Columns →</a>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <script src="assets/js/navigation.js"></script>
+</body>
+</html>

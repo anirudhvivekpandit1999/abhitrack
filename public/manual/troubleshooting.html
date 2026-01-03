@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Troubleshooting & Best Practices - AbhiStat User Manual</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>AbhiStat User Manual</h2>
+                <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+            </div>
+            
+            <!-- Search Functionality -->
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search documentation...">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+            
+            <!-- Table of Contents -->
+            <div class="toc" id="tableOfContents">
+                <ul class="toc-list">
+                    <li class="toc-item">
+                        <a href="getting-started.html" class="toc-link">1. Getting Started</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-management.html" class="toc-link">2. Data Management</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="calculated-columns.html" class="toc-link">3. Calculated Columns</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="dependency-modeling.html" class="toc-link">4. Dependency Modeling</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-visualization.html" class="toc-link">5. Data Visualization</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="troubleshooting.html" class="toc-link toc-expandable active">6. Troubleshooting & Best Practices</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="#common-issues" class="toc-link">6.1 Common Issues</a></li>
+                            <li class="toc-item"><a href="#performance-optimization" class="toc-link">6.2 Performance Optimization</a></li>
+                            <li class="toc-item"><a href="#data-preparation" class="toc-link">6.3 Data Preparation Guidelines</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content" id="mainContent">
+            <div class="content-wrapper">
+                <!-- Breadcrumb Navigation -->
+                <div class="breadcrumb-container">
+                    <nav class="breadcrumb" id="breadcrumbs">
+                        <a href="index.html" class="breadcrumb-item">Home</a>
+                        <span class="breadcrumb-separator">></span>
+                        <span class="breadcrumb-item active">Troubleshooting & Best Practices</span>
+                    </nav>
+                </div>
+                
+                <!-- Content Area -->
+                <div id="content-area">
+                    <h1>Troubleshooting & Best Practices</h1>
+                    <p class="lead">Comprehensive guide to resolving common issues and optimizing your AbhiStat experience.</p>
+                    
+                    <div class="alert alert-info">
+                        <strong>Quick Help:</strong> Use Ctrl+F (Cmd+F on Mac) to quickly search for specific error messages or issues on this page.
+                    </div>
+
+                    <!-- Section 6.1: Common Issues -->
+                    <section id="common-issues" class="content-section">
+                        <h2>6.1 Common Issues & Error Resolution</h2>
+                        
+                        <!-- Authentication Errors -->
+                        <div class="subsection">
+                            <h3>Authentication & Access Issues</h3>
+                            
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Invalid email or password"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Login fails with error message during standard login</p>
+                                    <p><strong>Cause:</strong> Incorrect credentials or account doesn't exist</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Verify your email address is correct</li>
+                                        <li>Check if Caps Lock is enabled</li>
+                                        <li>Try resetting your password if you're an external user</li>
+                                        <li>For Abhitech internal users, contact your system administrator</li>
+                                    </ol>
+                                    <p><strong>Prevention:</strong> Use a password manager to store credentials securely</p>
+                                </div>
+                            </div>
+
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Invalid Google token"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Google OAuth login fails</p>
+                                    <p><strong>Cause:</strong> Expired or invalid Google authentication token</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Clear your browser cookies and cache</li>
+                                        <li>Sign out of your Google account and sign back in</li>
+                                        <li>Try using an incognito/private browser window</li>
+                                        <li>Disable browser extensions that might interfere with authentication</li>
+                                    </ol>
+                                    <p><strong>Prevention:</strong> Keep your browser updated and avoid multiple Google accounts in the same browser session</p>
+                                </div>
+                            </div>
+
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Email already registered"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Registration fails for external users</p>
+                                    <p><strong>Cause:</strong> Account already exists with the provided email</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Try logging in instead of registering</li>
+                                        <li>Use the "Forgot Password" option if available</li>
+                                        <li>Check if you previously registered with Google OAuth</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Session Management Errors -->
+                        <div class="subsection">
+                            <h3>Session Management Errors</h3>
+                            
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Session not found or expired"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Unable to proceed to calculated columns or dependency modeling</p>
+                                    <p><strong>Cause:</strong> Session expired or browser cookies cleared</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Return to Step 1 (Data File Checks) and re-upload your files</li>
+                                        <li>Ensure cookies are enabled in your browser</li>
+                                        <li>Avoid opening multiple tabs with AbhiStat</li>
+                                        <li>Complete your analysis workflow within the session timeout period</li>
+                                    </ol>
+                                    <p><strong>Prevention:</strong> Work efficiently through the 4-step process without long breaks</p>
+                                </div>
+                            </div>
+
+                            <div class="error-block">
+                                <h4 class="error-title">Error: Session data inconsistency</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Data appears different between steps or calculations fail unexpectedly</p>
+                                    <p><strong>Cause:</strong> Browser storage conflicts or multiple session interference</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Use the "Clear Data" button to reset your session</li>
+                                        <li>Close all AbhiStat browser tabs and start fresh</li>
+                                        <li>Clear browser cache and cookies for the AbhiStat domain</li>
+                                        <li>Re-upload your files from the beginning</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- File Upload Errors -->
+                        <div class="subsection">
+                            <h3>File Upload & Validation Errors</h3>
+                            
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Invalid file type"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> File upload rejected with format error</p>
+                                    <p><strong>Cause:</strong> Unsupported file format uploaded</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Convert your file to CSV, Excel (.xlsx/.xls), or Parquet format</li>
+                                        <li>Ensure file extension matches the actual format</li>
+                                        <li>For CSV files, use comma-separated values with proper encoding (UTF-8)</li>
+                                    </ol>
+                                    <p><strong>Supported Formats:</strong> .csv, .xlsx, .xls, .parquet</p>
+                                </div>
+                            </div>
+
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Unnamed columns detected"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> File processing fails with unnamed column warning</p>
+                                    <p><strong>Cause:</strong> Excel or CSV files contain columns without headers</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Click "Remove Unnamed Columns" to automatically exclude them</li>
+                                        <li>Or edit your source file to add proper column headers</li>
+                                        <li>Ensure the first row contains column names, not data</li>
+                                    </ol>
+                                    <p><strong>Prevention:</strong> Always include descriptive headers in the first row of your data files</p>
+                                </div>
+                            </div>
+
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Mismatched columns detected"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Files have different column structures</p>
+                                    <p><strong>Cause:</strong> The two uploaded files don't have identical column names</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Click "Remove Mismatched Columns" to keep only common columns</li>
+                                        <li>Or manually edit your files to ensure identical column names</li>
+                                        <li>Check for spelling differences, extra spaces, or case sensitivity</li>
+                                    </ol>
+                                    <p><strong>Prevention:</strong> Use consistent column naming across both data files</p>
+                                </div>
+                            </div>
+
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Server error. Please try again."</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> File upload fails with generic server error</p>
+                                    <p><strong>Cause:</strong> Network issues, server overload, or file corruption</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Check your internet connection</li>
+                                        <li>Try uploading smaller files (under 50MB recommended)</li>
+                                        <li>Wait a few minutes and retry</li>
+                                        <li>Try using a different browser or incognito mode</li>
+                                        <li>Contact support if the issue persists</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Formula Validation Errors -->
+                        <div class="subsection">
+                            <h3>Formula Validation Errors</h3>
+                            
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Column name can only contain letters, numbers and underscores"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Calculated column creation fails</p>
+                                    <p><strong>Cause:</strong> Invalid characters in column name</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Use only letters (a-z, A-Z), numbers (0-9), and underscores (_)</li>
+                                        <li>Remove spaces, hyphens, or special characters</li>
+                                        <li>Example: "New_Column_1" instead of "New Column-1"</li>
+                                    </ol>
+                                </div>
+                            </div>
+
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Column name is too long (max 30 characters)"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Column name validation fails</p>
+                                    <p><strong>Cause:</strong> Column name exceeds 30 character limit</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Shorten your column name to 30 characters or less</li>
+                                        <li>Use abbreviations or acronyms</li>
+                                        <li>Example: "Avg_Monthly_Revenue" instead of "Average_Monthly_Revenue_Calculation"</li>
+                                    </ol>
+                                </div>
+                            </div>
+
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Column name already exists in the original dataset"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Cannot create calculated column with existing name</p>
+                                    <p><strong>Cause:</strong> Attempting to use a column name that already exists</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Choose a different, unique column name</li>
+                                        <li>Add a suffix like "_calc" or "_new"</li>
+                                        <li>Example: "Revenue_Calc" instead of "Revenue"</li>
+                                    </ol>
+                                </div>
+                            </div>
+
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Division by zero"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Formula execution fails during calculation</p>
+                                    <p><strong>Cause:</strong> Formula attempts to divide by zero or empty values</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Check your data for zero or null values in denominator columns</li>
+                                        <li>Add conditional logic to handle zero values</li>
+                                        <li>Clean your data to remove or replace zero values before upload</li>
+                                    </ol>
+                                    <p><strong>Prevention:</strong> Always validate your data for mathematical edge cases</p>
+                                </div>
+                            </div>
+
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Invalid expression" or "Mismatched parentheses"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Formula validation fails with syntax error</p>
+                                    <p><strong>Cause:</strong> Incorrect formula syntax or unbalanced parentheses</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Check that every opening parenthesis "(" has a matching closing ")"</li>
+                                        <li>Ensure operators are placed between operands</li>
+                                        <li>Verify column references are properly formatted</li>
+                                        <li>Use the formula builder interface to avoid syntax errors</li>
+                                    </ol>
+                                    <p><strong>Example:</strong> "(Column_A + Column_B) * 2" instead of "Column_A + Column_B) * 2"</p>
+                                </div>
+                            </div>
+
+                            <div class="error-block">
+                                <h4 class="error-title">Error: "Invalid number: [value]"</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Formula contains invalid numeric values</p>
+                                    <p><strong>Cause:</strong> Non-numeric text entered where number expected</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Use only valid numbers (integers or decimals)</li>
+                                        <li>Use period (.) for decimal separator, not comma</li>
+                                        <li>Example: "3.14" instead of "3,14" or "three"</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Browser and Performance Issues -->
+                        <div class="subsection">
+                            <h3>Browser & Performance Issues</h3>
+                            
+                            <div class="error-block">
+                                <h4 class="error-title">Issue: Slow loading or unresponsive interface</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Pages load slowly or interface becomes unresponsive</p>
+                                    <p><strong>Cause:</strong> Large datasets, browser limitations, or network issues</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Close unnecessary browser tabs and applications</li>
+                                        <li>Use a modern browser (Chrome, Firefox, Safari, Edge)</li>
+                                        <li>Clear browser cache and cookies</li>
+                                        <li>Reduce dataset size if possible (see performance optimization section)</li>
+                                        <li>Ensure stable internet connection</li>
+                                    </ol>
+                                </div>
+                            </div>
+
+                            <div class="error-block">
+                                <h4 class="error-title">Issue: Charts or visualizations not displaying</h4>
+                                <div class="error-details">
+                                    <p><strong>Symptoms:</strong> Blank areas where charts should appear</p>
+                                    <p><strong>Cause:</strong> JavaScript disabled, browser compatibility, or data issues</p>
+                                    <p><strong>Solution:</strong></p>
+                                    <ol>
+                                        <li>Enable JavaScript in your browser settings</li>
+                                        <li>Disable ad blockers or browser extensions temporarily</li>
+                                        <li>Try refreshing the page</li>
+                                        <li>Check if your data contains the required numeric columns</li>
+                                        <li>Use a different browser to test</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 6.2: Performance Optimization -->
+                    <section id="performance-optimization" class="content-section">
+                        <h2>6.2 Performance Optimization & Best Practices</h2>
+                        
+                        <div class="subsection">
+                            <h3>Data Preparation Guidelines</h3>
+                            
+                            <div class="best-practice-block">
+                                <h4>Optimal File Sizes</h4>
+                                <ul>
+                                    <li><strong>Recommended:</strong> Files under 50MB for best performance</li>
+                                    <li><strong>Maximum:</strong> Files up to 200MB (may experience slower processing)</li>
+                                    <li><strong>Rows:</strong> Optimal range is 1,000 to 100,000 rows</li>
+                                    <li><strong>Columns:</strong> Keep under 50 columns when possible</li>
+                                </ul>
+                            </div>
+
+                            <div class="best-practice-block">
+                                <h4>File Format Recommendations</h4>
+                                <div class="format-comparison">
+                                    <div class="format-item">
+                                        <h5>CSV Files</h5>
+                                        <ul>
+                                            <li><strong>Best for:</strong> Simple data, fastest loading</li>
+                                            <li><strong>Encoding:</strong> Use UTF-8 encoding</li>
+                                            <li><strong>Separators:</strong> Use commas, avoid semicolons</li>
+                                            <li><strong>Headers:</strong> Always include column headers in first row</li>
+                                        </ul>
+                                    </div>
+                                    <div class="format-item">
+                                        <h5>Excel Files (.xlsx)</h5>
+                                        <ul>
+                                            <li><strong>Best for:</strong> Formatted data with multiple sheets</li>
+                                            <li><strong>Limitations:</strong> Slower processing than CSV</li>
+                                            <li><strong>Tips:</strong> Remove formatting, formulas, and charts before upload</li>
+                                            <li><strong>Sheets:</strong> Use simple sheet names without special characters</li>
+                                        </ul>
+                                    </div>
+                                    <div class="format-item">
+                                        <h5>Parquet Files</h5>
+                                        <ul>
+                                            <li><strong>Best for:</strong> Large datasets, fastest processing</li>
+                                            <li><strong>Advantages:</strong> Compressed, optimized for analytics</li>
+                                            <li><strong>Use case:</strong> When working with data science pipelines</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="best-practice-block">
+                                <h4>Data Quality Optimization</h4>
+                                <ul>
+                                    <li><strong>Clean Data:</strong> Remove empty rows and columns before upload</li>
+                                    <li><strong>Consistent Types:</strong> Ensure columns have consistent data types</li>
+                                    <li><strong>Missing Values:</strong> Handle null/empty values appropriately</li>
+                                    <li><strong>Numeric Data:</strong> Use proper numeric formats (no text in number columns)</li>
+                                    <li><strong>Date Formats:</strong> Use consistent date formats (YYYY-MM-DD recommended)</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="subsection">
+                            <h3>Workflow Optimization Tips</h3>
+                            
+                            <div class="best-practice-block">
+                                <h4>Efficient Analysis Workflow</h4>
+                                <ol>
+                                    <li><strong>Plan Ahead:</strong> Prepare your data files before starting the session</li>
+                                    <li><strong>Work Continuously:</strong> Complete the 4-step process without long breaks</li>
+                                    <li><strong>Save Progress:</strong> Use browser bookmarks to save your current step</li>
+                                    <li><strong>Document Formulas:</strong> Keep notes of calculated column formulas for future reference</li>
+                                    <li><strong>Export Results:</strong> Download charts and results immediately after generation</li>
+                                </ol>
+                            </div>
+
+                            <div class="best-practice-block">
+                                <h4>Browser Optimization</h4>
+                                <ul>
+                                    <li><strong>Recommended Browsers:</strong> Chrome, Firefox, Safari, Edge (latest versions)</li>
+                                    <li><strong>Memory Management:</strong> Close unnecessary tabs and applications</li>
+                                    <li><strong>Cache Management:</strong> Clear cache if experiencing issues</li>
+                                    <li><strong>Extensions:</strong> Disable unnecessary browser extensions</li>
+                                    <li><strong>JavaScript:</strong> Ensure JavaScript is enabled</li>
+                                </ul>
+                            </div>
+
+                            <div class="best-practice-block">
+                                <h4>Large Dataset Handling</h4>
+                                <div class="alert alert-warning">
+                                    <strong>For datasets over 100MB or 50,000 rows:</strong>
+                                </div>
+                                <ul>
+                                    <li><strong>Sample Data:</strong> Consider using a representative sample for initial analysis</li>
+                                    <li><strong>Filter Data:</strong> Remove unnecessary columns and rows before upload</li>
+                                    <li><strong>Split Analysis:</strong> Break large datasets into smaller, manageable chunks</li>
+                                    <li><strong>Patience:</strong> Allow extra time for processing and visualization</li>
+                                    <li><strong>System Resources:</strong> Ensure adequate RAM (8GB+ recommended)</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="subsection">
+                            <h3>Session Management Best Practices</h3>
+                            
+                            <div class="best-practice-block">
+                                <h4>Maintaining Active Sessions</h4>
+                                <ul>
+                                    <li><strong>Single Tab:</strong> Use only one browser tab for AbhiStat</li>
+                                    <li><strong>Cookies Enabled:</strong> Ensure browser cookies are enabled</li>
+                                    <li><strong>Avoid Refreshing:</strong> Use navigation buttons instead of browser refresh</li>
+                                    <li><strong>Complete Workflow:</strong> Finish the 4-step process in one session</li>
+                                    <li><strong>Clear Data:</strong> Use "Clear Data" button when starting new analysis</li>
+                                </ul>
+                            </div>
+
+                            <div class="best-practice-block">
+                                <h4>Troubleshooting Session Issues</h4>
+                                <div class="troubleshooting-steps">
+                                    <h5>If you lose your session:</h5>
+                                    <ol>
+                                        <li>Check if you can navigate back to previous steps</li>
+                                        <li>Look for "Clear Data" button to reset cleanly</li>
+                                        <li>Close all AbhiStat tabs and start fresh</li>
+                                        <li>Clear browser cookies for the AbhiStat domain</li>
+                                        <li>Re-upload your files from Step 1</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 6.3: Data Preparation Guidelines -->
+                    <section id="data-preparation" class="content-section">
+                        <h2>6.3 Data Preparation Guidelines</h2>
+                        
+                        <div class="subsection">
+                            <h3>Pre-Upload Data Checklist</h3>
+                            
+                            <div class="checklist-block">
+                                <h4>File Structure Requirements</h4>
+                                <div class="checklist">
+                                    <label class="checklist-item">
+                                        <input type="checkbox" disabled>
+                                        <span class="checkmark"></span>
+                                        Both files have identical column names and structure
+                                    </label>
+                                    <label class="checklist-item">
+                                        <input type="checkbox" disabled>
+                                        <span class="checkmark"></span>
+                                        First row contains column headers (not data)
+                                    </label>
+                                    <label class="checklist-item">
+                                        <input type="checkbox" disabled>
+                                        <span class="checkmark"></span>
+                                        No empty columns or rows at the beginning/end
+                                    </label>
+                                    <label class="checklist-item">
+                                        <input type="checkbox" disabled>
+                                        <span class="checkmark"></span>
+                                        Column names contain only letters, numbers, and underscores
+                                    </label>
+                                    <label class="checklist-item">
+                                        <input type="checkbox" disabled>
+                                        <span class="checkmark"></span>
+                                        File size is under 50MB for optimal performance
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="checklist-block">
+                                <h4>Data Quality Requirements</h4>
+                                <div class="checklist">
+                                    <label class="checklist-item">
+                                        <input type="checkbox" disabled>
+                                        <span class="checkmark"></span>
+                                        Numeric columns contain only numbers (no text)
+                                    </label>
+                                    <label class="checklist-item">
+                                        <input type="checkbox" disabled>
+                                        <span class="checkmark"></span>
+                                        Date columns use consistent format (YYYY-MM-DD preferred)
+                                    </label>
+                                    <label class="checklist-item">
+                                        <input type="checkbox" disabled>
+                                        <span class="checkmark"></span>
+                                        Missing values are handled appropriately (empty or NULL)
+                                    </label>
+                                    <label class="checklist-item">
+                                        <input type="checkbox" disabled>
+                                        <span class="checkmark"></span>
+                                        No special characters in data that could cause parsing errors
+                                    </label>
+                                    <label class="checklist-item">
+                                        <input type="checkbox" disabled>
+                                        <span class="checkmark"></span>
+                                        Text encoding is UTF-8 (especially for CSV files)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="subsection">
+                            <h3>Common Data Preparation Tasks</h3>
+                            
+                            <div class="preparation-task">
+                                <h4>Cleaning Column Names</h4>
+                                <div class="example-block">
+                                    <h5>❌ Problematic Names:</h5>
+                                    <ul>
+                                        <li>"Revenue ($)" → Contains special characters</li>
+                                        <li>"Monthly Sales-2024" → Contains hyphens</li>
+                                        <li>"Customer Name" → Contains spaces</li>
+                                        <li>"%" → Too short and special character</li>
+                                    </ul>
+                                    
+                                    <h5>✅ Corrected Names:</h5>
+                                    <ul>
+                                        <li>"Revenue_USD" → Uses underscore instead of special chars</li>
+                                        <li>"Monthly_Sales_2024" → Uses underscores instead of hyphens</li>
+                                        <li>"Customer_Name" → Uses underscore instead of space</li>
+                                        <li>"Percentage" → Descriptive name without special chars</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="preparation-task">
+                                <h4>Handling Missing Data</h4>
+                                <div class="example-block">
+                                    <h5>Recommended Approaches:</h5>
+                                    <ul>
+                                        <li><strong>Numeric Data:</strong> Leave cells empty or use 0 if appropriate</li>
+                                        <li><strong>Text Data:</strong> Leave cells empty or use "N/A" consistently</li>
+                                        <li><strong>Dates:</strong> Leave cells empty rather than using placeholder dates</li>
+                                        <li><strong>Avoid:</strong> Using "NULL", "n/a", "missing", or inconsistent placeholders</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="preparation-task">
+                                <h4>Numeric Data Formatting</h4>
+                                <div class="example-block">
+                                    <h5>Best Practices:</h5>
+                                    <ul>
+                                        <li><strong>Decimal Separator:</strong> Use period (.) not comma (,)</li>
+                                        <li><strong>Currency:</strong> Remove currency symbols ($, €, etc.)</li>
+                                        <li><strong>Percentages:</strong> Use decimal format (0.15 instead of 15%)</li>
+                                        <li><strong>Large Numbers:</strong> Remove thousand separators (1000000 not 1,000,000)</li>
+                                        <li><strong>Scientific Notation:</strong> Convert to standard decimal format when possible</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="subsection">
+                            <h3>Excel-Specific Preparation</h3>
+                            
+                            <div class="excel-tips">
+                                <h4>Before Uploading Excel Files:</h4>
+                                <ol>
+                                    <li><strong>Remove Formatting:</strong> Clear cell colors, fonts, and borders</li>
+                                    <li><strong>Delete Formulas:</strong> Convert formulas to values (Paste Special → Values)</li>
+                                    <li><strong>Remove Charts:</strong> Delete any embedded charts or objects</li>
+                                    <li><strong>Clean Sheets:</strong> Remove empty sheets and rename remaining sheets simply</li>
+                                    <li><strong>Check Data Types:</strong> Ensure columns have consistent data types</li>
+                                    <li><strong>Remove Filters:</strong> Clear any active filters or sorting</li>
+                                </ol>
+                            </div>
+
+                            <div class="excel-tips">
+                                <h4>Sheet Selection Tips:</h4>
+                                <ul>
+                                    <li><strong>Simple Names:</strong> Use sheet names like "Data1", "Data2" without spaces</li>
+                                    <li><strong>Data Location:</strong> Ensure data starts from cell A1</li>
+                                    <li><strong>Single Dataset:</strong> Each sheet should contain only one dataset</li>
+                                    <li><strong>Consistent Structure:</strong> Both files should have data in the same sheet position</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="subsection">
+                            <h3>Validation Before Upload</h3>
+                            
+                            <div class="validation-steps">
+                                <h4>Final Validation Checklist:</h4>
+                                <ol>
+                                    <li><strong>Open Both Files:</strong> Verify they open correctly in Excel or a text editor</li>
+                                    <li><strong>Compare Structures:</strong> Ensure column names and order match exactly</li>
+                                    <li><strong>Check Sample Data:</strong> Verify first few rows contain expected data types</li>
+                                    <li><strong>Count Columns:</strong> Confirm both files have the same number of columns</li>
+                                    <li><strong>Test Upload:</strong> Try uploading a small sample first if working with large files</li>
+                                </ol>
+                            </div>
+
+                            <div class="alert alert-success">
+                                <strong>Pro Tip:</strong> Keep backup copies of your original data files before making any modifications for AbhiStat upload.
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Contact and Support -->
+                    <section class="content-section">
+                        <h2>Getting Additional Help</h2>
+                        
+                        <div class="support-info">
+                            <h3>Support Resources</h3>
+                            <ul>
+                                <li><strong>Documentation:</strong> Review other sections of this manual for detailed guidance</li>
+                                <li><strong>Error Messages:</strong> Use Ctrl+F to search this page for specific error messages</li>
+                                <li><strong>Browser Console:</strong> Check browser developer tools for additional error details</li>
+                            </ul>
+                            
+                            <div class="alert alert-info">
+                                <strong>Before Contacting Support:</strong> Try the troubleshooting steps above and note any specific error messages you encounter.
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="assets/js/navigation.js"></script>
+</body>
+</html>

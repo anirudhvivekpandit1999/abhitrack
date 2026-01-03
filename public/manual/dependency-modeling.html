@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dependency Modeling - AbhiStat User Manual</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/print.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>AbhiStat User Manual</h2>
+                <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+            </div>
+            
+            <!-- Search Functionality -->
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search documentation...">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+            
+            <!-- Table of Contents -->
+            <div class="toc" id="tableOfContents">
+                <ul class="toc-list">
+                    <li class="toc-item">
+                        <a href="index.html" class="toc-link">Home</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="getting-started.html" class="toc-link toc-expandable">1. Getting Started</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="getting-started.html#authentication" class="toc-link">1.1 Authentication & Account Creation</a></li>
+                            <li class="toc-item"><a href="getting-started.html#platform-overview" class="toc-link">1.2 Platform Overview</a></li>
+                            <li class="toc-item"><a href="getting-started.html#navigation-guide" class="toc-link">1.3 Navigation Guide</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-management.html" class="toc-link toc-expandable">2. Data Management</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="data-management.html#upload-process" class="toc-link">2.1 File Upload Process</a></li>
+                            <li class="toc-item"><a href="data-management.html#data-validation" class="toc-link">2.2 Data Validation & Preview</a></li>
+                            <li class="toc-item"><a href="session-management.html" class="toc-link">2.3 Session Management</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="calculated-columns.html" class="toc-link toc-expandable">3. Calculated Columns</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="calculated-columns.html#interface-overview" class="toc-link">3.1 Formula Builder Interface</a></li>
+                            <li class="toc-item"><a href="calculated-columns.html#operators-reference" class="toc-link">3.2 Available Functions & Operators</a></li>
+                            <li class="toc-item"><a href="calculated-columns.html#column-management" class="toc-link">3.3 Column Management</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="dependency-modeling.html" class="toc-link toc-expandable active">4. Dependency Modeling</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="#variable-selection" class="toc-link">4.1 Variable Selection</a></li>
+                            <li class="toc-item"><a href="#drag-drop-interface" class="toc-link">4.2 Drag & Drop Interface</a></li>
+                            <li class="toc-item"><a href="#statistical-analysis" class="toc-link">4.3 Statistical Analysis</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-visualization.html" class="toc-link toc-expandable">5. Data Visualization</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="data-visualization.html#distribution-curves" class="toc-link">5.1 Distribution Curves</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#scatter-plots" class="toc-link">5.2 Scatter Plots</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#multivariate-analysis" class="toc-link">5.3 Multi-variate Analysis</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#bootstrapping" class="toc-link">5.4 Bootstrapping</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#advanced-features" class="toc-link">5.5 Advanced Features</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="troubleshooting.html" class="toc-link toc-expandable">6. Troubleshooting & Best Practices</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="troubleshooting.html#common-issues" class="toc-link">6.1 Common Issues</a></li>
+                            <li class="toc-item"><a href="troubleshooting.html#performance-optimization" class="toc-link">6.2 Performance Optimization</a></li>
+                            <li class="toc-item"><a href="troubleshooting.html#data-preparation" class="toc-link">6.3 Data Preparation Guidelines</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="technical-reference.html" class="toc-link toc-expandable">7. Technical Reference</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="technical-reference.html#system-architecture" class="toc-link">7.1 System Architecture</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#api-endpoints" class="toc-link">7.2 API Documentation</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#authentication" class="toc-link">7.3 Authentication System</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#session-management" class="toc-link">7.4 Session Management</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#file-cleanup" class="toc-link">7.5 Administrative Functions</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="main-content" id="mainContent">
+            <div class="breadcrumb">
+                <a href="index.html">Home</a> > <span>Dependency Modeling</span>
+            </div>
+
+            <article>
+                <header>
+                    <h1>Dependency Modeling</h1>
+                    <p class="lead">Define relationships between variables using the intuitive drag-and-drop interface to analyze statistical dependencies and perform bootstrap analysis.</p>
+                </header>
+
+                <section id="overview">
+                    <h2>Overview</h2>
+                    <p>Dependency Modeling is Step 3 in the AbhiStat workflow, where you define which variables will be analyzed as dependent (outcome) variables and which will serve as independent (predictor) variables. This step is crucial for statistical analysis as it determines how your data will be examined for relationships and dependencies.</p>
+                    
+                    <div class="info-box">
+                        <h3>What You'll Learn</h3>
+                        <ul>
+                            <li>Understanding dependent vs independent variables</li>
+                            <li>Using the three-column drag-and-drop interface</li>
+                            <li>Variable selection strategies and best practices</li>
+                            <li>Statistical analysis concepts and interpretation</li>
+                            <li>Bootstrap analysis results and significance testing</li>
+                            <li>Confidence intervals and mean differences</li>
+                        </ul>
+                    </div>
+
+                    <div class="workflow-context">
+                        <h3>Workflow Context</h3>
+                        <p>Dependency Modeling is the third step in the four-step AbhiStat analysis process:</p>
+                        <ol>
+                            <li>Data File Checks (Upload and validate your data)</li>
+                            <li>Calculated Columns (Create custom parameters)</li>
+                            <li><strong>Dependency Modeling (Analyze variable relationships) ← You are here</strong></li>
+                            <li>Data Visualization (Create charts and statistical plots)</li>
+                        </ol>
+                    </div>
+                </section>
+
+                <section id="variable-concepts">
+                    <h2>Understanding Variable Types</h2>
+                    <p>Before organizing your variables, it's essential to understand the difference between dependent and independent variables in statistical analysis.</p>
+
+                    <div class="concept-grid">
+                        <div class="concept-card">
+                            <h3>Independent Variables</h3>
+                            <div class="concept-icon">📊</div>
+                            <p><strong>Definition:</strong> Variables that are manipulated, controlled, or categorized to observe their effect on other variables.</p>
+                            <div class="characteristics">
+                                <h4>Characteristics:</h4>
+                                <ul>
+                                    <li>Also called predictor variables or explanatory variables</li>
+                                    <li>Represent the "cause" in cause-and-effect relationships</li>
+                                    <li>Values are typically known or controlled</li>
+                                    <li>Used to predict or explain changes in dependent variables</li>
+                                </ul>
+                            </div>
+                            <div class="examples">
+                                <h4>Examples:</h4>
+                                <ul>
+                                    <li>Treatment type (with/without product)</li>
+                                    <li>Time periods (before/after intervention)</li>
+                                    <li>Dosage levels or concentrations</li>
+                                    <li>Environmental conditions</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="concept-card">
+                            <h3>Dependent Variables</h3>
+                            <div class="concept-icon">🎯</div>
+                            <p><strong>Definition:</strong> Variables that are measured or tested in response to changes in independent variables.</p>
+                            <div class="characteristics">
+                                <h4>Characteristics:</h4>
+                                <ul>
+                                    <li>Also called outcome variables or response variables</li>
+                                    <li>Represent the "effect" in cause-and-effect relationships</li>
+                                    <li>Values change based on independent variable conditions</li>
+                                    <li>The primary focus of measurement and analysis</li>
+                                </ul>
+                            </div>
+                            <div class="examples">
+                                <h4>Examples:</h4>
+                                <ul>
+                                    <li>Performance metrics (efficiency, yield, quality)</li>
+                                    <li>Measurement outcomes (temperature, pressure, flow)</li>
+                                    <li>Test scores or assessment results</li>
+                                    <li>Calculated ratios and derived parameters</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="selection-strategy">
+                        <h3>Variable Selection Strategy</h3>
+                        <p>Consider these guidelines when categorizing your variables:</p>
+                        <div class="strategy-tips">
+                            <div class="tip-item">
+                                <h4>🔍 Research Question Focus</h4>
+                                <p>Start with your research question: "What effect does X have on Y?" X becomes independent, Y becomes dependent.</p>
+                            </div>
+                            <div class="tip-item">
+                                <h4>⏰ Temporal Relationships</h4>
+                                <p>Variables that occur first in time are typically independent; those that follow are dependent.</p>
+                            </div>
+                            <div class="tip-item">
+                                <h4>🎛️ Control and Manipulation</h4>
+                                <p>Variables you can control or manipulate are independent; those you measure as outcomes are dependent.</p>
+                            </div>
+                            <div class="tip-item">
+                                <h4>📈 Multiple Dependencies</h4>
+                                <p>You can have multiple dependent variables to analyze various outcomes simultaneously.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="interface-guide">
+                    <h2>Three-Column Drag-and-Drop Interface</h2>
+                    <p>The Dependency Modeling interface features three columns that allow you to organize your variables intuitively using drag-and-drop functionality.</p>
+
+                    <div class="interface-overview">
+                        <div class="interface-diagram">
+                            <div class="column-representation">
+                                <div class="column-box independent">
+                                    <h4>Independent Variables</h4>
+                                    <p>Predictor variables</p>
+                                    <div class="sample-items">
+                                        <div class="sample-item">Treatment_Type</div>
+                                        <div class="sample-item">Time_Period</div>
+                                    </div>
+                                </div>
+                                <div class="arrows">
+                                    <span>↔</span>
+                                </div>
+                                <div class="column-box not-used">
+                                    <h4>Fields Not Used</h4>
+                                    <p>Available variables</p>
+                                    <div class="sample-items">
+                                        <div class="sample-item">ID_Number</div>
+                                        <div class="sample-item">Date_Recorded</div>
+                                    </div>
+                                </div>
+                                <div class="arrows">
+                                    <span>↔</span>
+                                </div>
+                                <div class="column-box dependent">
+                                    <h4>Dependent Variables</h4>
+                                    <p>Outcome variables</p>
+                                    <div class="sample-items">
+                                        <div class="sample-item">Efficiency_Score</div>
+                                        <div class="sample-item">Quality_Rating</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column-details">
+                        <h3>Column Functions</h3>
+                        
+                        <div class="column-detail-card">
+                            <h4>Independent Variables Column</h4>
+                            <p>Contains variables that will be used as predictors in the statistical analysis.</p>
+                            <div class="column-features">
+                                <ul>
+                                    <li><strong>Purpose:</strong> Variables that explain or predict changes in dependent variables</li>
+                                    <li><strong>Analysis Role:</strong> Used to group and compare data in bootstrap analysis</li>
+                                    <li><strong>Tooltip Help:</strong> Hover over the info icon for definition reminder</li>
+                                    <li><strong>Search Function:</strong> Built-in search to find specific variables quickly</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="column-detail-card">
+                            <h4>Fields Not Used Column</h4>
+                            <p>Central repository for all available variables that haven't been assigned to analysis roles.</p>
+                            <div class="column-features">
+                                <ul>
+                                    <li><strong>Purpose:</strong> Temporary storage for variables not currently needed</li>
+                                    <li><strong>Default Location:</strong> All variables start here when first loaded</li>
+                                    <li><strong>Flexibility:</strong> Variables can be moved in and out as needed</li>
+                                    <li><strong>Pagination:</strong> Large datasets are paginated for easy browsing</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="column-detail-card">
+                            <h4>Dependent Variables Column</h4>
+                            <p>Contains variables that will be analyzed as outcomes or responses.</p>
+                            <div class="column-features">
+                                <ul>
+                                    <li><strong>Purpose:</strong> Variables whose changes will be measured and analyzed</li>
+                                    <li><strong>Analysis Role:</strong> Primary focus of statistical testing and comparison</li>
+                                    <li><strong>Multiple Selection:</strong> Can contain multiple variables for comprehensive analysis</li>
+                                    <li><strong>Bootstrap Target:</strong> These variables undergo bootstrap statistical testing</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="step-by-step-guide">
+                    <h2>Step-by-Step Variable Organization</h2>
+                    <p>Follow this comprehensive guide to organize your variables for dependency analysis:</p>
+
+                    <div class="step-container">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h3>Review Available Variables</h3>
+                                <p>When you first enter the Dependency Modeling page, all your variables (original columns plus any calculated columns) appear in the "Fields Not Used" column.</p>
+                                <div class="step-actions">
+                                    <ul>
+                                        <li>Scroll through the available variables to see what's available</li>
+                                        <li>Use the search box to quickly find specific variables</li>
+                                        <li>Note that calculated columns from Step 2 are included</li>
+                                        <li>Variables are paginated if you have many columns</li>
+                                    </ul>
+                                </div>
+                                <div class="tip-box">
+                                    <strong>Tip:</strong> Take time to review all available variables before organizing. This helps you make informed decisions about which variables to include in your analysis.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h3>Identify Your Research Question</h3>
+                                <p>Before moving variables, clearly define what you want to analyze:</p>
+                                <div class="research-questions">
+                                    <div class="question-example">
+                                        <h4>Example Research Questions:</h4>
+                                        <ul>
+                                            <li>"Does the product treatment affect operational efficiency?"</li>
+                                            <li>"How do different time periods impact quality metrics?"</li>
+                                            <li>"What is the relationship between input variables and output performance?"</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="question-mapping">
+                                    <h4>Question to Variable Mapping:</h4>
+                                    <ul>
+                                        <li><strong>"Does X affect Y?"</strong> → X = Independent, Y = Dependent</li>
+                                        <li><strong>"How does treatment impact outcomes?"</strong> → Treatment = Independent, Outcomes = Dependent</li>
+                                        <li><strong>"What predicts performance?"</strong> → Predictors = Independent, Performance = Dependent</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h3>Move Independent Variables</h3>
+                                <p>Start by identifying and moving your independent (predictor) variables:</p>
+                                <div class="movement-methods">
+                                    <h4>Three Ways to Move Variables:</h4>
+                                    <div class="method-grid">
+                                        <div class="method-card">
+                                            <h5>🖱️ Drag and Drop</h5>
+                                            <ul>
+                                                <li>Click and hold on the drag handle (⋮⋮)</li>
+                                                <li>Drag the variable to the target column</li>
+                                                <li>Drop when the column highlights</li>
+                                            </ul>
+                                        </div>
+                                        <div class="method-card">
+                                            <h5>⬅️ Arrow Buttons</h5>
+                                            <ul>
+                                                <li>Click the left arrow (←) to move left</li>
+                                                <li>Click the right arrow (→) to move right</li>
+                                                <li>Arrows appear based on current position</li>
+                                            </ul>
+                                        </div>
+                                        <div class="method-card">
+                                            <h5>📱 Touch Interface</h5>
+                                            <ul>
+                                                <li>On mobile devices, use touch drag</li>
+                                                <li>Long press to initiate drag</li>
+                                                <li>Arrow buttons work on all devices</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="selection-tips">
+                                    <h4>Independent Variable Selection Tips:</h4>
+                                    <ul>
+                                        <li>Look for variables that represent treatments, conditions, or categories</li>
+                                        <li>Include time-based variables (before/after, different periods)</li>
+                                        <li>Consider environmental or experimental conditions</li>
+                                        <li>Include any grouping variables that define different conditions</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h3>Move Dependent Variables</h3>
+                                <p>Next, identify and move your dependent (outcome) variables:</p>
+                                <div class="dependent-selection">
+                                    <h4>Dependent Variable Selection Criteria:</h4>
+                                    <ul>
+                                        <li><strong>Measurement Outcomes:</strong> Variables that represent results or measurements</li>
+                                        <li><strong>Performance Metrics:</strong> Efficiency, quality, productivity measures</li>
+                                        <li><strong>Calculated Parameters:</strong> Ratios, indices, or derived values</li>
+                                        <li><strong>Response Variables:</strong> Variables that change based on conditions</li>
+                                    </ul>
+                                </div>
+                                <div class="multiple-dependent">
+                                    <h4>Multiple Dependent Variables:</h4>
+                                    <p>You can analyze multiple dependent variables simultaneously:</p>
+                                    <ul>
+                                        <li>Each dependent variable will be analyzed separately</li>
+                                        <li>Bootstrap analysis runs for each dependent variable</li>
+                                        <li>Results show which variables have significant changes</li>
+                                        <li>Useful for comprehensive outcome assessment</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">5</div>
+                            <div class="step-content">
+                                <h3>Organize and Review</h3>
+                                <p>Fine-tune your variable organization and review your selections:</p>
+                                <div class="organization-checklist">
+                                    <h4>Review Checklist:</h4>
+                                    <ul>
+                                        <li>✓ Independent variables represent predictors or conditions</li>
+                                        <li>✓ Dependent variables represent outcomes or measurements</li>
+                                        <li>✓ Unused variables are properly excluded from analysis</li>
+                                        <li>✓ Variable names are clear and recognizable</li>
+                                        <li>✓ You have at least one variable in each analysis column</li>
+                                    </ul>
+                                </div>
+                                <div class="reordering">
+                                    <h4>Reordering Within Columns:</h4>
+                                    <p>You can reorder variables within each column:</p>
+                                    <ul>
+                                        <li>Drag variables up or down within the same column</li>
+                                        <li>Order doesn't affect analysis but helps with organization</li>
+                                        <li>Put most important variables at the top for easy reference</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">6</div>
+                            <div class="step-content">
+                                <h3>Proceed to Analysis</h3>
+                                <p>Once your variables are organized, proceed to the statistical analysis:</p>
+                                <div class="proceed-actions">
+                                    <ul>
+                                        <li>Click "Next Step" to save your dependency model</li>
+                                        <li>The system performs bootstrap analysis on your data</li>
+                                        <li>Results are calculated for each dependent variable</li>
+                                        <li>You'll proceed to the Data Visualization step</li>
+                                    </ul>
+                                </div>
+                                <div class="processing-info">
+                                    <h4>What Happens During Processing:</h4>
+                                    <ul>
+                                        <li>Bootstrap analysis runs with 10,000 iterations</li>
+                                        <li>Confidence intervals are calculated for each dependent variable</li>
+                                        <li>Statistical significance is determined</li>
+                                        <li>Mean differences and standard deviations are computed</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="interface-features">
+                    <h2>Interface Features and Navigation</h2>
+                    <p>The Dependency Modeling interface includes several helpful features to make variable organization efficient and intuitive.</p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h3>🔍 Search Functionality</h3>
+                            <p>Each column has its own search box to quickly find specific variables.</p>
+                            <div class="feature-details">
+                                <h4>Search Features:</h4>
+                                <ul>
+                                    <li>Real-time filtering as you type</li>
+                                    <li>Case-insensitive search</li>
+                                    <li>Searches within variable names</li>
+                                    <li>Clear button (×) to reset search</li>
+                                </ul>
+                            </div>
+                            <div class="usage-tip">
+                                <strong>Usage Tip:</strong> Use search when you have many variables and need to find specific ones quickly. Each column maintains its own search state.
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>📄 Pagination</h3>
+                            <p>Large datasets are automatically paginated for better performance and usability.</p>
+                            <div class="feature-details">
+                                <h4>Pagination Features:</h4>
+                                <ul>
+                                    <li>5 variables per page by default</li>
+                                    <li>Page numbers at the bottom of each column</li>
+                                    <li>Automatic adjustment when variables are moved</li>
+                                    <li>Search results are also paginated</li>
+                                </ul>
+                            </div>
+                            <div class="usage-tip">
+                                <strong>Usage Tip:</strong> If you can't find a variable, check other pages or use the search function. Variables maintain their page position until moved.
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>ℹ️ Contextual Help</h3>
+                            <p>Tooltip help is available for column definitions and guidance.</p>
+                            <div class="feature-details">
+                                <h4>Help Features:</h4>
+                                <ul>
+                                    <li>Info icons (ℹ️) next to column headers</li>
+                                    <li>Hover tooltips with definitions</li>
+                                    <li>Clear explanations of variable types</li>
+                                    <li>Guidance on proper variable selection</li>
+                                </ul>
+                            </div>
+                            <div class="usage-tip">
+                                <strong>Usage Tip:</strong> Hover over the info icons if you need a quick reminder of what independent and dependent variables represent.
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>💾 Auto-Save</h3>
+                            <p>Your variable organization is automatically saved as you work.</p>
+                            <div class="feature-details">
+                                <h4>Auto-Save Features:</h4>
+                                <ul>
+                                    <li>Changes saved immediately when variables are moved</li>
+                                    <li>Persists across browser sessions</li>
+                                    <li>Search states are also saved</li>
+                                    <li>No manual save required</li>
+                                </ul>
+                            </div>
+                            <div class="usage-tip">
+                                <strong>Usage Tip:</strong> You can safely navigate away and return - your variable organization will be preserved exactly as you left it.
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>📱 Responsive Design</h3>
+                            <p>The interface adapts to different screen sizes and devices.</p>
+                            <div class="feature-details">
+                                <h4>Responsive Features:</h4>
+                                <ul>
+                                    <li>Three-column layout on desktop</li>
+                                    <li>Stacked layout on mobile devices</li>
+                                    <li>Touch-friendly drag and drop</li>
+                                    <li>Accessible arrow button alternatives</li>
+                                </ul>
+                            </div>
+                            <div class="usage-tip">
+                                <strong>Usage Tip:</strong> On mobile devices, use the arrow buttons if drag-and-drop is difficult. The interface works fully on all device types.
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <h3>🎯 Visual Feedback</h3>
+                            <p>Clear visual indicators help guide your interactions.</p>
+                            <div class="feature-details">
+                                <h4>Visual Feedback:</h4>
+                                <ul>
+                                    <li>Column highlighting during drag operations</li>
+                                    <li>Hover effects on interactive elements</li>
+                                    <li>Clear drag handles (⋮⋮) on each variable</li>
+                                    <li>Directional arrows showing possible moves</li>
+                                </ul>
+                            </div>
+                            <div class="usage-tip">
+                                <strong>Usage Tip:</strong> Watch for the blue highlighting when dragging - it shows where the variable will be dropped when you release.
+                            </div>
+                        </div>
+                    </div>
+                </section>  
+              <section id="statistical-concepts">
+                    <h2>Statistical Analysis Concepts</h2>
+                    <p>Understanding the statistical concepts behind AbhiStat's dependency analysis will help you interpret results correctly and make informed decisions based on your data.</p>
+
+                    <div class="concept-overview">
+                        <h3>Bootstrap Analysis Overview</h3>
+                        <p>AbhiStat uses bootstrap statistical analysis to determine whether there are significant differences between your "before" and "after" datasets (typically representing conditions without and with product treatment).</p>
+                        
+                        <div class="bootstrap-explanation">
+                            <h4>What is Bootstrap Analysis?</h4>
+                            <p>Bootstrap analysis is a statistical resampling technique that:</p>
+                            <ul>
+                                <li>Creates thousands of random samples from your original data</li>
+                                <li>Calculates statistics for each sample</li>
+                                <li>Builds a distribution of possible outcomes</li>
+                                <li>Determines confidence intervals and significance</li>
+                            </ul>
+                            
+                            <div class="bootstrap-process">
+                                <h5>AbhiStat Bootstrap Process:</h5>
+                                <ol>
+                                    <li><strong>Resampling:</strong> 10,000 bootstrap samples are created from both datasets</li>
+                                    <li><strong>Calculation:</strong> Mean difference is calculated for each bootstrap sample</li>
+                                    <li><strong>Distribution:</strong> A distribution of mean differences is built</li>
+                                    <li><strong>Confidence Interval:</strong> 95% confidence interval is calculated (2.5th to 97.5th percentiles)</li>
+                                    <li><strong>Significance:</strong> Statistical significance is determined based on whether zero falls within the confidence interval</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="statistical-measures">
+                        <h3>Key Statistical Measures</h3>
+                        
+                        <div class="measure-grid">
+                            <div class="measure-card">
+                                <h4>Mean Difference</h4>
+                                <div class="measure-icon">📊</div>
+                                <p><strong>Definition:</strong> The average difference between the "after" and "before" values for each variable.</p>
+                                <div class="calculation">
+                                    <h5>Calculation:</h5>
+                                    <div class="formula">Mean Difference = Mean(After) - Mean(Before)</div>
+                                </div>
+                                <div class="interpretation">
+                                    <h5>Interpretation:</h5>
+                                    <ul>
+                                        <li><strong>Positive value:</strong> The variable increased on average</li>
+                                        <li><strong>Negative value:</strong> The variable decreased on average</li>
+                                        <li><strong>Near zero:</strong> Little to no average change</li>
+                                    </ul>
+                                </div>
+                                <div class="example">
+                                    <strong>Example:</strong> If efficiency was 75% before and 82% after, the mean difference is +7 percentage points.
+                                </div>
+                            </div>
+
+                            <div class="measure-card">
+                                <h4>Standard Deviation</h4>
+                                <div class="measure-icon">📈</div>
+                                <p><strong>Definition:</strong> Measures the variability or spread of the bootstrap mean differences.</p>
+                                <div class="interpretation">
+                                    <h5>Interpretation:</h5>
+                                    <ul>
+                                        <li><strong>Small standard deviation:</strong> Consistent, reliable difference</li>
+                                        <li><strong>Large standard deviation:</strong> High variability in the difference</li>
+                                        <li><strong>Relative to mean:</strong> Compare to mean difference for context</li>
+                                    </ul>
+                                </div>
+                                <div class="practical-use">
+                                    <h5>Practical Use:</h5>
+                                    <p>A smaller standard deviation relative to the mean difference indicates more reliable and consistent results.</p>
+                                </div>
+                            </div>
+
+                            <div class="measure-card">
+                                <h4>Confidence Interval</h4>
+                                <div class="measure-icon">🎯</div>
+                                <p><strong>Definition:</strong> A range of values that likely contains the true mean difference with 95% confidence.</p>
+                                <div class="calculation">
+                                    <h5>Calculation:</h5>
+                                    <div class="formula">95% CI = [2.5th percentile, 97.5th percentile] of bootstrap distribution</div>
+                                </div>
+                                <div class="interpretation">
+                                    <h5>Interpretation:</h5>
+                                    <ul>
+                                        <li><strong>Narrow interval:</strong> More precise estimate of the true difference</li>
+                                        <li><strong>Wide interval:</strong> Less precise, more uncertainty</li>
+                                        <li><strong>Contains zero:</strong> No significant difference</li>
+                                        <li><strong>Doesn't contain zero:</strong> Significant difference</li>
+                                    </ul>
+                                </div>
+                                <div class="example">
+                                    <strong>Example:</strong> CI [3.2, 10.8] means we're 95% confident the true difference is between 3.2 and 10.8 units.
+                                </div>
+                            </div>
+
+                            <div class="measure-card">
+                                <h4>Statistical Significance</h4>
+                                <div class="measure-icon">⚡</div>
+                                <p><strong>Definition:</strong> Indicates whether the observed difference is likely due to a real effect rather than random chance.</p>
+                                <div class="determination">
+                                    <h5>How It's Determined:</h5>
+                                    <ul>
+                                        <li><strong>Significant:</strong> Confidence interval does NOT include zero</li>
+                                        <li><strong>Not Significant:</strong> Confidence interval INCLUDES zero</li>
+                                    </ul>
+                                </div>
+                                <div class="interpretation">
+                                    <h5>Interpretation:</h5>
+                                    <ul>
+                                        <li><strong>Significant:</strong> Strong evidence of a real difference</li>
+                                        <li><strong>Not Significant:</strong> Insufficient evidence of a real difference</li>
+                                        <li><strong>Practical vs Statistical:</strong> Consider both significance and practical importance</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="significance-interpretation">
+                        <h3>Interpreting Significance Results</h3>
+                        <p>AbhiStat categorizes your variables into two groups based on statistical significance. Understanding these categories helps you focus on the most important findings.</p>
+
+                        <div class="significance-categories">
+                            <div class="category-card significant">
+                                <h4>Variables with Significant Impact</h4>
+                                <div class="category-icon">✅</div>
+                                <p>These variables show statistically significant differences between the before and after conditions.</p>
+                                
+                                <div class="characteristics">
+                                    <h5>Characteristics:</h5>
+                                    <ul>
+                                        <li>Confidence interval does not include zero</li>
+                                        <li>Strong evidence of a real effect</li>
+                                        <li>Changes are unlikely due to random chance</li>
+                                        <li>Priority focus for further investigation</li>
+                                    </ul>
+                                </div>
+
+                                <div class="interpretation-guide">
+                                    <h5>Interpretation Examples:</h5>
+                                    <div class="example-scenario">
+                                        <strong>Scenario:</strong> Efficiency_Score<br>
+                                        <strong>Mean Difference:</strong> +8.5<br>
+                                        <strong>Confidence Interval:</strong> [5.2, 11.8]<br>
+                                        <strong>Interpretation:</strong> Efficiency significantly improved by an average of 8.5 points, with the true improvement likely between 5.2 and 11.8 points.
+                                    </div>
+                                </div>
+
+                                <div class="action-items">
+                                    <h5>Recommended Actions:</h5>
+                                    <ul>
+                                        <li>Investigate the practical importance of the change</li>
+                                        <li>Consider the magnitude relative to your domain knowledge</li>
+                                        <li>Examine these variables in visualization for patterns</li>
+                                        <li>Document findings for reporting and decision-making</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="category-card not-significant">
+                                <h4>Variables with No Significant Impact</h4>
+                                <div class="category-icon">❌</div>
+                                <p>These variables do not show statistically significant differences between conditions.</p>
+                                
+                                <div class="characteristics">
+                                    <h5>Characteristics:</h5>
+                                    <ul>
+                                        <li>Confidence interval includes zero</li>
+                                        <li>Insufficient evidence of a real effect</li>
+                                        <li>Observed differences could be due to random variation</li>
+                                        <li>May still have practical importance in some contexts</li>
+                                    </ul>
+                                </div>
+
+                                <div class="interpretation-guide">
+                                    <h5>Interpretation Examples:</h5>
+                                    <div class="example-scenario">
+                                        <strong>Scenario:</strong> Temperature_Reading<br>
+                                        <strong>Mean Difference:</strong> +1.2<br>
+                                        <strong>Confidence Interval:</strong> [-0.8, 3.2]<br>
+                                        <strong>Interpretation:</strong> No significant change in temperature. The observed increase of 1.2 degrees could be due to random variation.
+                                    </div>
+                                </div>
+
+                                <div class="considerations">
+                                    <h5>Important Considerations:</h5>
+                                    <ul>
+                                        <li>Non-significance doesn't prove no effect exists</li>
+                                        <li>May indicate stable, unchanged variables</li>
+                                        <li>Could suggest need for larger sample sizes</li>
+                                        <li>Might still be practically meaningful in your context</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="practical-interpretation">
+                        <h3>Practical vs Statistical Significance</h3>
+                        <p>While statistical significance indicates whether a difference is likely real, practical significance considers whether the difference is meaningful in your specific context.</p>
+
+                        <div class="significance-comparison">
+                            <div class="comparison-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Aspect</th>
+                                            <th>Statistical Significance</th>
+                                            <th>Practical Significance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Definition</strong></td>
+                                            <td>Difference is unlikely due to chance</td>
+                                            <td>Difference is meaningful in real-world context</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Determination</strong></td>
+                                            <td>Based on confidence intervals and p-values</td>
+                                            <td>Based on domain knowledge and impact assessment</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Sample Size Effect</strong></td>
+                                            <td>Easier to achieve with larger samples</td>
+                                            <td>Independent of sample size</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Business Relevance</strong></td>
+                                            <td>Indicates reliability of finding</td>
+                                            <td>Indicates importance for decision-making</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="interpretation-scenarios">
+                            <h4>Common Interpretation Scenarios</h4>
+                            
+                            <div class="scenario-grid">
+                                <div class="scenario-card ideal">
+                                    <h5>Ideal Scenario</h5>
+                                    <p><strong>Statistically Significant + Practically Significant</strong></p>
+                                    <ul>
+                                        <li>Strong evidence of a real effect</li>
+                                        <li>Effect size is meaningful for your application</li>
+                                        <li>High confidence in findings</li>
+                                        <li>Clear basis for decision-making</li>
+                                    </ul>
+                                    <div class="example">
+                                        <strong>Example:</strong> 15% efficiency improvement with CI [12%, 18%] - both statistically significant and practically meaningful for operations.
+                                    </div>
+                                </div>
+
+                                <div class="scenario-card caution">
+                                    <h5>Caution Scenario</h5>
+                                    <p><strong>Statistically Significant + Not Practically Significant</strong></p>
+                                    <ul>
+                                        <li>Real effect exists but may be too small to matter</li>
+                                        <li>Often occurs with very large sample sizes</li>
+                                        <li>Consider cost-benefit of acting on findings</li>
+                                        <li>May not justify operational changes</li>
+                                    </ul>
+                                    <div class="example">
+                                        <strong>Example:</strong> 0.1% efficiency improvement with CI [0.05%, 0.15%] - statistically real but operationally negligible.
+                                    </div>
+                                </div>
+
+                                <div class="scenario-card investigate">
+                                    <h5>Investigation Scenario</h5>
+                                    <p><strong>Not Statistically Significant + Potentially Practically Significant</strong></p>
+                                    <ul>
+                                        <li>Observed effect size seems meaningful</li>
+                                        <li>But statistical evidence is insufficient</li>
+                                        <li>May need larger sample size</li>
+                                        <li>Consider additional data collection</li>
+                                    </ul>
+                                    <div class="example">
+                                        <strong>Example:</strong> 8% efficiency improvement with CI [-2%, 18%] - potentially meaningful but uncertain.
+                                    </div>
+                                </div>
+
+                                <div class="scenario-card stable">
+                                    <h5>Stable Scenario</h5>
+                                    <p><strong>Not Statistically Significant + Not Practically Significant</strong></p>
+                                    <ul>
+                                        <li>No meaningful change detected</li>
+                                        <li>Variable appears stable across conditions</li>
+                                        <li>May indicate good process control</li>
+                                        <li>Focus attention on other variables</li>
+                                    </ul>
+                                    <div class="example">
+                                        <strong>Example:</strong> 0.2% efficiency change with CI [-1.5%, 1.9%] - no meaningful change detected.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="interpretation-guidelines">
+                        <h3>Guidelines for Result Interpretation</h3>
+                        <p>Follow these guidelines to make the most of your bootstrap analysis results:</p>
+
+                        <div class="guideline-sections">
+                            <div class="guideline-section">
+                                <h4>1. Start with Significant Variables</h4>
+                                <ul>
+                                    <li>Focus first on variables showing statistical significance</li>
+                                    <li>These provide the strongest evidence of real effects</li>
+                                    <li>Examine both the direction and magnitude of changes</li>
+                                    <li>Consider whether changes align with expectations</li>
+                                </ul>
+                            </div>
+
+                            <div class="guideline-section">
+                                <h4>2. Assess Practical Importance</h4>
+                                <ul>
+                                    <li>Consider the size of the effect in your domain context</li>
+                                    <li>A 1% improvement might be huge in some contexts, negligible in others</li>
+                                    <li>Think about operational, financial, or performance implications</li>
+                                    <li>Consider the cost of achieving vs. the benefit of the change</li>
+                                </ul>
+                            </div>
+
+                            <div class="guideline-section">
+                                <h4>3. Examine Confidence Intervals</h4>
+                                <ul>
+                                    <li>Narrow intervals indicate more precise estimates</li>
+                                    <li>Wide intervals suggest more uncertainty</li>
+                                    <li>Consider the range of possible true effects</li>
+                                    <li>Plan for scenarios across the confidence interval range</li>
+                                </ul>
+                            </div>
+
+                            <div class="guideline-section">
+                                <h4>4. Consider Variable Relationships</h4>
+                                <ul>
+                                    <li>Look for patterns across related variables</li>
+                                    <li>Some variables may be correlated or causally related</li>
+                                    <li>Changes in one variable might explain changes in others</li>
+                                    <li>Use domain knowledge to understand relationships</li>
+                                </ul>
+                            </div>
+
+                            <div class="guideline-section">
+                                <h4>5. Document and Communicate Findings</h4>
+                                <ul>
+                                    <li>Clearly distinguish between statistical and practical significance</li>
+                                    <li>Report confidence intervals, not just point estimates</li>
+                                    <li>Explain findings in terms relevant to your audience</li>
+                                    <li>Include limitations and assumptions in your interpretation</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="common-scenarios">
+                    <h2>Common Analysis Scenarios</h2>
+                    <p>This section provides examples of typical dependency modeling scenarios you might encounter, with guidance on variable selection and interpretation.</p>
+
+                    <div class="scenario-examples">
+                        <div class="scenario-example">
+                            <h3>Scenario 1: Product Treatment Effect Analysis</h3>
+                            <div class="scenario-context">
+                                <p><strong>Context:</strong> Analyzing the effect of a chemical product treatment on industrial process performance.</p>
+                                <p><strong>Data:</strong> Two datasets - measurements before treatment and after treatment implementation.</p>
+                            </div>
+                            
+                            <div class="variable-setup">
+                                <h4>Variable Organization:</h4>
+                                <div class="variable-columns">
+                                    <div class="var-column">
+                                        <h5>Independent Variables:</h5>
+                                        <ul>
+                                            <li>Treatment_Status (Before/After)</li>
+                                            <li>Time_Period</li>
+                                            <li>Operating_Conditions</li>
+                                        </ul>
+                                    </div>
+                                    <div class="var-column">
+                                        <h5>Dependent Variables:</h5>
+                                        <ul>
+                                            <li>Process_Efficiency</li>
+                                            <li>Quality_Score</li>
+                                            <li>Energy_Consumption</li>
+                                            <li>Waste_Production</li>
+                                        </ul>
+                                    </div>
+                                    <div class="var-column">
+                                        <h5>Not Used:</h5>
+                                        <ul>
+                                            <li>Record_ID</li>
+                                            <li>Operator_Name</li>
+                                            <li>Date_Recorded</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="expected-results">
+                                <h4>Expected Analysis Results:</h4>
+                                <ul>
+                                    <li>Significant improvements in Process_Efficiency and Quality_Score</li>
+                                    <li>Possible reduction in Energy_Consumption (negative mean difference)</li>
+                                    <li>Decreased Waste_Production (negative mean difference)</li>
+                                    <li>Confidence intervals showing the range of expected improvements</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="scenario-example">
+                            <h3>Scenario 2: Time-Based Performance Analysis</h3>
+                            <div class="scenario-context">
+                                <p><strong>Context:</strong> Comparing performance metrics across different time periods to identify trends.</p>
+                                <p><strong>Data:</strong> Performance measurements from multiple time periods (e.g., quarters, seasons).</p>
+                            </div>
+                            
+                            <div class="variable-setup">
+                                <h4>Variable Organization:</h4>
+                                <div class="variable-columns">
+                                    <div class="var-column">
+                                        <h5>Independent Variables:</h5>
+                                        <ul>
+                                            <li>Quarter</li>
+                                            <li>Season</li>
+                                            <li>Market_Conditions</li>
+                                        </ul>
+                                    </div>
+                                    <div class="var-column">
+                                        <h5>Dependent Variables:</h5>
+                                        <ul>
+                                            <li>Sales_Performance</li>
+                                            <li>Customer_Satisfaction</li>
+                                            <li>Operational_Costs</li>
+                                            <li>Market_Share</li>
+                                        </ul>
+                                    </div>
+                                    <div class="var-column">
+                                        <h5>Not Used:</h5>
+                                        <ul>
+                                            <li>Transaction_ID</li>
+                                            <li>Customer_ID</li>
+                                            <li>Internal_Notes</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="interpretation-focus">
+                                <h4>Interpretation Focus:</h4>
+                                <ul>
+                                    <li>Look for seasonal patterns in performance metrics</li>
+                                    <li>Identify which quarters show significant improvements or declines</li>
+                                    <li>Consider external factors that might explain changes</li>
+                                    <li>Use findings to inform future planning and resource allocation</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="scenario-example">
+                            <h3>Scenario 3: Multi-Factor Experimental Analysis</h3>
+                            <div class="scenario-context">
+                                <p><strong>Context:</strong> Analyzing the effects of multiple experimental factors on outcome variables.</p>
+                                <p><strong>Data:</strong> Controlled experiment with various factor combinations and measured outcomes.</p>
+                            </div>
+                            
+                            <div class="variable-setup">
+                                <h4>Variable Organization:</h4>
+                                <div class="variable-columns">
+                                    <div class="var-column">
+                                        <h5>Independent Variables:</h5>
+                                        <ul>
+                                            <li>Temperature_Level</li>
+                                            <li>Pressure_Setting</li>
+                                            <li>Catalyst_Type</li>
+                                            <li>Reaction_Time</li>
+                                        </ul>
+                                    </div>
+                                    <div class="var-column">
+                                        <h5>Dependent Variables:</h5>
+                                        <ul>
+                                            <li>Yield_Percentage</li>
+                                            <li>Product_Purity</li>
+                                            <li>Reaction_Rate</li>
+                                            <li>Energy_Efficiency</li>
+                                        </ul>
+                                    </div>
+                                    <div class="var-column">
+                                        <h5>Not Used:</h5>
+                                        <ul>
+                                            <li>Experiment_ID</li>
+                                            <li>Lab_Technician</li>
+                                            <li>Equipment_Serial</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="analysis-approach">
+                                <h4>Analysis Approach:</h4>
+                                <ul>
+                                    <li>Each dependent variable is analyzed separately</li>
+                                    <li>Bootstrap analysis reveals which outcomes show significant changes</li>
+                                    <li>Results help identify optimal factor combinations</li>
+                                    <li>Confidence intervals provide ranges for expected performance</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="scenario-tips">
+                        <h3>General Scenario Tips</h3>
+                        <div class="tip-grid">
+                            <div class="tip-card">
+                                <h4>Variable Selection</h4>
+                                <ul>
+                                    <li>Include all potentially relevant independent variables</li>
+                                    <li>Focus dependent variables on key outcomes of interest</li>
+                                    <li>Exclude administrative or identifier variables</li>
+                                    <li>Consider calculated columns as valuable dependent variables</li>
+                                </ul>
+                            </div>
+                            <div class="tip-card">
+                                <h4>Result Interpretation</h4>
+                                <ul>
+                                    <li>Always consider practical significance alongside statistical significance</li>
+                                    <li>Look for patterns across related dependent variables</li>
+                                    <li>Consider the business or operational context of changes</li>
+                                    <li>Document assumptions and limitations</li>
+                                </ul>
+                            </div>
+                            <div class="tip-card">
+                                <h4>Next Steps</h4>
+                                <ul>
+                                    <li>Use visualization to explore significant variables further</li>
+                                    <li>Consider additional data collection for borderline cases</li>
+                                    <li>Plan follow-up analyses based on initial findings</li>
+                                    <li>Communicate results to stakeholders clearly</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="troubleshooting">
+                    <h2>Troubleshooting and Best Practices</h2>
+                    <p>This section addresses common issues you might encounter during dependency modeling and provides best practices for optimal results.</p>
+
+                    <div class="troubleshooting-sections">
+                        <div class="trouble-section">
+                            <h3>Common Interface Issues</h3>
+                            
+                            <div class="issue-item">
+                                <h4>Variables Not Moving When Dragged</h4>
+                                <div class="problem">
+                                    <strong>Problem:</strong> Drag and drop doesn't work or variables snap back to original position.
+                                </div>
+                                <div class="solutions">
+                                    <strong>Solutions:</strong>
+                                    <ul>
+                                        <li>Ensure you're dragging from the drag handle (⋮⋮) icon</li>
+                                        <li>Drag to the column area, not just the header</li>
+                                        <li>Wait for the blue highlighting before releasing</li>
+                                        <li>Use arrow buttons as an alternative to dragging</li>
+                                        <li>Try refreshing the page if the interface becomes unresponsive</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="issue-item">
+                                <h4>Cannot Find Specific Variables</h4>
+                                <div class="problem">
+                                    <strong>Problem:</strong> Looking for a variable but can't locate it in any column.
+                                </div>
+                                <div class="solutions">
+                                    <strong>Solutions:</strong>
+                                    <ul>
+                                        <li>Use the search box in each column to filter variables</li>
+                                        <li>Check all pages if you have many variables (use pagination)</li>
+                                        <li>Clear any existing search terms that might be filtering results</li>
+                                        <li>Remember that calculated columns appear with original columns</li>
+                                        <li>Variable names are case-sensitive in search</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="issue-item">
+                                <h4>Search Not Working Properly</h4>
+                                <div class="problem">
+                                    <strong>Problem:</strong> Search function doesn't find variables you know exist.
+                                </div>
+                                <div class="solutions">
+                                    <strong>Solutions:</strong>
+                                    <ul>
+                                        <li>Check spelling and try partial matches</li>
+                                        <li>Search is case-insensitive but must match part of the variable name</li>
+                                        <li>Clear search and browse manually if needed</li>
+                                        <li>Each column has its own search - check the right column</li>
+                                        <li>Use the clear button (×) to reset search terms</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="trouble-section">
+                            <h3>Analysis and Results Issues</h3>
+                            
+                            <div class="issue-item">
+                                <h4>No Variables Show Significant Results</h4>
+                                <div class="problem">
+                                    <strong>Problem:</strong> Bootstrap analysis shows no significant differences for any variables.
+                                </div>
+                                <div class="solutions">
+                                    <strong>Possible Causes & Solutions:</strong>
+                                    <ul>
+                                        <li><strong>Insufficient sample size:</strong> Collect more data if possible</li>
+                                        <li><strong>High variability:</strong> Look for ways to reduce measurement noise</li>
+                                        <li><strong>No real effect:</strong> The treatment may not have a measurable impact</li>
+                                        <li><strong>Wrong variable selection:</strong> Reconsider which variables should be dependent</li>
+                                        <li><strong>Data quality issues:</strong> Check for outliers or measurement errors</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="issue-item">
+                                <h4>All Variables Show Significance</h4>
+                                <div class="problem">
+                                    <strong>Problem:</strong> Every dependent variable shows statistical significance.
+                                </div>
+                                <div class="solutions">
+                                    <strong>Possible Causes & Solutions:</strong>
+                                    <ul>
+                                        <li><strong>Very large sample size:</strong> Focus on practical significance</li>
+                                        <li><strong>Strong treatment effect:</strong> This may be a genuine finding</li>
+                                        <li><strong>Systematic bias:</strong> Check for measurement or selection bias</li>
+                                        <li><strong>Correlated variables:</strong> Many variables may be measuring similar things</li>
+                                        <li><strong>Data processing errors:</strong> Verify data preparation steps</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="issue-item">
+                                <h4>Unexpected Direction of Effects</h4>
+                                <div class="problem">
+                                    <strong>Problem:</strong> Variables show significant changes in the opposite direction from expectations.
+                                </div>
+                                <div class="solutions">
+                                    <strong>Investigation Steps:</strong>
+                                    <ul>
+                                        <li>Verify which dataset represents "before" vs "after"</li>
+                                        <li>Check if variable definitions match expectations</li>
+                                        <li>Consider whether the unexpected direction might be correct</li>
+                                        <li>Look for confounding factors that might explain the results</li>
+                                        <li>Review data collection and processing procedures</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="trouble-section">
+                            <h3>Best Practices for Optimal Results</h3>
+                            
+                            <div class="best-practice-grid">
+                                <div class="practice-card">
+                                    <h4>Variable Selection Best Practices</h4>
+                                    <ul>
+                                        <li><strong>Clear Research Questions:</strong> Define what you want to learn before selecting variables</li>
+                                        <li><strong>Domain Knowledge:</strong> Use your expertise to guide variable categorization</li>
+                                        <li><strong>Avoid Over-inclusion:</strong> Don't include every available variable as dependent</li>
+                                        <li><strong>Consider Relationships:</strong> Think about how variables might be related</li>
+                                        <li><strong>Focus on Outcomes:</strong> Dependent variables should represent meaningful outcomes</li>
+                                    </ul>
+                                </div>
+
+                                <div class="practice-card">
+                                    <h4>Data Quality Considerations</h4>
+                                    <ul>
+                                        <li><strong>Check for Outliers:</strong> Extreme values can affect bootstrap results</li>
+                                        <li><strong>Handle Missing Data:</strong> Ensure missing values are properly handled</li>
+                                        <li><strong>Verify Data Types:</strong> Ensure numeric variables are properly formatted</li>
+                                        <li><strong>Consistent Measurements:</strong> Use the same measurement methods across datasets</li>
+                                        <li><strong>Adequate Sample Size:</strong> Ensure sufficient data for reliable bootstrap analysis</li>
+                                    </ul>
+                                </div>
+
+                                <div class="practice-card">
+                                    <h4>Interpretation Best Practices</h4>
+                                    <ul>
+                                        <li><strong>Statistical + Practical:</strong> Consider both types of significance</li>
+                                        <li><strong>Confidence Intervals:</strong> Report ranges, not just point estimates</li>
+                                        <li><strong>Context Matters:</strong> Interpret results within your domain knowledge</li>
+                                        <li><strong>Multiple Variables:</strong> Look for patterns across related outcomes</li>
+                                        <li><strong>Document Assumptions:</strong> Note limitations and assumptions clearly</li>
+                                    </ul>
+                                </div>
+
+                                <div class="practice-card">
+                                    <h4>Workflow Optimization</h4>
+                                    <ul>
+                                        <li><strong>Iterative Approach:</strong> You can return and modify variable selections</li>
+                                        <li><strong>Save Progress:</strong> Your selections are automatically saved</li>
+                                        <li><strong>Use Visualization:</strong> Proceed to charts to explore significant variables</li>
+                                        <li><strong>Document Findings:</strong> Keep notes on your analysis decisions</li>
+                                        <li><strong>Plan Follow-up:</strong> Consider additional analyses based on results</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="next-steps">
+                    <h2>Next Steps: Data Visualization</h2>
+                    <p>After completing your dependency modeling, you'll proceed to the Data Visualization step where you can create charts and plots to explore your results in detail.</p>
+
+                    <div class="next-steps-preview">
+                        <h3>What to Expect in Data Visualization</h3>
+                        <div class="visualization-features">
+                            <div class="viz-feature">
+                                <h4>📊 Distribution Curves</h4>
+                                <p>Visualize the distribution of your variables and see how they differ between conditions.</p>
+                            </div>
+                            <div class="viz-feature">
+                                <h4>📈 Scatter Plots</h4>
+                                <p>Explore relationships between variables with customizable scatter plots.</p>
+                            </div>
+                            <div class="viz-feature">
+                                <h4>🎯 Bootstrap Analysis Visualization</h4>
+                                <p>See visual representations of your bootstrap results and confidence intervals.</p>
+                            </div>
+                            <div class="viz-feature">
+                                <h4>🔍 Multi-variate Analysis</h4>
+                                <p>Examine complex relationships between multiple variables simultaneously.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="preparation-tips">
+                        <h3>Preparing for Visualization</h3>
+                        <p>To make the most of the visualization step:</p>
+                        <ul>
+                            <li>Note which variables showed significant results - these will be most interesting to visualize</li>
+                            <li>Think about relationships you want to explore between variables</li>
+                            <li>Consider what types of charts would best communicate your findings</li>
+                            <li>Prepare to interpret visual patterns in the context of your bootstrap results</li>
+                        </ul>
+                    </div>
+
+                    <div class="workflow-navigation">
+                        <h3>Workflow Navigation</h3>
+                        <p>Use the navigation buttons at the bottom of the page to:</p>
+                        <ul>
+                            <li><strong>Previous Step:</strong> Return to Calculated Columns if you need to modify formulas</li>
+                            <li><strong>Next Step:</strong> Proceed to Data Visualization to explore your results visually</li>
+                        </ul>
+                        <div class="workflow-reminder">
+                            <p><strong>Remember:</strong> Your variable selections are automatically saved, so you can always return to modify your dependency model if needed.</p>
+                        </div>
+                    </div>
+                </section>
+            </article>
+        </main>
+    </div>
+
+    <script src="assets/js/navigation.js"></script>
+</body>
+</html>

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started - AbhiStat User Manual</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/print.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>AbhiStat User Manual</h2>
+                <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+            </div>
+            
+            <!-- Search Functionality -->
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search documentation...">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+            
+            <!-- Table of Contents -->
+            <div class="toc" id="tableOfContents">
+                <ul class="toc-list">
+                    <li class="toc-item">
+                        <a href="index.html" class="toc-link">Home</a>
+                    </li>
+                    <li class="toc-item">
+                        <a href="getting-started.html" class="toc-link toc-expandable active">1. Getting Started</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="#authentication" class="toc-link">1.1 Authentication & Account Creation</a></li>
+                            <li class="toc-item"><a href="#platform-overview" class="toc-link">1.2 Platform Overview</a></li>
+                            <li class="toc-item"><a href="#navigation-guide" class="toc-link">1.3 Navigation Guide</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-management.html" class="toc-link toc-expandable">2. Data Management</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="data-management.html#upload-process" class="toc-link">2.1 File Upload Process</a></li>
+                            <li class="toc-item"><a href="data-management.html#data-validation" class="toc-link">2.2 Data Validation & Preview</a></li>
+                            <li class="toc-item"><a href="session-management.html" class="toc-link">2.3 Session Management</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="calculated-columns.html" class="toc-link toc-expandable">3. Calculated Columns</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="calculated-columns.html#interface-overview" class="toc-link">3.1 Formula Builder Interface</a></li>
+                            <li class="toc-item"><a href="calculated-columns.html#operators-reference" class="toc-link">3.2 Available Functions & Operators</a></li>
+                            <li class="toc-item"><a href="calculated-columns.html#column-management" class="toc-link">3.3 Column Management</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="dependency-modeling.html" class="toc-link toc-expandable">4. Dependency Modeling</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="dependency-modeling.html#variable-selection" class="toc-link">4.1 Variable Selection</a></li>
+                            <li class="toc-item"><a href="dependency-modeling.html#drag-drop-interface" class="toc-link">4.2 Drag & Drop Interface</a></li>
+                            <li class="toc-item"><a href="dependency-modeling.html#statistical-analysis" class="toc-link">4.3 Statistical Analysis</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="data-visualization.html" class="toc-link toc-expandable">5. Data Visualization</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="data-visualization.html#distribution-curves" class="toc-link">5.1 Distribution Curves</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#scatter-plots" class="toc-link">5.2 Scatter Plots</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#multivariate-analysis" class="toc-link">5.3 Multi-variate Analysis</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#bootstrapping" class="toc-link">5.4 Bootstrapping</a></li>
+                            <li class="toc-item"><a href="data-visualization.html#advanced-features" class="toc-link">5.5 Advanced Features</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="troubleshooting.html" class="toc-link toc-expandable">6. Troubleshooting & Best Practices</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="troubleshooting.html#common-issues" class="toc-link">6.1 Common Issues</a></li>
+                            <li class="toc-item"><a href="troubleshooting.html#performance-optimization" class="toc-link">6.2 Performance Optimization</a></li>
+                            <li class="toc-item"><a href="troubleshooting.html#data-preparation" class="toc-link">6.3 Data Preparation Guidelines</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item">
+                        <a href="technical-reference.html" class="toc-link toc-expandable">7. Technical Reference</a>
+                        <ul class="toc-sublist">
+                            <li class="toc-item"><a href="technical-reference.html#system-architecture" class="toc-link">7.1 System Architecture</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#api-endpoints" class="toc-link">7.2 API Documentation</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#authentication" class="toc-link">7.3 Authentication System</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#session-management" class="toc-link">7.4 Session Management</a></li>
+                            <li class="toc-item"><a href="technical-reference.html#file-cleanup" class="toc-link">7.5 Administrative Functions</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="main-content" id="mainContent">
+            <header class="page-header">
+                <h1>Getting Started with AbhiStat</h1>
+                <p class="subtitle">Your comprehensive guide to accessing and navigating the statistical analysis platform</p>
+            </header>
+
+            <section class="section">
+                <h2 id="authentication">1. Authentication and Account Creation</h2>
+                
+                <div class="subsection">
+                    <h3 id="user-types">1.1 Understanding User Types</h3>
+                    <p>AbhiStat supports two types of users with different authentication methods:</p>
+                    
+                    <div class="info-box">
+                        <h4>Internal Abhitech Users</h4>
+                        <ul>
+                            <li>Employees of Abhitech Energycon Limited</li>
+                            <li>Use company email credentials</li>
+                            <li>Direct access through internal authentication system</li>
+                            <li>Access via the main login page</li>
+                        </ul>
+                    </div>
+
+                    <div class="info-box">
+                        <h4>External Users</h4>
+                        <ul>
+                            <li>Clients, partners, and external collaborators</li>
+                            <li>Require account registration</li>
+                            <li>Support for Google OAuth login</li>
+                            <li>Access via external user login page</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 id="abhitech-login">1.2 Abhitech Employee Login Process</h3>
+                    
+                    <div class="step-by-step">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4>Access the Login Page</h4>
+                                <p>Navigate to the AbhiStat application. You'll be presented with the main login interface featuring the Abhitech branding.</p>
+                                <div class="code-block">
+                                    <strong>URL:</strong> https://abhistat.com/login
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4>Enter Your Credentials</h4>
+                                <p>Use your Abhitech company email address and password:</p>
+                                <ul>
+                                    <li><strong>Email:</strong> Your @abhitechenergycon.com email address</li>
+                                    <li><strong>Password:</strong> Your company account password</li>
+                                </ul>
+                                <div class="tip-box">
+                                    <strong>Tip:</strong> Use the eye icon to toggle password visibility if needed.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4>Click "Log In As Abhitech Employee"</h4>
+                                <p>The blue gradient button will authenticate you through the internal system and redirect you to the data analysis workflow.</p>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h4>Successful Login</h4>
+                                <p>Upon successful authentication, you'll be automatically redirected to the <strong>Data File Checks</strong> page to begin your analysis.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 id="external-registration">1.3 External User Registration Process</h3>
+                    
+                    <div class="step-by-step">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4>Access External User Registration</h4>
+                                <p>From the main login page, click "Login as external user" to access the external authentication system.</p>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4>Navigate to Sign Up</h4>
+                                <p>On the external login page, click "Sign Up" to create a new account.</p>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4>Complete Registration Form</h4>
+                                <p>Fill out all required fields:</p>
+                                <ul>
+                                    <li><strong>Name:</strong> Your full name</li>
+                                    <li><strong>Email:</strong> Valid email address (will be your username)</li>
+                                    <li><strong>Phone Number:</strong> Contact number</li>
+                                    <li><strong>Password:</strong> Secure password</li>
+                                    <li><strong>Confirm Password:</strong> Re-enter password for verification</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h4>Submit Registration</h4>
+                                <p>Click "Sign Up" to create your account. You'll be redirected to the login page upon successful registration.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 id="external-login">1.4 External User Login Process</h3>
+                    
+                    <div class="step-by-step">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4>Standard Login</h4>
+                                <p>Enter your registered email and password, then click "Login".</p>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4>Google OAuth Login (Alternative)</h4>
+                                <p>Click the Google Sign-In button to authenticate using your Google account. This creates an account automatically if you're a first-time user.</p>
+                                <div class="warning-box">
+                                    <strong>Note:</strong> Google OAuth requires proper configuration and may not be available in all environments.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 id="auth-troubleshooting">1.5 Authentication Troubleshooting</h3>
+                    
+                    <div class="troubleshooting-section">
+                        <h4>Common Login Issues</h4>
+                        
+                        <div class="issue">
+                            <h5>Invalid Email or Password</h5>
+                            <p><strong>Symptoms:</strong> Error message "Invalid email or password"</p>
+                            <p><strong>Solutions:</strong></p>
+                            <ul>
+                                <li>Verify your email address is correct</li>
+                                <li>Check for typos in your password</li>
+                                <li>Ensure caps lock is not enabled</li>
+                                <li>For Abhitech employees, contact IT support for password reset</li>
+                            </ul>
+                        </div>
+
+                        <div class="issue">
+                            <h5>Account Not Found</h5>
+                            <p><strong>Symptoms:</strong> Login fails for external users</p>
+                            <p><strong>Solutions:</strong></p>
+                            <ul>
+                                <li>Verify you're using the external user login page</li>
+                                <li>Check if you need to register first</li>
+                                <li>Ensure you're using the correct email address</li>
+                            </ul>
+                        </div>
+
+                        <div class="issue">
+                            <h5>Google OAuth Issues</h5>
+                            <p><strong>Symptoms:</strong> "Google Sign-In failed" error</p>
+                            <p><strong>Solutions:</strong></p>
+                            <ul>
+                                <li>Ensure pop-ups are enabled in your browser</li>
+                                <li>Clear browser cache and cookies</li>
+                                <li>Try using standard email/password login instead</li>
+                                <li>Contact technical support if the issue persists</li>
+                            </ul>
+                        </div>
+
+                        <div class="issue">
+                            <h5>Server Connection Issues</h5>
+                            <p><strong>Symptoms:</strong> "Server error. Please try again." message</p>
+                            <p><strong>Solutions:</strong></p>
+                            <ul>
+                                <li>Check your internet connection</li>
+                                <li>Wait a few minutes and try again</li>
+                                <li>Clear browser cache</li>
+                                <li>Contact technical support if the problem continues</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 id="platform-overview">2. Platform Overview and Navigation</h2>
+                
+                <div class="subsection">
+                    <h3 id="workflow-overview">2.1 Four-Step Analysis Workflow</h3>
+                    <p>AbhiStat follows a systematic four-step process for statistical analysis:</p>
+                    
+                    <div class="workflow-diagram">
+                        <div class="workflow-step">
+                            <div class="step-icon">1</div>
+                            <h4>Data File Checks</h4>
+                            <p>Upload and validate your 'before' and 'after' data files</p>
+                            <ul>
+                                <li>File format validation (CSV, Excel, Parquet)</li>
+                                <li>Data structure verification</li>
+                                <li>Column matching between datasets</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="workflow-arrow">→</div>
+                        
+                        <div class="workflow-step">
+                            <div class="step-icon">2</div>
+                            <h4>Calculated Columns</h4>
+                            <p>Create custom formulas and derived metrics</p>
+                            <ul>
+                                <li>Excel-like formula builder</li>
+                                <li>Mathematical operations</li>
+                                <li>Column references and functions</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="workflow-arrow">→</div>
+                        
+                        <div class="workflow-step">
+                            <div class="step-icon">3</div>
+                            <h4>Dependency Model</h4>
+                            <p>Define variable relationships for analysis</p>
+                            <ul>
+                                <li>Drag-and-drop variable selection</li>
+                                <li>Independent vs dependent variables</li>
+                                <li>Statistical significance testing</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="workflow-arrow">→</div>
+                        
+                        <div class="workflow-step">
+                            <div class="step-icon">4</div>
+                            <h4>Data Visualization</h4>
+                            <p>Generate charts and statistical insights</p>
+                            <ul>
+                                <li>Distribution curves</li>
+                                <li>Scatter plots</li>
+                                <li>Bootstrapping analysis</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 id="main-features">2.2 Key Platform Features</h3>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h4>Multi-Format File Support</h4>
+                            <p>Upload data in CSV, Excel (.xlsx, .xls), or Parquet formats with automatic format detection and validation.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h4>Interactive Formula Builder</h4>
+                            <p>Create calculated columns using an intuitive interface with real-time validation and preview capabilities.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h4>Statistical Analysis Engine</h4>
+                            <p>Perform robust statistical comparisons with confidence intervals, significance testing, and bootstrapping.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h4>Dynamic Visualizations</h4>
+                            <p>Generate interactive charts including distribution curves, scatter plots, and multi-variate analysis.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h4>Session Management</h4>
+                            <p>Automatic data persistence during your analysis session with secure temporary file handling.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h4>Export Capabilities</h4>
+                            <p>Download results, charts, and processed data for reporting and further analysis.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 id="navigation-guide">2.3 User Interface Navigation</h3>
+                    
+                    <div class="ui-guide">
+                        <h4>Top Navigation Bar</h4>
+                        <ul>
+                            <li><strong>Logo:</strong> Click to return to the landing page</li>
+                            <li><strong>User Menu:</strong> Access account settings and logout options</li>
+                            <li><strong>Help:</strong> Quick access to documentation and support</li>
+                        </ul>
+                        
+                        <h4>Step Navigation</h4>
+                        <ul>
+                            <li><strong>Previous/Next Buttons:</strong> Navigate between workflow steps</li>
+                            <li><strong>Step Indicators:</strong> Visual progress through the four-step process</li>
+                            <li><strong>Breadcrumbs:</strong> Show current location in the workflow</li>
+                        </ul>
+                        
+                        <h4>Data Management Controls</h4>
+                        <ul>
+                            <li><strong>Clear Data Button:</strong> Reset current session and start over</li>
+                            <li><strong>File Upload Areas:</strong> Drag-and-drop or click to select files</li>
+                            <li><strong>Preview Tables:</strong> Scrollable data previews with column headers</li>
+                        </ul>
+                        
+                        <h4>Interactive Elements</h4>
+                        <ul>
+                            <li><strong>Formula Builder:</strong> Point-and-click interface for creating calculations</li>
+                            <li><strong>Variable Selector:</strong> Drag-and-drop interface for dependency modeling</li>
+                            <li><strong>Chart Controls:</strong> Customization options for visualizations</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 id="getting-started-checklist">2.4 Getting Started Checklist</h3>
+                    
+                    <div class="checklist">
+                        <h4>Before You Begin</h4>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="check1">
+                            <label for="check1">Ensure you have your 'before' and 'after' datasets ready</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="check2">
+                            <label for="check2">Verify data files are in supported formats (CSV, Excel, or Parquet)</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="check3">
+                            <label for="check3">Check that both datasets have matching column structures</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="check4">
+                            <label for="check4">Confirm you have appropriate user account access</label>
+                        </div>
+                        
+                        <h4>First-Time Setup</h4>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="check5">
+                            <label for="check5">Complete authentication process (login or registration)</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="check6">
+                            <label for="check6">Familiarize yourself with the four-step workflow</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="check7">
+                            <label for="check7">Review the platform features and capabilities</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="check8">
+                            <label for="check8">Test file upload with a small sample dataset</label>
+                        </div>
+                        
+                        <h4>Ready to Analyze</h4>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="check9">
+                            <label for="check9">Navigate to Step 1: Data File Checks</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="check10">
+                            <label for="check10">Upload your first dataset and verify the preview</label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="navigation-footer">
+                <a href="index.html" class="nav-button prev">← Home</a>
+                <a href="data-management.html" class="nav-button next">Data Management →</a>
+            </div>
+        </main>
+    </div>
+
+    <script src="assets/js/navigation.js"></script>
+</body>
+</html>

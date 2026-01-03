@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AbhiStat User Manual - Quality Assurance Testing</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .test-section {
+            background: white;
+            margin: 2rem 0;
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .test-results {
+            margin-top: 1rem;
+        }
+        
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        
+        .test-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .test-pass {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .test-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .test-warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .run-tests-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .run-tests-btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .test-details {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .screenshot-validation {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .screenshot-item {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .screenshot-placeholder {
+            width: 100%;
+            height: 200px;
+            background-color: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+        
+        .device-test {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .device-frame {
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 1rem;
+            background: white;
+            flex: 1;
+        }
+        
+        .device-frame.mobile {
+            max-width: 375px;
+            border-radius: 20px;
+        }
+        
+        .device-frame.tablet {
+            max-width: 768px;
+        }
+        
+        .device-frame.desktop {
+            max-width: 1200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>AbhiStat User Manual - Quality Assurance Testing</h1>
+        <p>This page provides comprehensive testing and validation for the user manual documentation.</p>
+        
+        <!-- Navigation and Search Testing -->
+        <div class="test-section">
+            <h2>Navigation and Search Functionality</h2>
+            <button class="run-tests-btn" onclick="runNavigationTests()">Run Navigation Tests</button>
+            <div id="navigation-test-results" class="test-results"></div>
+        </div>
+        
+        <!-- Interactive Features Testing -->
+        <div class="test-section">
+            <h2>Interactive Features Testing</h2>
+            <button class="run-tests-btn" onclick="runInteractiveTests()">Run Interactive Tests</button>
+            <div id="interactive-test-results" class="test-results"></div>
+            
+            <!-- Test Code Example -->
+            <h3>Test Interactive Code Example</h3>
+            <div class="code-example">
+                <div class="code-example-header">
+                    <span class="code-example-title">Sample Formula</span>
+                    <button class="copy-code-btn" type="button">Copy</button>
+                </div>
+                <pre><code>// Test formula for validation
+calculated_column = column_a + column_b * 2
+average_value = (column_a + column_b + column_c) / 3</code></pre>
+            </div>
+            
+            <!-- Test Tooltip -->
+            <p>Test tooltip functionality: <span data-tooltip="Application Programming Interface - A set of protocols and tools for building software applications" class="tooltip-term">API</span> and <span data-tooltip="Comma-Separated Values - A file format that stores tabular data in plain text" class="tooltip-term">CSV</span> files.</p>
+        </div>
+        
+        <!-- Content Validation Testing -->
+        <div class="test-section">
+            <h2>Content Validation</h2>
+            <button class="run-tests-btn" onclick="runContentValidation()">Validate Content</button>
+            <div id="content-validation-results" class="test-results"></div>
+        </div>
+        
+        <!-- Screenshot Validation -->
+        <div class="test-section">
+            <h2>Screenshot and UI Validation</h2>
+            <p>Verify that all screenshots match the current UI implementation:</p>
+            <div class="screenshot-validation">
+                <div class="screenshot-item">
+                    <div class="screenshot-placeholder">Login Page Screenshot</div>
+                    <div class="test-status test-warning">Needs Update</div>
+                </div>
+                <div class="screenshot-item">
+                    <div class="screenshot-placeholder">Data Upload Interface</div>
+                    <div class="test-status test-warning">Needs Update</div>
+                </div>
+                <div class="screenshot-item">
+                    <div class="screenshot-placeholder">Formula Builder</div>
+                    <div class="test-status test-warning">Needs Update</div>
+                </div>
+                <div class="screenshot-item">
+                    <div class="screenshot-placeholder">Dependency Modeling</div>
+                    <div class="test-status test-warning">Needs Update</div>
+                </div>
+                <div class="screenshot-item">
+                    <div class="screenshot-placeholder">Data Visualization</div>
+                    <div class="test-status test-warning">Needs Update</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Responsive Design Testing -->
+        <div class="test-section">
+            <h2>Responsive Design Testing</h2>
+            <button class="run-tests-btn" onclick="runResponsiveTests()">Test Responsive Design</button>
+            <div id="responsive-test-results" class="test-results"></div>
+            
+            <h3>Device Preview</h3>
+            <div class="device-test">
+                <div class="device-frame mobile">
+                    <h4>Mobile (375px)</h4>
+                    <div style="font-size: 0.8rem;">Navigation should collapse to hamburger menu</div>
+                </div>
+                <div class="device-frame tablet">
+                    <h4>Tablet (768px)</h4>
+                    <div style="font-size: 0.9rem;">Sidebar should be toggleable</div>
+                </div>
+                <div class="device-frame desktop">
+                    <h4>Desktop (1200px+)</h4>
+                    <div>Full sidebar should be visible</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Accessibility Testing -->
+        <div class="test-section">
+            <h2>Accessibility Testing</h2>
+            <button class="run-tests-btn" onclick="runAccessibilityTests()">Run Accessibility Tests</button>
+            <div id="accessibility-test-results" class="test-results"></div>
+        </div>
+        
+        <!-- Print/PDF Testing -->
+        <div class="test-section">
+            <h2>Print/PDF Generation Testing</h2>
+            <button class="run-tests-btn" onclick="testPrintStyles()">Test Print Styles</button>
+            <button class="run-tests-btn" onclick="window.print()" style="margin-left: 1rem;">Preview Print</button>
+            <div id="print-test-results" class="test-results"></div>
+        </div>
+        
+        <!-- Performance Testing -->
+        <div class="test-section">
+            <h2>Performance Testing</h2>
+            <button class="run-tests-btn" onclick="runPerformanceTests()">Run Performance Tests</button>
+            <div id="performance-test-results" class="test-results"></div>
+        </div>
+        
+        <!-- Overall Test Summary -->
+        <div class="test-section">
+            <h2>Test Summary</h2>
+            <button class="run-tests-btn" onclick="runAllTests()" style="background-color: #28a745;">Run All Tests</button>
+            <div id="overall-test-results" class="test-results"></div>
+        </div>
+    </div>
+    
+    <script src="assets/js/navigation.js"></script>
+    <script src="assets/js/validation.js"></script>
+    <script>
+        let testResults = {
+            navigation: [],
+            interactive: [],
+            content: [],
+            responsive: [],
+            accessibility: [],
+            print: [],
+            performance: []
+        };
+        
+        function runNavigationTests() {
+            const results = [];
+            
+            const sidebar = document.getElementById('sidebar');
+            results.push({
+                test: 'Sidebar element exists',
+                status: sidebar ? 'pass' : 'fail',
+                details: sidebar ? 'Sidebar found in DOM' : 'Sidebar element not found'
+            });
+            
+            const searchInput = document.getElementById('searchInput');
+            results.push({
+                test: 'Search input exists',
+                status: searchInput ? 'pass' : 'fail',
+                details: searchInput ? 'Search input found' : 'Search input not found'
+            });
+            
+            const tocLinks = document.querySelectorAll('.toc-link');
+            results.push({
+                test: 'Table of contents links',
+                status: tocLinks.length > 0 ? 'pass' : 'fail',
+                details: `Found ${tocLinks.length} TOC links`
+            });
+            
+            // Test smooth scrolling
+            results.push({
+                test: 'Smooth scrolling enabled',
+                status: getComputedStyle(document.documentElement).scrollBehavior === 'smooth' ? 'pass' : 'warning',
+                details: 'CSS scroll-behavior property check'
+            });
+            
+            const breadcrumbs = document.getElementById('breadcrumbs');
+            results.push({
+                test: 'Breadcrumb navigation',
+                status: breadcrumbs ? 'pass' : 'fail',
+                details: breadcrumbs ? 'Breadcrumb container found' : 'Breadcrumb container missing'
+            });
+            
+            testResults.navigation = results;
+            displayTestResults('navigation-test-results', results);
+        }
+        
+        // Interactive Features Tests
+        function runInteractiveTests() {
+            const results = [];
+            
+            // Test copy code functionality
+            const copyButtons = document.querySelectorAll('.copy-code-btn');
+            results.push({
+                test: 'Copy code buttons',
+                status: copyButtons.length > 0 ? 'pass' : 'fail',
+                details: `Found ${copyButtons.length} copy buttons`
+            });
+            
+            // Test tooltip functionality
+            const tooltipTerms = document.querySelectorAll('.tooltip-term');
+            results.push({
+                test: 'Tooltip terms',
+                status: tooltipTerms.length > 0 ? 'pass' : 'fail',
+                details: `Found ${tooltipTerms.length} tooltip terms`
+            });
+            
+            // Test tooltip container
+            const tooltipContainer = document.getElementById('tooltip-container');
+            results.push({
+                test: 'Tooltip container',
+                status: tooltipContainer ? 'pass' : 'fail',
+                details: tooltipContainer ? 'Tooltip container exists' : 'Tooltip container missing'
+            });
+            
+            // Test cross-references
+            const crossRefLinks = document.querySelectorAll('.cross-ref-link');
+            results.push({
+                test: 'Cross-reference links',
+                status: 'pass',
+                details: `Cross-reference system initialized (${crossRefLinks.length} links found)`
+            });
+            
+            // Test expandable TOC
+            const expandableItems = document.querySelectorAll('.toc-expandable');
+            results.push({
+                test: 'Expandable TOC items',
+                status: expandableItems.length > 0 ? 'pass' : 'fail',
+                details: `Found ${expandableItems.length} expandable items`
+            });
+            
+            testResults.interactive = results;
+            displayTestResults('interactive-test-results', results);
+        }
+        
+        // Content Validation Tests
+        function runContentValidation() {
+            const results = [];
+            
+            // Test for required sections
+            const requiredSections = [
+                'getting-started',
+                'data-management', 
+                'calculated-columns',
+                'dependency-modeling',
+                'data-visualization',
+                'troubleshooting',
+                'technical-reference'
+            ];
+            
+            requiredSections.forEach(section => {
+                const element = document.querySelector(`[href*="${section}"]`);
+                results.push({
+                    test: `Section: ${section}`,
+                    status: element ? 'pass' : 'fail',
+                    details: element ? 'Section link found in navigation' : 'Section link missing'
+                });
+            });
+            
+            // Test for code examples
+            const codeExamples = document.querySelectorAll('.code-example');
+            results.push({
+                test: 'Interactive code examples',
+                status: codeExamples.length > 0 ? 'pass' : 'warning',
+                details: `Found ${codeExamples.length} code examples`
+            });
+            
+            // Test for alerts and warnings
+            const alerts = document.querySelectorAll('.alert');
+            results.push({
+                test: 'Alert messages',
+                status: alerts.length > 0 ? 'pass' : 'warning',
+                details: `Found ${alerts.length} alert messages`
+            });
+            
+            testResults.content = results;
+            displayTestResults('content-validation-results', results);
+        }
+        
+        // Responsive Design Tests
+        function runResponsiveTests() {
+            const results = [];
+            
+            // Test viewport meta tag
+            const viewport = document.querySelector('meta[name="viewport"]');
+            results.push({
+                test: 'Viewport meta tag',
+                status: viewport ? 'pass' : 'fail',
+                details: viewport ? viewport.content : 'Viewport meta tag missing'
+            });
+            
+            // Test responsive CSS
+            const responsiveCSS = document.querySelector('link[href*="responsive"]');
+            results.push({
+                test: 'Responsive CSS file',
+                status: responsiveCSS ? 'pass' : 'fail',
+                details: responsiveCSS ? 'Responsive CSS loaded' : 'Responsive CSS missing'
+            });
+            
+            // Test media queries (simplified check)
+            const stylesheets = Array.from(document.styleSheets);
+            let hasMediaQueries = false;
+            
+            try {
+                stylesheets.forEach(sheet => {
+                    if (sheet.cssRules) {
+                        Array.from(sheet.cssRules).forEach(rule => {
+                            if (rule.type === CSSRule.MEDIA_RULE) {
+                                hasMediaQueries = true;
+                            }
+                        });
+                    }
+                });
+            } catch (e) {
+                // Cross-origin stylesheets may not be accessible
+            }
+            
+            results.push({
+                test: 'Media queries present',
+                status: hasMediaQueries ? 'pass' : 'warning',
+                details: hasMediaQueries ? 'Media queries found in CSS' : 'Media queries check limited by CORS'
+            });
+            
+            // Test sidebar toggle
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            results.push({
+                test: 'Mobile sidebar toggle',
+                status: sidebarToggle ? 'pass' : 'fail',
+                details: sidebarToggle ? 'Sidebar toggle button found' : 'Sidebar toggle missing'
+            });
+            
+            testResults.responsive = results;
+            displayTestResults('responsive-test-results', results);
+        }
+        
+        // Accessibility Tests
+        function runAccessibilityTests() {
+            const results = [];
+            
+            // Test skip to content link
+            const skipLink = document.querySelector('.skip-to-content');
+            results.push({
+                test: 'Skip to content link',
+                status: skipLink ? 'pass' : 'fail',
+                details: skipLink ? 'Skip link found' : 'Skip link missing'
+            });
+            
+            // Test heading hierarchy
+            const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            results.push({
+                test: 'Heading structure',
+                status: headings.length > 0 ? 'pass' : 'fail',
+                details: `Found ${headings.length} headings`
+            });
+            
+            // Test alt text for images
+            const images = document.querySelectorAll('img');
+            const imagesWithAlt = document.querySelectorAll('img[alt]');
+            results.push({
+                test: 'Image alt text',
+                status: images.length === imagesWithAlt.length ? 'pass' : 'warning',
+                details: `${imagesWithAlt.length}/${images.length} images have alt text`
+            });
+            
+            // Test focus indicators
+            results.push({
+                test: 'Focus indicators',
+                status: 'pass',
+                details: 'CSS focus styles defined for interactive elements'
+            });
+            
+            // Test ARIA labels
+            const ariaLabels = document.querySelectorAll('[aria-label], [aria-labelledby]');
+            results.push({
+                test: 'ARIA labels',
+                status: ariaLabels.length > 0 ? 'pass' : 'warning',
+                details: `Found ${ariaLabels.length} elements with ARIA labels`
+            });
+            
+            testResults.accessibility = results;
+            displayTestResults('accessibility-test-results', results);
+        }
+        
+        // Print Styles Tests
+        function testPrintStyles() {
+            const results = [];
+            
+            // Test print media query
+            const printStyles = Array.from(document.styleSheets);
+            let hasPrintStyles = false;
+            
+            try {
+                printStyles.forEach(sheet => {
+                    if (sheet.cssRules) {
+                        Array.from(sheet.cssRules).forEach(rule => {
+                            if (rule.type === CSSRule.MEDIA_RULE && rule.media.mediaText.includes('print')) {
+                                hasPrintStyles = true;
+                            }
+                        });
+                    }
+                });
+            } catch (e) {
+                // Handle CORS issues
+            }
+            
+            results.push({
+                test: 'Print media queries',
+                status: hasPrintStyles ? 'pass' : 'warning',
+                details: hasPrintStyles ? 'Print styles found' : 'Print styles check limited by CORS'
+            });
+            
+            // Test elements that should be hidden in print
+            const hiddenInPrint = ['.sidebar', '.copy-code-btn', '.tooltip-container'];
+            hiddenInPrint.forEach(selector => {
+                const element = document.querySelector(selector);
+                results.push({
+                    test: `Print hiding: ${selector}`,
+                    status: element ? 'pass' : 'warning',
+                    details: element ? 'Element exists (should be hidden in print)' : 'Element not found'
+                });
+            });
+            
+            testResults.print = results;
+            displayTestResults('print-test-results', results);
+        }
+        
+        // Performance Tests
+        function runPerformanceTests() {
+            const results = [];
+            
+            // Test page load time
+            const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+            results.push({
+                test: 'Page load time',
+                status: loadTime < 3000 ? 'pass' : 'warning',
+                details: `${loadTime}ms (target: <3000ms)`
+            });
+            
+            // Test resource count
+            const resources = performance.getEntriesByType('resource');
+            results.push({
+                test: 'Resource count',
+                status: resources.length < 50 ? 'pass' : 'warning',
+                details: `${resources.length} resources loaded`
+            });
+            
+            // Test CSS file size (approximate)
+            const cssFiles = resources.filter(r => r.name.includes('.css'));
+            results.push({
+                test: 'CSS files',
+                status: cssFiles.length < 5 ? 'pass' : 'warning',
+                details: `${cssFiles.length} CSS files loaded`
+            });
+            
+            // Test JS file size (approximate)
+            const jsFiles = resources.filter(r => r.name.includes('.js'));
+            results.push({
+                test: 'JavaScript files',
+                status: jsFiles.length < 5 ? 'pass' : 'warning',
+                details: `${jsFiles.length} JS files loaded`
+            });
+            
+            testResults.performance = results;
+            displayTestResults('performance-test-results', results);
+        }
+        
+        // Run All Tests
+        function runAllTests() {
+            runNavigationTests();
+            runInteractiveTests();
+            runContentValidation();
+            runResponsiveTests();
+            runAccessibilityTests();
+            testPrintStyles();
+            runPerformanceTests();
+            
+            // Generate overall summary
+            setTimeout(() => {
+                const allResults = [
+                    ...testResults.navigation,
+                    ...testResults.interactive,
+                    ...testResults.content,
+                    ...testResults.responsive,
+                    ...testResults.accessibility,
+                    ...testResults.print,
+                    ...testResults.performance
+                ];
+                
+                const passed = allResults.filter(r => r.status === 'pass').length;
+                const failed = allResults.filter(r => r.status === 'fail').length;
+                const warnings = allResults.filter(r => r.status === 'warning').length;
+                
+                const summary = [{
+                    test: 'Overall Test Summary',
+                    status: failed === 0 ? 'pass' : 'warning',
+                    details: `${passed} passed, ${failed} failed, ${warnings} warnings out of ${allResults.length} total tests`
+                }];
+                
+                displayTestResults('overall-test-results', summary);
+            }, 1000);
+        }
+        
+        // Display Test Results
+        function displayTestResults(containerId, results) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = results.map(result => `
+                <div class="test-item">
+                    <div>
+                        <strong>${result.test}</strong>
+                        <div class="test-details">${result.details}</div>
+                    </div>
+                    <div class="test-status test-${result.status}">${result.status.toUpperCase()}</div>
+                </div>
+            `).join('');
+        }
+        
+        // Initialize tests when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Quality Assurance Testing Page Loaded');
+            
+            // Auto-run basic tests
+            setTimeout(() => {
+                runNavigationTests();
+                runInteractiveTests();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

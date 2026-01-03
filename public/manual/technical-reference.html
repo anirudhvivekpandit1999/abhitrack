@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Reference - AbhiStat User Manual</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>AbhiStat User Manual</h2>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="getting-started.html" class="nav-link">Getting Started</a>
+                <a href="data-management.html" class="nav-link">Data Management</a>
+                <a href="calculated-columns.html" class="nav-link">Calculated Columns</a>
+                <a href="dependency-modeling.html" class="nav-link">Dependency Modeling</a>
+                <a href="data-visualization.html" class="nav-link">Data Visualization</a>
+                <a href="troubleshooting.html" class="nav-link">Troubleshooting</a>
+                <a href="technical-reference.html" class="nav-link active">Technical Reference</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="content-wrapper">
+            <aside class="sidebar">
+                <div class="toc">
+                    <h3>Table of Contents</h3>
+                    <ul>
+                        <li><a href="#system-architecture">System Architecture</a></li>
+                        <li><a href="#frontend-components">Frontend Components</a></li>
+                        <li><a href="#backend-structure">Backend Structure</a></li>
+                        <li><a href="#database-schema">Database Schema</a></li>
+                        <li><a href="#api-endpoints">API Endpoints</a></li>
+                        <li><a href="#session-management">Session Management</a></li>
+                        <li><a href="#authentication">Authentication</a></li>
+                        <li><a href="#file-cleanup">File Cleanup</a></li>
+                        <li><a href="#deployment">Deployment</a></li>
+                    </ul>
+                </div>
+            </aside>
+
+            <main class="main-content">
+                <div class="breadcrumb">
+                    <a href="index.html">Home</a> > <span>Technical Reference</span>
+                </div>
+
+                <h1>Technical Reference</h1>
+                <p class="lead">Comprehensive technical documentation for AbhiStat system architecture, components, and administrative procedures.</p>
+
+                <section id="system-architecture" class="content-section">
+                    <h2>System Architecture</h2>
+                    <p>AbhiStat follows a modern web application architecture with a clear separation between frontend and backend components.</p>
+                    
+                    <div class="architecture-diagram">
+                        <h3>System Architecture Diagram</h3>
+                        <div class="diagram-container">
+                            <svg width="100%" height="400" viewBox="0 0 800 400">
+                                <!-- Client Layer -->
+                                <rect x="50" y="50" width="150" height="80" fill="#E3F2FD" stroke="#1976D2" stroke-width="2" rx="5"/>
+                                <text x="125" y="75" text-anchor="middle" font-size="12" font-weight="bold">Web Browser</text>
+                                <text x="125" y="95" text-anchor="middle" font-size="10">React Frontend</text>
+                                <text x="125" y="110" text-anchor="middle" font-size="10">Port 5173</text>
+                                
+                                <!-- Load Balancer/Proxy -->
+                                <rect x="300" y="50" width="150" height="80" fill="#FFF3E0" stroke="#F57C00" stroke-width="2" rx="5"/>
+                                <text x="375" y="75" text-anchor="middle" font-size="12" font-weight="bold">Web Server</text>
+                                <text x="375" y="95" text-anchor="middle" font-size="10">Nginx/Apache</text>
+                                <text x="375" y="110" text-anchor="middle" font-size="10">HTTPS/SSL</text>
+                                
+                                <!-- Backend API -->
+                                <rect x="550" y="50" width="150" height="80" fill="#E8F5E8" stroke="#388E3C" stroke-width="2" rx="5"/>
+                                <text x="625" y="75" text-anchor="middle" font-size="12" font-weight="bold">FastAPI Backend</text>
+                                <text x="625" y="95" text-anchor="middle" font-size="10">Python 3.x</text>
+                                <text x="625" y="110" text-anchor="middle" font-size="10">Port 8000</text>
+                                
+                                <!-- Database -->
+                                <rect x="550" y="200" width="150" height="80" fill="#FCE4EC" stroke="#C2185B" stroke-width="2" rx="5"/>
+                                <text x="625" y="225" text-anchor="middle" font-size="12" font-weight="bold">MongoDB</text>
+                                <text x="625" y="245" text-anchor="middle" font-size="10">User Management</text>
+                                <text x="625" y="260" text-anchor="middle" font-size="10">Session Storage</text>
+                                
+                                <!-- File Storage -->
+                                <rect x="300" y="200" width="150" height="80" fill="#F3E5F5" stroke="#7B1FA2" stroke-width="2" rx="5"/>
+                                <text x="375" y="225" text-anchor="middle" font-size="12" font-weight="bold">File System</text>
+                                <text x="375" y="245" text-anchor="middle" font-size="10">Temporary Files</text>
+                                <text x="375" y="260" text-anchor="middle" font-size="10">Data Processing</text>
+                                
+                                <!-- External Services -->
+                                <rect x="50" y="200" width="150" height="80" fill="#E0F2F1" stroke="#00796B" stroke-width="2" rx="5"/>
+                                <text x="125" y="225" text-anchor="middle" font-size="12" font-weight="bold">Google OAuth</text>
+                                <text x="125" y="245" text-anchor="middle" font-size="10">Authentication</text>
+                                <text x="125" y="260" text-anchor="middle" font-size="10">External Users</text>
+                                
+                                <!-- Arrows -->
+                                <defs>
+                                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                                    </marker>
+                                </defs>
+                                
+                                <!-- Client to Web Server -->
+                                <line x1="200" y1="90" x2="300" y2="90" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                <text x="250" y="85" text-anchor="middle" font-size="9">HTTPS</text>
+                                
+                                <!-- Web Server to Backend -->
+                                <line x1="450" y1="90" x2="550" y2="90" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                <text x="500" y="85" text-anchor="middle" font-size="9">API Calls</text>
+                                
+                                <!-- Backend to Database -->
+                                <line x1="625" y1="130" x2="625" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                <text x="640" y="165" font-size="9">MongoDB</text>
+                                
+                                <!-- Backend to File System -->
+                                <line x1="550" y1="110" x2="450" y2="220" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                <text x="480" y="165" font-size="9">File I/O</text>
+                                
+                                <!-- Client to Google OAuth -->
+                                <line x1="125" y1="130" x2="125" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                <text x="140" y="165" font-size="9">OAuth</text>
+                                
+                                <!-- Technology Stack Labels -->
+                                <text x="400" y="350" text-anchor="middle" font-size="14" font-weight="bold">Technology Stack</text>
+                                <text x="100" y="370" font-size="11">Frontend: React 19, Material-UI, Vite, TanStack Query</text>
+                                <text x="100" y="385" font-size="11">Backend: FastAPI, Python 3.x, Pandas, NumPy, Scikit-learn</text>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h4>Architecture Overview</h4>
+                        <ul>
+                            <li><strong>Frontend:</strong> React-based single-page application with modern UI components</li>
+                            <li><strong>Backend:</strong> FastAPI Python server providing RESTful API endpoints</li>
+                            <li><strong>Database:</strong> MongoDB for user management and session storage</li>
+                            <li><strong>File Storage:</strong> Local file system for temporary data processing</li>
+                            <li><strong>Authentication:</strong> Dual authentication system (internal + Google OAuth)</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="frontend-components" class="content-section">
+                    <h2>Frontend Components</h2>
+                    <p>The React frontend is organized into a modular component structure with clear separation of concerns.</p>
+                    
+                    <h3>Main Application Structure</h3>
+                    <div class="code-block">
+                        <pre><code>src/
+├── App.jsx                 # Main application component with routing
+├── main.jsx               # Application entry point
+├── components/            # Reusable UI components
+├── pages/                 # Main application pages
+├── hooks/                 # Custom React hooks
+├── utils/                 # Utility functions
+└── assets/               # Static assets</code></pre>
+                    </div>
+                    
+                    <h3>Core Pages and Components</h3>
+                    <div class="component-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Component</th>
+                                    <th>File</th>
+                                    <th>Purpose</th>
+                                    <th>Key Features</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Landing</td>
+                                    <td>pages/Landing.jsx</td>
+                                    <td>Homepage with feature overview</td>
+                                    <td>Animated sections, process workflow, benefits</td>
+                                </tr>
+                                <tr>
+                                    <td>DataFileChecks</td>
+                                    <td>pages/DataFileChecks.jsx</td>
+                                    <td>File upload and validation</td>
+                                    <td>Multi-format support, data preview, validation</td>
+                                </tr>
+                                <tr>
+                                    <td>CalculatedColumnsBuilder</td>
+                                    <td>pages/CalculatedColumnsBuilder.jsx</td>
+                                    <td>Formula creation interface</td>
+                                    <td>Formula builder, validation, batch processing</td>
+                                </tr>
+                                <tr>
+                                    <td>DependencyModel</td>
+                                    <td>pages/DependencyModel.jsx</td>
+                                    <td>Variable relationship analysis</td>
+                                    <td>Drag-drop interface, statistical analysis</td>
+                                </tr>
+                                <tr>
+                                    <td>VisualizeData</td>
+                                    <td>pages/VisualizeData.jsx</td>
+                                    <td>Data visualization and charts</td>
+                                    <td>Multiple chart types, interactive controls</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <h3>Key Dependencies</h3>
+                    <div class="dependency-list">
+                        <ul>
+                            <li><strong>React 19:</strong> Core framework with latest features</li>
+                            <li><strong>Material-UI (MUI):</strong> Component library for consistent UI</li>
+                            <li><strong>React Router:</strong> Client-side routing and navigation</li>
+                            <li><strong>TanStack Query:</strong> Server state management and caching</li>
+                            <li><strong>Framer Motion:</strong> Animation library for smooth transitions</li>
+                            <li><strong>D3.js & Recharts:</strong> Data visualization libraries</li>
+                            <li><strong>Axios:</strong> HTTP client for API communication</li>
+                            <li><strong>@dnd-kit:</strong> Drag and drop functionality</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="backend-structure" class="content-section">
+                    <h2>Backend Structure</h2>
+                    <p>The FastAPI backend provides a robust API layer with modular organization and comprehensive data processing capabilities.</p>
+                    
+                    <h3>Directory Structure</h3>
+                    <div class="code-block">
+                        <pre><code>Abhitech_Statistical_Tool_Backend/
+├── main.py                # FastAPI application entry point
+├── api/                   # API route modules
+│   ├── auth.py           # Authentication endpoints
+│   ├── file_processing.py # File upload and processing
+│   ├── calculated.py     # Calculated columns functionality
+│   ├── dependency.py     # Dependency modeling endpoints
+│   └── session.py        # Session management
+├── core/                  # Core configuration and utilities
+│   ├── config.py         # Application configuration
+│   ├── db.py            # Database connection
+│   └── security.py      # Security utilities (JWT, hashing)
+├── models/               # Data models and schemas
+│   └── schemas.py       # Pydantic models for API
+├── temp_files/          # Temporary file storage
+└── utils.py             # Utility functions</code></pre>
+                    </div>
+                    
+                    <h3>API Modules</h3>
+                    <div class="api-modules">
+                        <div class="module-card">
+                            <h4>Authentication (auth.py)</h4>
+                            <ul>
+                                <li>User registration and login</li>
+                                <li>Google OAuth integration</li>
+                                <li>JWT token management</li>
+                                <li>Password hashing and verification</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="module-card">
+                            <h4>File Processing (file_processing.py)</h4>
+                            <ul>
+                                <li>Multi-format file upload (CSV, Excel, Parquet)</li>
+                                <li>Data validation and cleaning</li>
+                                <li>Column matching and consistency checks</li>
+                                <li>Session-based file management</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="module-card">
+                            <h4>Calculated Columns (calculated.py)</h4>
+                            <ul>
+                                <li>Formula parsing and validation</li>
+                                <li>Mathematical expression evaluation</li>
+                                <li>Batch column processing</li>
+                                <li>Error handling and reporting</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="module-card">
+                            <h4>Dependency Modeling (dependency.py)</h4>
+                            <ul>
+                                <li>Statistical analysis algorithms</li>
+                                <li>Variable relationship computation</li>
+                                <li>Confidence interval calculations</li>
+                                <li>Significance testing</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <h3>Core Dependencies</h3>
+                    <div class="dependency-list">
+                        <ul>
+                            <li><strong>FastAPI:</strong> Modern web framework for building APIs</li>
+                            <li><strong>Pandas:</strong> Data manipulation and analysis</li>
+                            <li><strong>NumPy:</strong> Numerical computing and array operations</li>
+                            <li><strong>Scikit-learn:</strong> Machine learning and statistical analysis</li>
+                            <li><strong>PyMongo:</strong> MongoDB driver for Python</li>
+                            <li><strong>PyJWT:</strong> JSON Web Token implementation</li>
+                            <li><strong>Uvicorn:</strong> ASGI server for FastAPI</li>
+                            <li><strong>OpenPyXL:</strong> Excel file processing</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="database-schema" class="content-section">
+                    <h2>Database Schema</h2>
+                    <p>AbhiStat uses MongoDB for user management and session storage with a simple but effective schema design.</p>
+                    
+                    <h3>Collections</h3>
+                    
+                    <div class="schema-section">
+                        <h4>external_users Collection</h4>
+                        <p>Stores user account information for external (non-Abhitech) users.</p>
+                        <div class="code-block">
+                            <pre><code>{
+  "_id": ObjectId,
+  "name": String,           // User's full name
+  "email": String,          // Email address (unique)
+  "phone": String,          // Phone number (optional)
+  "password": String,       // Hashed password (null for Google OAuth users)
+  "google_id": String,      // Google OAuth ID (null for regular users)
+  "created_at": DateTime    // Account creation timestamp
+}</code></pre>
+                        </div>
+                        
+                        <div class="info-box">
+                            <h5>Schema Notes</h5>
+                            <ul>
+                                <li>Email field is indexed for unique constraint</li>
+                                <li>Password is hashed using bcrypt</li>
+                                <li>Google OAuth users have null password field</li>
+                                <li>Phone field is optional and may be empty string</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <h3>Session Management</h3>
+                    <p>Session data is stored in-memory using Python dictionaries for temporary data processing. This includes:</p>
+                    <ul>
+                        <li>Uploaded file data (DataFrames)</li>
+                        <li>Calculated columns</li>
+                        <li>Processing state</li>
+                        <li>User session metadata</li>
+                    </ul>
+                    
+                    <div class="warning-box">
+                        <h4>Important Note</h4>
+                        <p>Session data is not persisted to the database and will be lost on server restart. Files are automatically cleaned up after expiration.</p>
+                    </div>
+                </section>
+
+                <section id="api-endpoints" class="content-section">
+                    <h2>API Endpoints</h2>
+                    <p>Comprehensive documentation of all available API endpoints with parameters, responses, and examples.</p>
+                    
+                    <h3>Authentication Endpoints</h3>
+                    <div class="endpoint-section">
+                        <div class="endpoint-card">
+                            <div class="endpoint-header">
+                                <span class="method post">POST</span>
+                                <span class="path">/register</span>
+                            </div>
+                            <div class="endpoint-body">
+                                <h5>Register New User</h5>
+                                <p>Creates a new external user account with email and password.</p>
+                                
+                                <h6>Request Body</h6>
+                                <div class="code-block">
+                                    <pre><code>{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "password": "securepassword",
+  "confirm_password": "securepassword"
+}</code></pre>
+                                </div>
+                                
+                                <h6>Response</h6>
+                                <div class="code-block">
+                                    <pre><code>{
+  "message": "User registered successfully."
+}</code></pre>
+                                </div>
+                                
+                                <h6>Error Responses</h6>
+                                <ul>
+                                    <li><code>400</code>: Passwords do not match or email already registered</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="endpoint-card">
+                            <div class="endpoint-header">
+                                <span class="method post">POST</span>
+                                <span class="path">/login</span>
+                            </div>
+                            <div class="endpoint-body">
+                                <h5>User Login</h5>
+                                <p>Authenticates user with email and password, returns JWT token.</p>
+                                
+                                <h6>Request Body</h6>
+                                <div class="code-block">
+                                    <pre><code>{
+  "email": "john@example.com",
+  "password": "securepassword"
+}</code></pre>
+                                </div>
+                                
+                                <h6>Response</h6>
+                                <div class="code-block">
+                                    <pre><code>{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "token_type": "bearer",
+  "user": {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "+1234567890",
+    "access": "External"
+  },
+  "message": "User logged in successfully"
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="endpoint-card">
+                            <div class="endpoint-header">
+                                <span class="method post">POST</span>
+                                <span class="path">/google-login</span>
+                            </div>
+                            <div class="endpoint-body">
+                                <h5>Google OAuth Login</h5>
+                                <p>Authenticates user with Google OAuth token.</p>
+                                
+                                <h6>Request Body</h6>
+                                <div class="code-block">
+                                    <pre><code>{
+  "token": "google_oauth_token_here"
+}</code></pre>
+                                </div>
+                                
+                                <h6>Response</h6>
+                                <div class="code-block">
+                                    <pre><code>{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "token_type": "bearer",
+  "user": {
+    "name": "John Doe",
+    "email": "john@gmail.com",
+    "phone": ""
+  }
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>File Processing Endpoints</h3>
+                    <div class="endpoint-section">
+                        <div class="endpoint-card">
+                            <div class="endpoint-header">
+                                <span class="method post">POST</span>
+                                <span class="path">/process-files</span>
+                            </div>
+                            <div class="endpoint-body">
+                                <h5>Process Data Files</h5>
+                                <p>Uploads and processes two data files for comparison analysis.</p>
+                                
+                                <h6>Form Data Parameters</h6>
+                                <ul>
+                                    <li><code>file1</code>: First data file (before data)</li>
+                                    <li><code>file2</code>: Second data file (after data)</li>
+                                    <li><code>remove_unnamed</code>: Boolean to remove unnamed columns</li>
+                                    <li><code>remove_mismatched</code>: Boolean to remove mismatched columns</li>
+                                    <li><code>sheet1</code>: Excel sheet name for file1 (optional)</li>
+                                    <li><code>sheet2</code>: Excel sheet name for file2 (optional)</li>
+                                </ul>
+                                
+                                <h6>Response</h6>
+                                <div class="code-block">
+                                    <pre><code>{
+  "message": "Files processed successfully",
+  "session_id": "uuid-session-id",
+  "file1_info": {
+    "filename": "before_data.csv",
+    "shape": [100, 5],
+    "columns": ["col1", "col2", "col3", "col4", "col5"],
+    "preview": [...],
+    "data": [...]
+  },
+  "file2_info": {
+    "filename": "after_data.csv",
+    "shape": [100, 5],
+    "columns": ["col1", "col2", "col3", "col4", "col5"],
+    "preview": [...],
+    "data": [...]
+  }
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>Calculated Columns Endpoints</h3>
+                    <div class="endpoint-section">
+                        <div class="endpoint-card">
+                            <div class="endpoint-header">
+                                <span class="method post">POST</span>
+                                <span class="path">/save-calculated-columns</span>
+                            </div>
+                            <div class="endpoint-body">
+                                <h5>Save Calculated Columns</h5>
+                                <p>Creates multiple calculated columns using mathematical formulas with batch processing.</p>
+                                
+                                <h6>Request Body</h6>
+                                <div class="code-block">
+                                    <pre><code>{
+  "session_id": "uuid-session-id",
+  "columns": [
+    {
+      "column_name": "efficiency_ratio",
+      "formula": "[col1] / [col2] * 100",
+      "formula_elements": [
+        {"type": "column", "value": "col1"},
+        {"type": "operator", "value": "/"},
+        {"type": "column", "value": "col2"},
+        {"type": "operator", "value": "*"},
+        {"type": "number", "value": "100"}
+      ]
+    }
+  ]
+}</code></pre>
+                                </div>
+                                
+                                <h6>Response</h6>
+                                <div class="code-block">
+                                    <pre><code>{
+  "message": "Successfully added 1 calculated columns",
+  "new_columns": ["efficiency_ratio"],
+  "preview": {
+    "file1": [...],
+    "file2": [...]
+  }
+}</code></pre>
+                                </div>
+                                
+                                <h6>Validation Rules</h6>
+                                <ul>
+                                    <li>Column names must contain only letters, numbers, and underscores</li>
+                                    <li>Column names must be 30 characters or less</li>
+                                    <li>Column names cannot duplicate existing columns</li>
+                                    <li>Formulas must reference valid columns using [column_name] syntax</li>
+                                    <li>Formulas must have balanced parentheses</li>
+                                    <li>Division by zero is not allowed</li>
+                                </ul>
+                                
+                                <h6>Supported Functions</h6>
+                                <ul>
+                                    <li><code>AVERAGE([column])</code> - Calculate column average</li>
+                                    <li><code>SUM([column])</code> - Calculate column sum</li>
+                                    <li><code>MIN([column])</code> - Find minimum value</li>
+                                    <li><code>MAX([column])</code> - Find maximum value</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>Dependency Analysis Endpoints</h3>
+                    <div class="endpoint-section">
+                        <div class="endpoint-card">
+                            <div class="endpoint-header">
+                                <span class="method post">POST</span>
+                                <span class="path">/save-dependency-model</span>
+                            </div>
+                            <div class="endpoint-body">
+                                <h5>Save Dependency Model</h5>
+                                <p>Performs bootstrap statistical analysis on selected dependent and independent variables.</p>
+                                
+                                <h6>Request Body</h6>
+                                <div class="code-block">
+                                    <pre><code>{
+  "dependent_variables": ["efficiency", "output"],
+  "independent_variables": ["temperature", "pressure", "flow_rate"],
+  "session_id": "uuid-session-id"
+}</code></pre>
+                                </div>
+                                
+                                <h6>Response</h6>
+                                <div class="code-block">
+                                    <pre><code>{
+  "message": "Dependency model saved successfully",
+  "model_info": {
+    "dependent_variables": ["efficiency", "output"],
+    "independent_variables": ["temperature", "pressure", "flow_rate"]
+  },
+  "data_info": {
+    "with_product": {
+      "name": "after_data.csv",
+      "shape": [100, 8],
+      "data": [...]
+    },
+    "without_product": {
+      "name": "before_data.csv", 
+      "shape": [100, 8],
+      "data": [...]
+    },
+    "available_columns": [...],
+    "calculated_columns": [...]
+  },
+  "bootstrap_analysis": {
+    "significant_impact": [
+      {
+        "column": "efficiency",
+        "mean_difference": -15.234,
+        "standard_deviation": 2.456,
+        "confidence_interval": {
+          "lower_bound": -19.847,
+          "upper_bound": -10.621
+        },
+        "is_significant": true
+      }
+    ],
+    "no_significant_impact": [...],
+    "total_columns_analyzed": 8
+  }
+}</code></pre>
+                                </div>
+                                
+                                <h6>Bootstrap Analysis</h6>
+                                <p>The system performs 100 bootstrap iterations to calculate:</p>
+                                <ul>
+                                    <li><strong>Mean Difference:</strong> Average change between before/after data</li>
+                                    <li><strong>Standard Deviation:</strong> Variability of the difference</li>
+                                    <li><strong>95% Confidence Interval:</strong> Statistical significance bounds</li>
+                                    <li><strong>Significance:</strong> True if confidence interval doesn't include zero</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>Utility Endpoints</h3>
+                    <div class="endpoint-section">
+                        <div class="endpoint-card">
+                            <div class="endpoint-header">
+                                <span class="method get">GET</span>
+                                <span class="path">/</span>
+                            </div>
+                            <div class="endpoint-body">
+                                <h5>Health Check</h5>
+                                <p>Returns basic API status information.</p>
+                                
+                                <h6>Response</h6>
+                                <div class="code-block">
+                                    <pre><code>{
+  "message": "Welcome to the Abhitech Statistical Backend"
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="session-management" class="content-section">
+                    <h2>Session Management</h2>
+                    <p>AbhiStat uses a session-based approach to manage user data and processing state across multiple requests.</p>
+                    
+                    <h3>Session Lifecycle</h3>
+                    <div class="lifecycle-diagram">
+                        <div class="lifecycle-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4>Session Creation</h4>
+                                <p>New session ID generated on first file upload</p>
+                            </div>
+                        </div>
+                        <div class="lifecycle-arrow">→</div>
+                        <div class="lifecycle-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4>Data Storage</h4>
+                                <p>Files and processing results stored in memory</p>
+                            </div>
+                        </div>
+                        <div class="lifecycle-arrow">→</div>
+                        <div class="lifecycle-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4>Processing</h4>
+                                <p>Multiple operations using session data</p>
+                            </div>
+                        </div>
+                        <div class="lifecycle-arrow">→</div>
+                        <div class="lifecycle-step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h4>Cleanup</h4>
+                                <p>Automatic cleanup after expiration</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>Session Data Structure</h3>
+                    <div class="code-block">
+                        <pre><code>session_data_store[session_id] = {
+    "df1": pandas.DataFrame,           # First uploaded file data
+    "df2": pandas.DataFrame,           # Second uploaded file data
+    "file1_name": str,                 # Original filename 1
+    "file2_name": str,                 # Original filename 2
+    "calculated_columns": list,        # List of calculated columns
+    "created_at": datetime,            # Session creation time
+    "last_accessed": datetime          # Last access time
+}</code></pre>
+                    </div>
+                    
+                    <h3>Session Configuration</h3>
+                    <div class="config-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Value</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Session Timeout</td>
+                                    <td>24 hours</td>
+                                    <td>Maximum session duration</td>
+                                </tr>
+                                <tr>
+                                    <td>Cleanup Interval</td>
+                                    <td>1 hour</td>
+                                    <td>Frequency of cleanup process</td>
+                                </tr>
+                                <tr>
+                                    <td>Storage Type</td>
+                                    <td>In-memory</td>
+                                    <td>Session data storage method</td>
+                                </tr>
+                                <tr>
+                                    <td>Cookie Settings</td>
+                                    <td>HttpOnly: False, SameSite: Lax</td>
+                                    <td>Session cookie configuration</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="authentication" class="content-section">
+                    <h2>Authentication System</h2>
+                    <p>AbhiStat implements a dual authentication system supporting both internal Abhitech users and external users.</p>
+                    
+                    <h3>Authentication Flow</h3>
+                    <div class="auth-flow">
+                        <div class="auth-option">
+                            <h4>Internal Users (Abhitech)</h4>
+                            <div class="flow-steps">
+                                <div class="flow-step">User accesses login page</div>
+                                <div class="flow-arrow">↓</div>
+                                <div class="flow-step">Redirected to internal authentication</div>
+                                <div class="flow-arrow">↓</div>
+                                <div class="flow-step">Credentials verified against internal system</div>
+                                <div class="flow-arrow">↓</div>
+                                <div class="flow-step">JWT token issued</div>
+                            </div>
+                        </div>
+                        
+                        <div class="auth-option">
+                            <h4>External Users</h4>
+                            <div class="flow-steps">
+                                <div class="flow-step">User chooses registration/login</div>
+                                <div class="flow-arrow">↓</div>
+                                <div class="flow-step">Email/password or Google OAuth</div>
+                                <div class="flow-arrow">↓</div>
+                                <div class="flow-step">Credentials verified against MongoDB</div>
+                                <div class="flow-arrow">↓</div>
+                                <div class="flow-step">JWT token issued</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>JWT Token Configuration</h3>
+                    <div class="code-block">
+                        <pre><code># JWT Settings
+SECRET_KEY = os.getenv('JWT_SECRET', 'supersecretkey')
+ALGORITHM = 'HS256'
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+# Token Payload
+{
+  "sub": "user_id",           # User identifier
+  "email": "user@example.com", # User email
+  "exp": timestamp,           # Expiration time
+  "iat": timestamp            # Issued at time
+}</code></pre>
+                    </div>
+                    
+                    <h3>Security Features</h3>
+                    <ul>
+                        <li><strong>Password Hashing:</strong> bcrypt with salt for secure password storage</li>
+                        <li><strong>JWT Tokens:</strong> Stateless authentication with configurable expiration</li>
+                        <li><strong>CORS Protection:</strong> Configured allowed origins and headers</li>
+                        <li><strong>Google OAuth:</strong> Secure third-party authentication integration</li>
+                        <li><strong>Input Validation:</strong> Pydantic models for request validation</li>
+                    </ul>
+                </section>
+
+                <section id="file-cleanup" class="content-section">
+                    <h2>File Cleanup and Maintenance</h2>
+                    <p>Automated file cleanup system prevents storage overflow and maintains system performance.</p>
+                    
+                    <h3>Cleanup Process</h3>
+                    <div class="cleanup-process">
+                        <div class="process-step">
+                            <h4>1. Scheduled Cleanup</h4>
+                            <p>Runs every hour as a background task</p>
+                            <div class="code-block">
+                                <pre><code>async def cleanup_expired_files_periodically():
+    while True:
+        await asyncio.sleep(3600)  # 1 hour
+        cleanup_expired_files()</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="process-step">
+                            <h4>2. File Age Check</h4>
+                            <p>Identifies files older than 24 hours</p>
+                            <div class="code-block">
+                                <pre><code>cutoff_time = datetime.now() - timedelta(hours=24)
+if file_creation_time < cutoff_time:
+    # Mark for deletion</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="process-step">
+                            <h4>3. Safe Deletion</h4>
+                            <p>Removes files and cleans up session data</p>
+                            <ul>
+                                <li>Delete physical files from temp_files directory</li>
+                                <li>Remove session data from memory</li>
+                                <li>Log cleanup activities</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <h3>Manual Cleanup Commands</h3>
+                    <div class="code-block">
+                        <pre><code># Clean all expired files
+python -c "from utils import cleanup_expired_files; cleanup_expired_files()"
+
+# Clean specific session
+python -c "from utils import cleanup_session; cleanup_session('session_id')"
+
+# Check storage usage
+du -sh temp_files/</code></pre>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h4>Storage Monitoring</h4>
+                        <p>Monitor the temp_files directory regularly to ensure adequate disk space. Consider implementing disk usage alerts for production environments.</p>
+                    </div>
+                </section>
+
+                <section id="deployment" class="content-section">
+                    <h2>Deployment Configuration</h2>
+                    <p>Production deployment configuration and best practices for AbhiStat.</p>
+                    
+                    <h3>Environment Variables</h3>
+                    <div class="code-block">
+                        <pre><code># Backend (.env)
+MONGODB_URI=mongodb://localhost:27017
+JWT_SECRET=your-secure-secret-key
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# Frontend (config.ts)
+VITE_API_BASE_URL=https://api.abhistat.com
+VITE_GOOGLE_CLIENT_ID=your-google-client-id</code></pre>
+                    </div>
+                    
+                    <h3>CORS Configuration</h3>
+                    <div class="code-block">
+                        <pre><code>allow_origins=[
+    "http://localhost:5173",      # Development
+    "https://13.203.202.28",      # Production IP
+    "https://abhistat.com",       # Production domain
+    "https://www.abhistat.com",   # Production www
+    "http://abhistat.com",        # HTTP fallback
+    "http://www.abhistat.com"     # HTTP www fallback
+]</code></pre>
+                    </div>
+                    
+                    <h3>Production Checklist</h3>
+                    <div class="checklist">
+                        <ul>
+                            <li>✓ Set secure JWT secret key</li>
+                            <li>✓ Configure MongoDB connection string</li>
+                            <li>✓ Set up SSL certificates</li>
+                            <li>✓ Configure CORS for production domains</li>
+                            <li>✓ Set up file cleanup monitoring</li>
+                            <li>✓ Configure logging and error tracking</li>
+                            <li>✓ Set up backup procedures</li>
+                            <li>✓ Configure load balancing (if needed)</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="administrative-guides" class="content-section">
+                    <h2>Administrative Guides</h2>
+                    <p>Comprehensive guides for system administrators managing AbhiStat deployments.</p>
+                    
+                    <h3>User Management</h3>
+                    <div class="admin-section">
+                        <h4>Managing External Users</h4>
+                        <p>External users are stored in the MongoDB <code>external_users</code> collection. Here are common administrative tasks:</p>
+                        
+                        <div class="admin-task">
+                            <h5>View All Users</h5>
+                            <div class="code-block">
+                                <pre><code># MongoDB Shell
+use abhitech_stat_tool
+db.external_users.find({}, {password: 0}).pretty()
+
+# Python Script
+from pymongo import MongoClient
+client = MongoClient('mongodb://localhost:27017')
+db = client['abhitech_stat_tool']
+users = db.external_users.find({}, {'password': 0})
+for user in users:
+    print(user)</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-task">
+                            <h5>Delete User Account</h5>
+                            <div class="code-block">
+                                <pre><code># MongoDB Shell
+db.external_users.deleteOne({"email": "user@example.com"})
+
+# Python Script
+result = db.external_users.delete_one({"email": "user@example.com"})
+print(f"Deleted {result.deleted_count} user(s)")</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-task">
+                            <h5>Reset User Password</h5>
+                            <div class="code-block">
+                                <pre><code># Python Script (requires bcrypt)
+from core.security import get_password_hash
+new_password_hash = get_password_hash("new_password")
+db.external_users.update_one(
+    {"email": "user@example.com"},
+    {"$set": {"password": new_password_hash}}
+)</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>Session Management</h3>
+                    <div class="admin-section">
+                        <h4>Monitoring Active Sessions</h4>
+                        <p>Sessions are stored in memory and can be monitored through the application.</p>
+                        
+                        <div class="admin-task">
+                            <h5>View Active Sessions</h5>
+                            <div class="code-block">
+                                <pre><code># Python Script
+from api.session import session_data_store
+print(f"Active sessions: {len(session_data_store)}")
+for session_id, data in session_data_store.items():
+    print(f"Session: {session_id}")
+    print(f"  Files: {data.get('file1_name', 'N/A')}, {data.get('file2_name', 'N/A')}")
+    print(f"  Calculated columns: {len(data.get('calculated_columns', []))}")
+    print("---")</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-task">
+                            <h5>Clear Specific Session</h5>
+                            <div class="code-block">
+                                <pre><code># Python Script
+session_id = "target-session-id"
+if session_id in session_data_store:
+    del session_data_store[session_id]
+    print(f"Session {session_id} cleared")
+else:
+    print("Session not found")</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-task">
+                            <h5>Clear All Sessions</h5>
+                            <div class="code-block">
+                                <pre><code># Python Script
+session_count = len(session_data_store)
+session_data_store.clear()
+print(f"Cleared {session_count} sessions")</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>File System Management</h3>
+                    <div class="admin-section">
+                        <h4>Storage Monitoring</h4>
+                        <p>Monitor and manage the temporary file storage system.</p>
+                        
+                        <div class="admin-task">
+                            <h5>Check Storage Usage</h5>
+                            <div class="code-block">
+                                <pre><code># Linux/macOS
+du -sh temp_files/
+df -h .
+
+# Python Script
+import os
+from pathlib import Path
+
+def get_directory_size(path):
+    total = 0
+    for entry in os.scandir(path):
+        if entry.is_file():
+            total += entry.stat().st_size
+        elif entry.is_dir():
+            total += get_directory_size(entry.path)
+    return total
+
+temp_dir = Path("./temp_files")
+if temp_dir.exists():
+    size_bytes = get_directory_size(temp_dir)
+    size_mb = size_bytes / (1024 * 1024)
+    print(f"Temp files directory size: {size_mb:.2f} MB")</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-task">
+                            <h5>List Session Directories</h5>
+                            <div class="code-block">
+                                <pre><code># Python Script
+from pathlib import Path
+from datetime import datetime
+
+temp_dir = Path("./temp_files")
+if temp_dir.exists():
+    for session_dir in temp_dir.iterdir():
+        if session_dir.is_dir():
+            modified_time = datetime.fromtimestamp(session_dir.stat().st_mtime)
+            file_count = len(list(session_dir.glob("*")))
+            print(f"Session: {session_dir.name}")
+            print(f"  Modified: {modified_time}")
+            print(f"  Files: {file_count}")
+            print("---")</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-task">
+                            <h5>Manual Cleanup</h5>
+                            <div class="code-block">
+                                <pre><code># Python Script
+from utils import cleanup_expired_files
+import asyncio
+
+# Run cleanup manually
+asyncio.run(cleanup_expired_files())
+print("Manual cleanup completed")</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>System Monitoring</h3>
+                    <div class="admin-section">
+                        <h4>Health Checks</h4>
+                        <p>Monitor system health and performance metrics.</p>
+                        
+                        <div class="admin-task">
+                            <h5>API Health Check</h5>
+                            <div class="code-block">
+                                <pre><code># curl command
+curl -X GET "http://localhost:8000/" -H "accept: application/json"
+
+# Python script
+import requests
+try:
+    response = requests.get("http://localhost:8000/")
+    if response.status_code == 200:
+        print("API is healthy")
+        print(response.json())
+    else:
+        print(f"API health check failed: {response.status_code}")
+except Exception as e:
+    print(f"API is unreachable: {e}")</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-task">
+                            <h5>Database Connection Check</h5>
+                            <div class="code-block">
+                                <pre><code># Python Script
+from core.db import mongo_client
+try:
+    # Test connection
+    mongo_client.admin.command('ping')
+    print("MongoDB connection is healthy")
+    
+    # Check database stats
+    db = mongo_client['abhitech_stat_tool']
+    stats = db.command("dbstats")
+    print(f"Database size: {stats['dataSize']} bytes")
+    print(f"Collections: {stats['collections']}")
+    print(f"Objects: {stats['objects']}")
+except Exception as e:
+    print(f"MongoDB connection failed: {e}")</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>Backup and Recovery</h3>
+                    <div class="admin-section">
+                        <h4>Database Backup</h4>
+                        <div class="admin-task">
+                            <h5>Create MongoDB Backup</h5>
+                            <div class="code-block">
+                                <pre><code># MongoDB dump
+mongodump --db abhitech_stat_tool --out ./backups/$(date +%Y%m%d_%H%M%S)
+
+# Automated backup script
+#!/bin/bash
+BACKUP_DIR="./backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+mkdir -p $BACKUP_DIR
+
+mongodump --db abhitech_stat_tool --out $BACKUP_DIR/$DATE
+echo "Backup created: $BACKUP_DIR/$DATE"
+
+# Keep only last 7 days of backups
+find $BACKUP_DIR -type d -mtime +7 -exec rm -rf {} \;</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-task">
+                            <h5>Restore from Backup</h5>
+                            <div class="code-block">
+                                <pre><code># MongoDB restore
+mongorestore --db abhitech_stat_tool ./backups/20241201_120000/abhitech_stat_tool/
+
+# Restore specific collection
+mongorestore --db abhitech_stat_tool --collection external_users ./backups/20241201_120000/abhitech_stat_tool/external_users.bson</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>Security Management</h3>
+                    <div class="admin-section">
+                        <h4>JWT Token Management</h4>
+                        <div class="admin-task">
+                            <h5>Rotate JWT Secret</h5>
+                            <div class="code-block">
+                                <pre><code># 1. Generate new secret
+import secrets
+new_secret = secrets.token_urlsafe(32)
+print(f"New JWT secret: {new_secret}")
+
+# 2. Update environment variable
+# Update .env file:
+# JWT_SECRET=new_secret_here
+
+# 3. Restart application
+# All existing tokens will be invalidated</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-task">
+                            <h5>Monitor Failed Login Attempts</h5>
+                            <div class="code-block">
+                                <pre><code># Add to application logging
+import logging
+from datetime import datetime
+
+# In auth.py, add logging for failed attempts
+@router.post("/login")
+async def login_user(data: LoginRequest):
+    user = external_users.find_one({"email": data.email})
+    if not user or not verify_password(data.password, user["password"]):
+        logging.warning(f"Failed login attempt for {data.email} at {datetime.now()}")
+        raise HTTPException(status_code=401, detail="Invalid email or password.")</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>Performance Optimization</h3>
+                    <div class="admin-section">
+                        <h4>Database Optimization</h4>
+                        <div class="admin-task">
+                            <h5>Create Database Indexes</h5>
+                            <div class="code-block">
+                                <pre><code># MongoDB Shell
+use abhitech_stat_tool
+
+# Create index on email field for faster lookups
+db.external_users.createIndex({"email": 1}, {"unique": true})
+
+# Create index on created_at for time-based queries
+db.external_users.createIndex({"created_at": 1})
+
+# View existing indexes
+db.external_users.getIndexes()</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-task">
+                            <h5>Monitor Query Performance</h5>
+                            <div class="code-block">
+                                <pre><code># MongoDB Shell - Enable profiling
+db.setProfilingLevel(2)
+
+# View slow queries
+db.system.profile.find().limit(5).sort({ts: -1}).pretty()
+
+# Disable profiling
+db.setProfilingLevel(0)</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h4>Security Notice</h4>
+                        <p>Always test administrative commands in a development environment before running in production. Ensure proper backups are in place before making any system changes.</p>
+                    </div>
+                </section>
+
+                <div class="navigation-buttons">
+                    <a href="troubleshooting.html" class="btn btn-secondary">← Previous: Troubleshooting</a>
+                    <a href="index.html" class="btn btn-primary">Back to Home</a>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="assets/js/navigation.js"></script>
+</body>
+</html>
