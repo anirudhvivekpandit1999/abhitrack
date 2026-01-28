@@ -69,6 +69,12 @@ const FullExcelFile = () => {
     }
   };
 
+  const addSheet = (sheetName) => {
+    setSheetNames((prev) => [...prev, sheetName]);
+    setExcelData((prev) => [...prev, { sheetName, sheetData: [] }]);
+    setSelectedSheet(sheetName);
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
       <div className="mx-auto max-w-md rounded-2xl border-2 border-dashed bg-slate-50 p-8 text-center transition hover:border-blue-500 hover:bg-blue-50 hover:shadow-lg">
@@ -145,14 +151,14 @@ const FullExcelFile = () => {
                 <div className="mt-3">
                   <input
                     value={newSheetName}
-                    onChange={(e) => setNewSheetName(e.target.value)}
+                    onChange={(e) => {setNewSheetName(e.target.value);}}
                     placeholder="Enter sheet/file name"
                     className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                   />
                 </div>
                 <div className="mt-3 flex gap-2">
                   <button
-                    onClick={handleCreateNewExcel}
+                    onClick={()=> addSheet(newSheetName)}
                     className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-60"
                     disabled={addLoading}
                   >
