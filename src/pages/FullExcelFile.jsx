@@ -14,12 +14,18 @@ const FullExcelFile = () => {
   const [newSheetName, setNewSheetName] = useState("");
   const [copyFromSheet, setCopyFromSheet] = useState(""); // NEW: selected previous sheet to copy from
   const [addLoading, setAddLoading] = useState(false);
+  const [columnNames , setColumnNames] = useState([]);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     const found = excelData.find((s) => s.sheetName === selectedSheet);
     setSelectedSheetData(found ? found.sheetData : []);
+    console.log("DEBUG Excel Data : ",excelData)
   }, [selectedSheet, excelData]);
+
+  useEffect(()=> {
+    console.log("DEBUG Column Names : ",columnNames)
+  },[columnNames]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -212,7 +218,7 @@ const FullExcelFile = () => {
                   <label className="block text-xs text-slate-600">Copy from existing sheet (optional)</label>
                   <select
                     value={copyFromSheet}
-                    onChange={(e) => setCopyFromSheet(e.target.value)}
+                    onChange={(e) => {setCopyFromSheet(e.target.value);setColumnNames(excelData.find(s => s.sheetName === e.target.value)?.sheetData.length > 0 ? Object.keys(excelData.find(s => s.sheetName === e.target.value).sheetData[0]) : []);}}
                     className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">-- Do not copy (create blank sheet) --</option>
