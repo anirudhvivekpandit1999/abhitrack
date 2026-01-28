@@ -32,7 +32,7 @@ const Login = () => {
 
   useEffect(() => {
     if (auth?.user || isAuthenticated()) {
-      navigate("/data-file-checks", { replace: true });
+      navigate("/full-excel-file", { replace: true });
     }
   }, [auth?.user, navigate]);
 

@@ -24,7 +24,7 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate('/data-file-checks', { replace: true });
+      navigate('/full-excel-file', { replace: true });
     }
   }, [navigate]);
 
@@ -93,6 +93,7 @@ const Login = () => {
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     setError('');
+    console.log('Google Credential Response:', credentialResponse);
 
     try {
       const res = await fetch('https://abhistat.com/api/google-login', {

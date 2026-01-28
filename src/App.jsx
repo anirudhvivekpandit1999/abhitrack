@@ -6,6 +6,7 @@ import ProtectedRoute from './ProtectedRoute';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import FullExcelFile from './pages/FullExcelFile';
 
 const Login = lazy(() => import('./pages/Login'));
 const Landing = lazy(() => import('./pages/Landing'));
@@ -36,6 +37,7 @@ function App() {
           <Route path="/non-abhitech-signup" element={<NonAbhitechSignup />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/" element={<Landing />} />
+          <Route path="/full-excel-file" element={<FullExcelFile />} />
           <Route path="/data-file-checks" element={<ProtectedRoute><DataFileChecks /></ProtectedRoute>} />
           <Route path="/calculated-columns-builder" element={<ProtectedRoute><CalculatedColumnsBuilder /></ProtectedRoute>} />
           <Route path="/dependency-model" element={<ProtectedRoute><DependencyModel /></ProtectedRoute>} />
