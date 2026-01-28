@@ -27,12 +27,15 @@ const FullExcelFile = () => {
   const [selectedColumns, setSelectedColumns] = useState([""]);
   const [xAxis, setXAxis] = useState("");
   const [yAxis, setYAxis] = useState("");
+  const [bifurcateSheetNames, setBifurcateSheetNames] = useState([]);
   const fileInputRef = useRef(null);
+
+  const debounceRef = useRef(null);
 
   const addPanelRef = useRef(null);
   const [addPanelHeight, setAddPanelHeight] = useState(0);
 
-  const [rowRanges, setRowRanges] = useState([{ name: "", range: "" }]);
+  const [rowRanges, setRowRanges] = useState([{ name: "", startRange: "", endRange: "" }]);
 
   useEffect(() => {
     const found = excelData.find((s) => s.sheetName === selectedSheet);
@@ -212,11 +215,54 @@ const FullExcelFile = () => {
   };
 
   const handleRowRangeChange = (idx, field, value) => {
+
     setRowRanges(prev => {
       const next = prev.map((r, i) => i === idx ? { ...r, [field]: value } : r);
+      console.log("[DEBUG] handleRowRangeChange() next", next);
       return next;
     });
   };
+
+  const bifurcatedExcelData = (
+    sheetName,
+    baseSheetName,
+    idx
+  ) => {
+
+    const { startRange, endRange } = rowRanges[idx];
+    console.log("[DEBUG] bifurcatedExcelData() startRange", startRange);
+    console.log("[DEBUG] bifurcatedExcelData() endRange", endRange);
+
+    setExcelData(prev => {
+      const baseSheet = prev.find(s => s.sheetName === baseSheetName);
+      if (!baseSheet) return prev;
+
+      const sheetRows = Array.isArray(baseSheet.sheetData) ? baseSheet.sheetData : [];
+
+      const range = parseRange(`${startRange}-${endRange}`);
+      const rows = range ? sheetRows.slice(range[0], range[1] + 1) : sheetRows;
+
+      const newSheetName = `${sheetName}_${idx}`;
+      setSheetNames([...sheetNames, newSheetName]);
+
+      const withoutOldVersion = prev.filter(s => s.sheetName !== newSheetName);
+
+      const newSheet = {
+        sheetName: newSheetName,
+        sheetData: rows
+      };
+
+      console.log("📄 Creating bifurcated sheet:", newSheetName);
+      console.log("Rows copied:", rows.length);
+      console.table(rows.slice(0, 5));
+
+      return [...withoutOldVersion, newSheet];
+    });
+
+    console.log("[DEBUG] bifurcatedExcelData() completed", excelData);
+
+  };
+
 
   const filteredData = selectedSheetData.map(row => {
     const newRow = {};
@@ -355,8 +401,26 @@ const FullExcelFile = () => {
                             className="w-1/2 rounded-md border px-3 py-2 text-sm"
                           />
                           <input
-                            value={rr.range}
-                            onChange={(e) => handleRowRangeChange(idx, "range", e.target.value)}
+                            value={rr.startRange}
+                            onChange={(e) => handleRowRangeChange(idx, "startRange", e.target.value)}
+                            placeholder="e.g. 1"
+                            className="w-1/2 rounded-md border px-3 py-2 text-sm"
+                          />
+                          <input
+                            value={rr.endRange}
+                            onChange={(e) => {
+                              const value = e.target.value;
+
+                              handleRowRangeChange(idx, "endRange", value);
+
+                              if (debounceRef.current) {
+                                clearTimeout(debounceRef.current);
+                              }
+
+                              debounceRef.current = setTimeout(() => {
+                                bifurcatedExcelData(rr.name, selectedSheet, idx);
+                              }, 500);
+                            }}
                             placeholder="e.g. 1-10"
                             className="w-1/2 rounded-md border px-3 py-2 text-sm"
                           />
@@ -461,7 +525,7 @@ const FullExcelFile = () => {
                   </div>
                 </div>
 
-               
+
                 <div className="flex-1 rounded-md border bg-white p-3 shadow-lg">
                   {scatterData.length > 0 && addPanelHeight > 0 ? (
                     <div style={{ height: addPanelHeight }}>
