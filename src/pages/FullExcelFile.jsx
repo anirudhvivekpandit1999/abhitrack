@@ -94,8 +94,7 @@ const FullExcelFile = () => {
 
       // Append and write file
       XLSX.utils.book_append_sheet(wb, ws, finalName);
-      const fileNameToSave = `${finalName || "new-sheet"}.xlsx`;
-      XLSX.writeFile(wb, fileNameToSave);
+      
 
       // Update local state so UI reflects the new sheet (copied data included)
       setSheetNames((prev) => [...prev, finalName]);
