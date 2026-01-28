@@ -11,7 +11,6 @@ import {
   ResponsiveContainer
 } from "recharts";
 
-
 const FullExcelFile = () => {
   const [fileName, setFileName] = useState("");
   const [sheetNames, setSheetNames] = useState([]);
@@ -30,9 +29,10 @@ const FullExcelFile = () => {
   const [yAxis, setYAxis] = useState("");
   const fileInputRef = useRef(null);
 
- 
   const addPanelRef = useRef(null);
   const [addPanelHeight, setAddPanelHeight] = useState(0);
+
+  const [rowRanges, setRowRanges] = useState([{ name: "", range: "" }]);
 
   useEffect(() => {
     const found = excelData.find((s) => s.sheetName === selectedSheet);
@@ -63,21 +63,20 @@ const FullExcelFile = () => {
     }
   }, [xAxis, yAxis]);
 
- 
   useEffect(() => {
     const updateHeight = () => {
       if (addPanelRef.current) {
         setAddPanelHeight(addPanelRef.current.offsetHeight);
       }
     };
-    
+
     const id = setTimeout(updateHeight, 0);
     window.addEventListener("resize", updateHeight);
     return () => {
       clearTimeout(id);
       window.removeEventListener("resize", updateHeight);
     };
-  }, [showAddPanel, selectedColumns, xAxis, yAxis, columnNames, newSheetName, copyFromSheet]);
+  }, [showAddPanel, selectedColumns, xAxis, yAxis, columnNames, newSheetName, copyFromSheet, rowRanges]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -112,6 +111,18 @@ const FullExcelFile = () => {
     return name.trim().slice(0, 31);
   };
 
+  const parseRange = (r) => {
+    if (!r) return null;
+    const parts = r.split("-").map(s => s.trim());
+    if (parts.length !== 2) return null;
+    const a = parseInt(parts[0], 10);
+    const b = parseInt(parts[1], 10);
+    if (Number.isNaN(a) || Number.isNaN(b)) return null;
+    const start = Math.max(0, Math.min(a, b) - 1);
+    const end = Math.max(0, Math.max(a, b) - 1);
+    return [start, end];
+  };
+
   const handleAddSheetSubmit = async () => {
     setError(null);
     const trimmed = newSheetName.trim();
@@ -127,7 +138,26 @@ const FullExcelFile = () => {
     setAddLoading(true);
     try {
       let dataToCopy = [];
-      if (copyFromSheet) {
+      if (rowRanges && rowRanges.length > 0 && rowRanges.some(rr => rr.name)) {
+        const foundSheet = excelData.find(s => s.sheetName === selectedSheet);
+        const sheetRows = foundSheet && Array.isArray(foundSheet.sheetData) ? foundSheet.sheetData : [];
+        for (const rr of rowRanges) {
+          if (!rr.name) continue;
+          const range = parseRange(rr.range);
+          const rows = range ? sheetRows.slice(range[0], range[1] + 1) : sheetRows;
+          const picks = selectedColumns.filter((c) => c && c !== "");
+          if (picks.length > 0) {
+            const mapped = rows.map(row => {
+              const newRow = {};
+              picks.forEach(k => { newRow[k] = row[k]; });
+              return newRow;
+            });
+            dataToCopy = dataToCopy.concat(mapped);
+          } else {
+            dataToCopy = dataToCopy.concat(rows);
+          }
+        }
+      } else if (copyFromSheet) {
         const found = excelData.find((s) => s.sheetName === copyFromSheet);
         const sourceData = found ? found.sheetData || [] : [];
         const picks = selectedColumns.filter((c) => c && c !== "");
@@ -152,6 +182,7 @@ const FullExcelFile = () => {
       setCopyFromSheet("");
       setColumnNames([]);
       setSelectedColumns([""]);
+      setRowRanges([{ name: "", range: "" }]);
     } catch {
       setError("Failed to create file");
     } finally {
@@ -172,6 +203,21 @@ const FullExcelFile = () => {
     });
   };
 
+  const addRowRange = () => {
+    setRowRanges(prev => [...prev, { name: "", range: "" }]);
+  };
+
+  const removeRowRange = (idx) => {
+    setRowRanges(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleRowRangeChange = (idx, field, value) => {
+    setRowRanges(prev => {
+      const next = prev.map((r, i) => i === idx ? { ...r, [field]: value } : r);
+      return next;
+    });
+  };
+
   const filteredData = selectedSheetData.map(row => {
     const newRow = {};
     selectedColumns.forEach(col => {
@@ -186,7 +232,6 @@ const FullExcelFile = () => {
       y: Number(row[yAxis])
     }))
     .filter(point => !isNaN(point.x) && !isNaN(point.y));
-
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
@@ -259,6 +304,7 @@ const FullExcelFile = () => {
                         setError(null);
                         setColumnNames([]);
                         setSelectedColumns([""]);
+                        setRowRanges([{ name: "", range: "" }]);
                       }}
                       className="text-slate-500 hover:text-slate-700"
                     >
@@ -287,6 +333,44 @@ const FullExcelFile = () => {
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
+                  </div>
+
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-medium text-slate-600">Add sheet name & row range</div>
+                      <button
+                        onClick={addRowRange}
+                        className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {rowRanges.map((rr, idx) => (
+                        <div key={idx} className="flex gap-2">
+                          <input
+                            value={rr.name}
+                            onChange={(e) => handleRowRangeChange(idx, "name", e.target.value)}
+                            placeholder="New sheet name"
+                            className="w-1/2 rounded-md border px-3 py-2 text-sm"
+                          />
+                          <input
+                            value={rr.range}
+                            onChange={(e) => handleRowRangeChange(idx, "range", e.target.value)}
+                            placeholder="e.g. 1-10"
+                            className="w-1/2 rounded-md border px-3 py-2 text-sm"
+                          />
+                          {rowRanges.length > 1 && (
+                            <button
+                              onClick={() => removeRowRange(idx)}
+                              className="ml-1 rounded-md bg-red-600 px-2 py-1 text-xs text-white"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-4">
@@ -353,7 +437,6 @@ const FullExcelFile = () => {
                     </div>
                   </div>
 
-
                   {error && <div className="mt-3 text-xs text-red-600">{error}</div>}
 
                   <div className="mt-3 flex gap-2">
@@ -403,6 +486,10 @@ const FullExcelFile = () => {
           <div className="p-4">
             {selectedSheetData.length > 0 ? (
               <div className="relative overflow-auto rounded-lg border">
+                <div className="absolute right-2 top-2 z-10 rounded bg-slate-800 px-2 py-0.5 text-xs text-white md:hidden">
+                  Scroll →
+                </div>
+
                 <table className="min-w-full text-sm border-separate" style={{ borderSpacing: 0 }}>
                   <thead className="sticky top-0 bg-slate-100 shadow-sm">
                     <tr>
