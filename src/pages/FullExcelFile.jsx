@@ -224,6 +224,43 @@ const FullExcelFile = () => {
                   </select>
                 </div>
 
+                <div className="mt-4 grid grid-cols-2 gap-3">
+  {/* X Axis */}
+  <div>
+    <label
+      htmlFor="xAxis"
+      className="block text-xs font-medium text-slate-600 mb-1"
+    >
+      X-Axis Column
+    </label>
+    <input
+      type="text"
+      id="xAxis"
+      name="xAxis"
+      placeholder="Enter column name"
+      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+    />
+  </div>
+
+  {/* Y Axis */}
+  <div>
+    <label
+      htmlFor="yAxis"
+      className="block text-xs font-medium text-slate-600 mb-1"
+    >
+      Y-Axis Column
+    </label>
+    <input
+      type="text"
+      id="yAxis"
+      name="yAxis"
+      placeholder="Enter column name"
+      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+    />
+  </div>
+</div>
+
+
                 {error && <div className="mt-3 text-xs text-red-600">{error}</div>}
 
                 <div className="mt-3 flex gap-2">
