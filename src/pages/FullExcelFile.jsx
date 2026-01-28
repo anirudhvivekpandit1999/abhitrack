@@ -12,20 +12,31 @@ const FullExcelFile = () => {
   const [error, setError] = useState(null);
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [newSheetName, setNewSheetName] = useState("");
-  const [copyFromSheet, setCopyFromSheet] = useState(""); // NEW: selected previous sheet to copy from
+  const [copyFromSheet, setCopyFromSheet] = useState("");
   const [addLoading, setAddLoading] = useState(false);
-  const [columnNames , setColumnNames] = useState([]);
+  const [columnNames, setColumnNames] = useState([]);
+  const [selectedColumns, setSelectedColumns] = useState([""]);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     const found = excelData.find((s) => s.sheetName === selectedSheet);
     setSelectedSheetData(found ? found.sheetData : []);
-    console.log("DEBUG Excel Data : ",excelData)
   }, [selectedSheet, excelData]);
 
-  useEffect(()=> {
-    console.log("DEBUG Column Names : ",columnNames)
-  },[columnNames]);
+  useEffect(() => {
+    if (!copyFromSheet) {
+      setColumnNames([]);
+      setSelectedColumns([""]);
+      return;
+    }
+    const found = excelData.find((s) => s.sheetName === copyFromSheet);
+    const cols =
+      found && Array.isArray(found.sheetData) && found.sheetData.length > 0
+        ? Object.keys(found.sheetData[0])
+        : [];
+    setColumnNames(cols);
+    setSelectedColumns([""]);
+  }, [copyFromSheet, excelData]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -55,13 +66,11 @@ const FullExcelFile = () => {
     reader.readAsBinaryString(file);
   };
 
-  // Helper to sanitize/limit sheet name to 31 chars (Excel limit)
   const normalizeSheetName = (name) => {
     if (!name) return "";
     return name.trim().slice(0, 31);
   };
 
-  // Called when user submits the create/add panel
   const handleAddSheetSubmit = async () => {
     setError(null);
     const trimmed = newSheetName.trim();
@@ -74,59 +83,52 @@ const FullExcelFile = () => {
       setError("A sheet with that name already exists");
       return;
     }
-
     setAddLoading(true);
     try {
-      // Build workbook and worksheet
-      const wb = XLSX.utils.book_new();
-      let ws;
       let dataToCopy = [];
-
       if (copyFromSheet) {
         const found = excelData.find((s) => s.sheetName === copyFromSheet);
-        dataToCopy = found ? found.sheetData || [] : [];
-        // If there is JSON-like data (array of objects) use json_to_sheet,
-        // otherwise fallback to a single empty cell.
-        if (Array.isArray(dataToCopy) && dataToCopy.length > 0) {
-          ws = XLSX.utils.json_to_sheet(dataToCopy);
+        const sourceData = found ? found.sheetData || [] : [];
+        const picks = selectedColumns.filter((c) => c && c !== "");
+        if (picks.length > 0 && sourceData.length > 0) {
+          dataToCopy = sourceData.map((row) => {
+            const newRow = {};
+            picks.forEach((k) => (newRow[k] = row[k]));
+            return newRow;
+          });
         } else {
-          // no rows — create an empty sheet with one blank cell
-          ws = XLSX.utils.aoa_to_sheet([[""]]);
+          dataToCopy = sourceData;
         }
-      } else {
-        // No copy requested — create minimal blank sheet
-        ws = XLSX.utils.aoa_to_sheet([[""]]);
       }
-
-      // Append and write file
-      XLSX.utils.book_append_sheet(wb, ws, finalName);
-      
-
-      // Update local state so UI reflects the new sheet (copied data included)
       setSheetNames((prev) => [...prev, finalName]);
       setExcelData((prev) => [
         ...prev,
-        { sheetName: finalName, sheetData: Array.isArray(dataToCopy) ? dataToCopy : [] },
+        { sheetName: finalName, sheetData: dataToCopy },
       ]);
       setSelectedSheet(finalName);
-
-      // Reset add panel UI
       setShowAddPanel(false);
       setNewSheetName("");
       setCopyFromSheet("");
-    } catch (err) {
-      console.error(err);
+      setColumnNames([]);
+      setSelectedColumns([""]);
+    } catch {
       setError("Failed to create file");
     } finally {
       setAddLoading(false);
     }
   };
 
-  const addSheet = (sheetName) => {
-    // keep this helper for other flows if you still want to add sheet to UI without writing file
-    setSheetNames((prev) => [...prev, sheetName]);
-    setExcelData((prev) => [...prev, { sheetName, sheetData: [] }]);
-    setSelectedSheet(sheetName);
+  const handleAddColumnSelector = () => {
+    if (selectedColumns.length >= columnNames.length) return;
+    setSelectedColumns((prev) => [...prev, ""]);
+  };
+
+  const handleColumnChange = (index, value) => {
+    setSelectedColumns((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
   };
 
   return (
@@ -167,7 +169,6 @@ const FullExcelFile = () => {
                 <button
                   onClick={() => setShowAddPanel((s) => !s)}
                   className="ml-2 inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-green-700 focus:outline-none"
-                  aria-label="Add sheet or create new file"
                 >
                   <span className="text-lg leading-none">+</span>
                 </button>
@@ -197,74 +198,84 @@ const FullExcelFile = () => {
                       setNewSheetName("");
                       setCopyFromSheet("");
                       setError(null);
+                      setColumnNames([]);
+                      setSelectedColumns([""]);
                     }}
                     className="text-slate-500 hover:text-slate-700"
-                    aria-label="Close"
                   >
                     ✕
                   </button>
                 </div>
+
                 <div className="mt-3">
                   <input
                     value={newSheetName}
-                    onChange={(e) => { setNewSheetName(e.target.value); }}
+                    onChange={(e) => setNewSheetName(e.target.value)}
                     placeholder="Enter sheet/file name"
                     className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                   />
                 </div>
 
-                {/* NEW: dropdown to select existing sheet to copy from */}
                 <div className="mt-3">
                   <label className="block text-xs text-slate-600">Copy from existing sheet (optional)</label>
                   <select
                     value={copyFromSheet}
-                    onChange={(e) => {setCopyFromSheet(e.target.value);setColumnNames(excelData.find(s => s.sheetName === e.target.value)?.sheetData.length > 0 ? Object.keys(excelData.find(s => s.sheetName === e.target.value).sheetData[0]) : []);}}
+                    onChange={(e) => setCopyFromSheet(e.target.value)}
                     className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">-- Do not copy (create blank sheet) --</option>
                     {sheetNames.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
+                      <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
                 </div>
-
                 <div className="mt-4 grid grid-cols-2 gap-3">
-  {/* X Axis */}
-  <div>
-    <label
-      htmlFor="xAxis"
-      className="block text-xs font-medium text-slate-600 mb-1"
-    >
-      X-Axis Column
-    </label>
-    <input
-      type="text"
-      id="xAxis"
-      name="xAxis"
-      placeholder="Enter column name"
-      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-    />
-  </div>
+                  <input
+                    type="text"
+                    placeholder="X-Axis Column"
+                    className="w-full rounded-md border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Y-Axis Column"
+                    className="w-full rounded-md border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
 
-  {/* Y Axis */}
-  <div>
-    <label
-      htmlFor="yAxis"
-      className="block text-xs font-medium text-slate-600 mb-1"
-    >
-      Y-Axis Column
-    </label>
-    <input
-      type="text"
-      id="yAxis"
-      name="yAxis"
-      placeholder="Enter column name"
-      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-    />
-  </div>
-</div>
+
+
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-medium text-slate-600">Select columns to keep</div>
+                    <button
+                      onClick={handleAddColumnSelector}
+                      disabled={columnNames.length === 0 || selectedColumns.length >= columnNames.length}
+                      className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {selectedColumns.map((sel, idx) => {
+                      const available = columnNames.filter((c) => c === sel || !selectedColumns.includes(c));
+                      return (
+                        <select
+                          key={idx}
+                          value={sel}
+                          onChange={(e) => handleColumnChange(idx, e.target.value)}
+                          className="w-full rounded-md border px-3 py-2 text-sm"
+                        >
+                          <option value="">-- select column --</option>
+                          {available.map((col) => (
+                            <option key={col} value={col}>{col}</option>
+                          ))}
+                        </select>
+                      );
+                    })}
+                  </div>
+                </div>
+
 
 
                 {error && <div className="mt-3 text-xs text-red-600">{error}</div>}
@@ -296,19 +307,11 @@ const FullExcelFile = () => {
           <div className="p-4">
             {selectedSheetData.length > 0 ? (
               <div className="relative overflow-auto rounded-lg border">
-                <div className="absolute right-2 top-2 z-10 rounded bg-slate-800 px-2 py-0.5 text-xs text-white md:hidden">
-                  Scroll →
-                </div>
-
                 <table className="min-w-full text-sm border-separate" style={{ borderSpacing: 0 }}>
                   <thead className="sticky top-0 bg-slate-100 shadow-sm">
                     <tr>
                       {Object.keys(selectedSheetData[0]).map((key) => (
-                        <th
-                          key={key}
-                          className="whitespace-nowrap border-r border-b px-4 py-2 text-left font-semibold text-slate-700"
-                          style={{ borderColor: "rgba(226,232,240,1)" }}
-                        >
+                        <th key={key} className="border px-4 py-2 text-left font-semibold text-slate-700">
                           {key}
                         </th>
                       ))}
@@ -316,19 +319,9 @@ const FullExcelFile = () => {
                   </thead>
                   <tbody>
                     {selectedSheetData.map((row, i) => (
-                      <tr
-                        key={i}
-                        className={`${i % 2 === 0 ? "bg-white" : "bg-slate-50"} hover:bg-blue-50`}
-                      >
+                      <tr key={i}>
                         {Object.keys(selectedSheetData[0]).map((k, j) => (
-                          <td
-                            key={j}
-                            className="max-w-[240px] truncate whitespace-nowrap border-r border-b px-4 py-2 text-slate-700"
-                            title={row[k]}
-                            style={{ borderColor: "rgba(226,232,240,1)" }}
-                          >
-                            {row[k]}
-                          </td>
+                          <td key={j} className="border px-4 py-2">{row[k]}</td>
                         ))}
                       </tr>
                     ))}
