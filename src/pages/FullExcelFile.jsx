@@ -27,8 +27,12 @@ const FullExcelFile = () => {
   const [columnNames, setColumnNames] = useState([]);
   const [selectedColumns, setSelectedColumns] = useState([""]);
   const [xAxis, setXAxis] = useState("");
-const [yAxis, setYAxis] = useState("");
+  const [yAxis, setYAxis] = useState("");
   const fileInputRef = useRef(null);
+
+ 
+  const addPanelRef = useRef(null);
+  const [addPanelHeight, setAddPanelHeight] = useState(0);
 
   useEffect(() => {
     const found = excelData.find((s) => s.sheetName === selectedSheet);
@@ -51,13 +55,29 @@ const [yAxis, setYAxis] = useState("");
   }, [copyFromSheet, excelData]);
 
   useEffect(() => {
-  if (xAxis && !selectedColumns.includes(xAxis)) {
-    setSelectedColumns(prev => [...prev, xAxis]);
-  }
-  if (yAxis && !selectedColumns.includes(yAxis)) {
-    setSelectedColumns(prev => [...prev, yAxis]);
-  }
-}, [xAxis, yAxis]);
+    if (xAxis && !selectedColumns.includes(xAxis)) {
+      setSelectedColumns((prev) => [...prev, xAxis]);
+    }
+    if (yAxis && !selectedColumns.includes(yAxis)) {
+      setSelectedColumns((prev) => [...prev, yAxis]);
+    }
+  }, [xAxis, yAxis]);
+
+ 
+  useEffect(() => {
+    const updateHeight = () => {
+      if (addPanelRef.current) {
+        setAddPanelHeight(addPanelRef.current.offsetHeight);
+      }
+    };
+    
+    const id = setTimeout(updateHeight, 0);
+    window.addEventListener("resize", updateHeight);
+    return () => {
+      clearTimeout(id);
+      window.removeEventListener("resize", updateHeight);
+    };
+  }, [showAddPanel, selectedColumns, xAxis, yAxis, columnNames, newSheetName, copyFromSheet]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -153,19 +173,19 @@ const [yAxis, setYAxis] = useState("");
   };
 
   const filteredData = selectedSheetData.map(row => {
-  const newRow = {};
-  selectedColumns.forEach(col => {
-    if (col) newRow[col] = row[col];
+    const newRow = {};
+    selectedColumns.forEach(col => {
+      if (col) newRow[col] = row[col];
+    });
+    return newRow;
   });
-  return newRow;
-});
 
-const scatterData = filteredData
-  .map(row => ({
-    x: Number(row[xAxis]),
-    y: Number(row[yAxis])
-  }))
-  .filter(point => !isNaN(point.x) && !isNaN(point.y));
+  const scatterData = filteredData
+    .map(row => ({
+      x: Number(row[xAxis]),
+      y: Number(row[yAxis])
+    }))
+    .filter(point => !isNaN(point.x) && !isNaN(point.y));
 
 
   return (
@@ -226,151 +246,157 @@ const scatterData = filteredData
             </div>
 
             {showAddPanel && (
-              <div className="mt-3 w-full sm:w-96 rounded-md border bg-slate-50 p-3 shadow-lg">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-sm font-medium text-slate-800">Create new Excel</div>
-                  <button
-                    onClick={() => {
-                      setShowAddPanel(false);
-                      setNewSheetName("");
-                      setCopyFromSheet("");
-                      setError(null);
-                      setColumnNames([]);
-                      setSelectedColumns([""]);
-                    }}
-                    className="text-slate-500 hover:text-slate-700"
-                  >
-                    ✕
-                  </button>
-                </div>
 
-                <div className="mt-3">
-                  <input
-                    value={newSheetName}
-                    onChange={(e) => setNewSheetName(e.target.value)}
-                    placeholder="Enter sheet/file name"
-                    className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  />
-                </div>
-
-                <div className="mt-3">
-                  <label className="block text-xs text-slate-600">Copy from existing sheet (optional)</label>
-                  <select
-                    value={copyFromSheet}
-                    onChange={(e) => setCopyFromSheet(e.target.value)}
-                    className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  >
-                    <option value="">-- Do not copy (create blank sheet) --</option>
-                    {sheetNames.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4 mt-4">
-  <div>
-    <label className="block text-xs font-medium text-slate-600 mb-1">X-Axis</label>
-    <select
-      value={xAxis}
-      onChange={(e) => setXAxis(e.target.value)}
-      className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm"
-    >
-      <option value="">Select column</option>
-      {selectedSheetData.length > 0 &&
-        Object.keys(selectedSheetData[0]).map((col) => (
-          <option key={col} value={col}>{col}</option>
-        ))}
-    </select>
-  </div>
-
-  <div>
-    <label className="block text-xs font-medium text-slate-600 mb-1">Y-Axis</label>
-    <select
-      value={yAxis}
-      onChange={(e) => setYAxis(e.target.value)}
-      className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm"
-    >
-      <option value="">Select column</option>
-      {selectedSheetData.length > 0 &&
-        Object.keys(selectedSheetData[0]).map((col) => (
-          <option key={col} value={col}>{col}</option>
-        ))}
-    </select>
-  </div>
-</div>
-
-
-
-
-                <div className="mt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs font-medium text-slate-600">Select columns to keep</div>
+              <div className="mt-3 flex gap-4 items-start">
+                <div ref={addPanelRef} className="w-full sm:w-96 rounded-md border bg-slate-50 p-3 shadow-lg">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-sm font-medium text-slate-800">Create new Excel</div>
                     <button
-                      onClick={handleAddColumnSelector}
-                      disabled={columnNames.length === 0 || selectedColumns.length >= columnNames.length}
-                      className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                      onClick={() => {
+                        setShowAddPanel(false);
+                        setNewSheetName("");
+                        setCopyFromSheet("");
+                        setError(null);
+                        setColumnNames([]);
+                        setSelectedColumns([""]);
+                      }}
+                      className="text-slate-500 hover:text-slate-700"
                     >
-                      +
+                      ✕
                     </button>
                   </div>
 
-                  <div className="space-y-2">
-                    {selectedColumns.map((sel, idx) => {
-                      const available = columnNames.filter((c) => c === sel || !selectedColumns.includes(c));
-                      return (
-                        <select
-                          key={idx}
-                          value={sel}
-                          onChange={(e) => handleColumnChange(idx, e.target.value)}
-                          className="w-full rounded-md border px-3 py-2 text-sm"
-                        >
-                          <option value="">-- select column --</option>
-                          {available.map((col) => (
+                  <div className="mt-3">
+                    <input
+                      value={newSheetName}
+                      onChange={(e) => setNewSheetName(e.target.value)}
+                      placeholder="Enter sheet/file name"
+                      className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    />
+                  </div>
+
+                  <div className="mt-3">
+                    <label className="block text-xs text-slate-600">Copy from existing sheet (optional)</label>
+                    <select
+                      value={copyFromSheet}
+                      onChange={(e) => setCopyFromSheet(e.target.value)}
+                      className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    >
+                      <option value="">-- Do not copy (create blank sheet) --</option>
+                      {sheetNames.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">X-Axis</label>
+                      <select
+                        value={xAxis}
+                        onChange={(e) => setXAxis(e.target.value)}
+                        className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm"
+                      >
+                        <option value="">Select column</option>
+                        {selectedSheetData.length > 0 &&
+                          Object.keys(selectedSheetData[0]).map((col) => (
                             <option key={col} value={col}>{col}</option>
                           ))}
-                        </select>
-                      );
-                    })}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Y-Axis</label>
+                      <select
+                        value={yAxis}
+                        onChange={(e) => setYAxis(e.target.value)}
+                        className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm"
+                      >
+                        <option value="">Select column</option>
+                        {selectedSheetData.length > 0 &&
+                          Object.keys(selectedSheetData[0]).map((col) => (
+                            <option key={col} value={col}>{col}</option>
+                          ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-medium text-slate-600">Select columns to keep</div>
+                      <button
+                        onClick={handleAddColumnSelector}
+                        disabled={columnNames.length === 0 || selectedColumns.length >= columnNames.length}
+                        className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {selectedColumns.map((sel, idx) => {
+                        const available = columnNames.filter((c) => c === sel || !selectedColumns.includes(c));
+                        return (
+                          <select
+                            key={idx}
+                            value={sel}
+                            onChange={(e) => handleColumnChange(idx, e.target.value)}
+                            className="w-full rounded-md border px-3 py-2 text-sm"
+                          >
+                            <option value="">-- select column --</option>
+                            {available.map((col) => (
+                              <option key={col} value={col}>{col}</option>
+                            ))}
+                          </select>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+
+                  {error && <div className="mt-3 text-xs text-red-600">{error}</div>}
+
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={handleAddSheetSubmit}
+                      className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-60"
+                      disabled={addLoading}
+                    >
+                      {addLoading ? "Creating..." : "Submit"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAddPanel(false);
+                        setNewSheetName("");
+                        setCopyFromSheet("");
+                        setError(null);
+                      }}
+                      className="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 border hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
 
-
-
-                {error && <div className="mt-3 text-xs text-red-600">{error}</div>}
-
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={handleAddSheetSubmit}
-                    className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-60"
-                    disabled={addLoading}
-                  >
-                    {addLoading ? "Creating..." : "Submit"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowAddPanel(false);
-                      setNewSheetName("");
-                      setCopyFromSheet("");
-                      setError(null);
-                    }}
-                    className="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 border hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
+               
+                <div className="flex-1 rounded-md border bg-white p-3 shadow-lg">
+                  {scatterData.length > 0 && addPanelHeight > 0 ? (
+                    <div style={{ height: addPanelHeight }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                          <CartesianGrid />
+                          <XAxis type="number" dataKey="x" name={xAxis} />
+                          <YAxis type="number" dataKey="y" name={yAxis} />
+                          <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                          <Scatter data={scatterData} fill="#6366f1" />
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-72 flex items-center justify-center text-xs text-slate-500">No scatter data</div>
+                  )}
                 </div>
-                {scatterData.length > 0 && (
-  <ResponsiveContainer width="100%" height={300}>
-    <ScatterChart>
-      <CartesianGrid />
-      <XAxis type="number" dataKey="x" name={xAxis} />
-      <YAxis type="number" dataKey="y" name={yAxis} />
-      <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-      <Scatter data={scatterData} fill="#6366f1" />
-    </ScatterChart>
-  </ResponsiveContainer>
-)}
               </div>
-
-              
             )}
           </div>
 
