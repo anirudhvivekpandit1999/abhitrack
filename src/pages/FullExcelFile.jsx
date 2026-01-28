@@ -25,6 +25,8 @@ const FullExcelFile = () => {
                             const data = evt.target.result;
                             const workbook = XLSX.read(data, { type: 'binary' });
                             const sheets = workbook.SheetNames;
+                            setSheetNames(sheets);
+                            setSheetSelectPending(true);
                             sheets.forEach(sheetNames => {
                                 const workSheet = workbook.Sheets[sheetNames];
                                 const jsonData = XLSX.utils.sheet_to_json(workSheet, { defval: null });
@@ -84,6 +86,16 @@ const FullExcelFile = () => {
         {fileName}
       </div>
     )}
+    {sheetSelectPending && sheetNames.map((sheet) => {
+        return (
+            <div key={sheet} className="mt-2">
+                <label htmlFor={`sheet-${sheet}`} className="block text-sm font-medium text-slate-700">
+                    {sheet}
+                </label>
+                
+            </div>
+        );
+    })}
   </div>
     )
 }
