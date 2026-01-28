@@ -12,6 +12,7 @@ const FullExcelFile = () => {
   const [error, setError] = useState(null);
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [newSheetName, setNewSheetName] = useState("");
+  const [copyFromSheet, setCopyFromSheet] = useState(""); // NEW: selected previous sheet to copy from
   const [addLoading, setAddLoading] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -48,21 +49,68 @@ const FullExcelFile = () => {
     reader.readAsBinaryString(file);
   };
 
-  const handleCreateNewExcel = async () => {
-    if (!newSheetName || newSheetName.trim() === "") {
+  // Helper to sanitize/limit sheet name to 31 chars (Excel limit)
+  const normalizeSheetName = (name) => {
+    if (!name) return "";
+    return name.trim().slice(0, 31);
+  };
+
+  // Called when user submits the create/add panel
+  const handleAddSheetSubmit = async () => {
+    setError(null);
+    const trimmed = newSheetName.trim();
+    if (!trimmed) {
       setError("Please enter a name");
       return;
     }
+    const finalName = normalizeSheetName(trimmed);
+    if (sheetNames.includes(finalName)) {
+      setError("A sheet with that name already exists");
+      return;
+    }
+
     setAddLoading(true);
     try {
+      // Build workbook and worksheet
       const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet([[""]]);
-      XLSX.utils.book_append_sheet(wb, ws, newSheetName.trim().slice(0, 31));
-      const fileNameToSave = `${newSheetName.trim() || "new-sheet"}.xlsx`;
+      let ws;
+      let dataToCopy = [];
+
+      if (copyFromSheet) {
+        const found = excelData.find((s) => s.sheetName === copyFromSheet);
+        dataToCopy = found ? found.sheetData || [] : [];
+        // If there is JSON-like data (array of objects) use json_to_sheet,
+        // otherwise fallback to a single empty cell.
+        if (Array.isArray(dataToCopy) && dataToCopy.length > 0) {
+          ws = XLSX.utils.json_to_sheet(dataToCopy);
+        } else {
+          // no rows — create an empty sheet with one blank cell
+          ws = XLSX.utils.aoa_to_sheet([[""]]);
+        }
+      } else {
+        // No copy requested — create minimal blank sheet
+        ws = XLSX.utils.aoa_to_sheet([[""]]);
+      }
+
+      // Append and write file
+      XLSX.utils.book_append_sheet(wb, ws, finalName);
+      const fileNameToSave = `${finalName || "new-sheet"}.xlsx`;
       XLSX.writeFile(wb, fileNameToSave);
+
+      // Update local state so UI reflects the new sheet (copied data included)
+      setSheetNames((prev) => [...prev, finalName]);
+      setExcelData((prev) => [
+        ...prev,
+        { sheetName: finalName, sheetData: Array.isArray(dataToCopy) ? dataToCopy : [] },
+      ]);
+      setSelectedSheet(finalName);
+
+      // Reset add panel UI
       setShowAddPanel(false);
       setNewSheetName("");
+      setCopyFromSheet("");
     } catch (err) {
+      console.error(err);
       setError("Failed to create file");
     } finally {
       setAddLoading(false);
@@ -70,10 +118,11 @@ const FullExcelFile = () => {
   };
 
   const addSheet = (sheetName) => {
+    // keep this helper for other flows if you still want to add sheet to UI without writing file
     setSheetNames((prev) => [...prev, sheetName]);
     setExcelData((prev) => [...prev, { sheetName, sheetData: [] }]);
     setSelectedSheet(sheetName);
-  }
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
@@ -141,6 +190,8 @@ const FullExcelFile = () => {
                     onClick={() => {
                       setShowAddPanel(false);
                       setNewSheetName("");
+                      setCopyFromSheet("");
+                      setError(null);
                     }}
                     className="text-slate-500 hover:text-slate-700"
                     aria-label="Close"
@@ -151,14 +202,34 @@ const FullExcelFile = () => {
                 <div className="mt-3">
                   <input
                     value={newSheetName}
-                    onChange={(e) => {setNewSheetName(e.target.value);}}
+                    onChange={(e) => { setNewSheetName(e.target.value); }}
                     placeholder="Enter sheet/file name"
                     className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                   />
                 </div>
+
+                {/* NEW: dropdown to select existing sheet to copy from */}
+                <div className="mt-3">
+                  <label className="block text-xs text-slate-600">Copy from existing sheet (optional)</label>
+                  <select
+                    value={copyFromSheet}
+                    onChange={(e) => setCopyFromSheet(e.target.value)}
+                    className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  >
+                    <option value="">-- Do not copy (create blank sheet) --</option>
+                    {sheetNames.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {error && <div className="mt-3 text-xs text-red-600">{error}</div>}
+
                 <div className="mt-3 flex gap-2">
                   <button
-                    onClick={()=> addSheet(newSheetName)}
+                    onClick={handleAddSheetSubmit}
                     className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-60"
                     disabled={addLoading}
                   >
@@ -168,6 +239,8 @@ const FullExcelFile = () => {
                     onClick={() => {
                       setShowAddPanel(false);
                       setNewSheetName("");
+                      setCopyFromSheet("");
+                      setError(null);
                     }}
                     className="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 border hover:bg-slate-50"
                   >
