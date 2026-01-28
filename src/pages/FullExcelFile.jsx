@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import * as XLSX from "xlsx";
+import {
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts";
+
 
 const FullExcelFile = () => {
   const [fileName, setFileName] = useState("");
@@ -16,6 +26,8 @@ const FullExcelFile = () => {
   const [addLoading, setAddLoading] = useState(false);
   const [columnNames, setColumnNames] = useState([]);
   const [selectedColumns, setSelectedColumns] = useState([""]);
+  const [xAxis, setXAxis] = useState("");
+const [yAxis, setYAxis] = useState("");
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -37,6 +49,15 @@ const FullExcelFile = () => {
     setColumnNames(cols);
     setSelectedColumns([""]);
   }, [copyFromSheet, excelData]);
+
+  useEffect(() => {
+  if (xAxis && !selectedColumns.includes(xAxis)) {
+    setSelectedColumns(prev => [...prev, xAxis]);
+  }
+  if (yAxis && !selectedColumns.includes(yAxis)) {
+    setSelectedColumns(prev => [...prev, yAxis]);
+  }
+}, [xAxis, yAxis]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -130,6 +151,22 @@ const FullExcelFile = () => {
       return next;
     });
   };
+
+  const filteredData = selectedSheetData.map(row => {
+  const newRow = {};
+  selectedColumns.forEach(col => {
+    if (col) newRow[col] = row[col];
+  });
+  return newRow;
+});
+
+const scatterData = filteredData
+  .map(row => ({
+    x: Number(row[xAxis]),
+    y: Number(row[yAxis])
+  }))
+  .filter(point => !isNaN(point.x) && !isNaN(point.y));
+
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
@@ -229,18 +266,38 @@ const FullExcelFile = () => {
                     ))}
                   </select>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="X-Axis Column"
-                    className="w-full rounded-md border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Y-Axis Column"
-                    className="w-full rounded-md border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+  <div>
+    <label className="block text-xs font-medium text-slate-600 mb-1">X-Axis</label>
+    <select
+      value={xAxis}
+      onChange={(e) => setXAxis(e.target.value)}
+      className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm"
+    >
+      <option value="">Select column</option>
+      {selectedSheetData.length > 0 &&
+        Object.keys(selectedSheetData[0]).map((col) => (
+          <option key={col} value={col}>{col}</option>
+        ))}
+    </select>
+  </div>
+
+  <div>
+    <label className="block text-xs font-medium text-slate-600 mb-1">Y-Axis</label>
+    <select
+      value={yAxis}
+      onChange={(e) => setYAxis(e.target.value)}
+      className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm"
+    >
+      <option value="">Select column</option>
+      {selectedSheetData.length > 0 &&
+        Object.keys(selectedSheetData[0]).map((col) => (
+          <option key={col} value={col}>{col}</option>
+        ))}
+    </select>
+  </div>
+</div>
+
 
 
 
@@ -300,7 +357,20 @@ const FullExcelFile = () => {
                     Cancel
                   </button>
                 </div>
+                {scatterData.length > 0 && (
+  <ResponsiveContainer width="100%" height={300}>
+    <ScatterChart>
+      <CartesianGrid />
+      <XAxis type="number" dataKey="x" name={xAxis} />
+      <YAxis type="number" dataKey="y" name={yAxis} />
+      <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+      <Scatter data={scatterData} fill="#6366f1" />
+    </ScatterChart>
+  </ResponsiveContainer>
+)}
               </div>
+
+              
             )}
           </div>
 
