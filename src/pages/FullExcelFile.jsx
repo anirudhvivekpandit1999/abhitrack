@@ -418,7 +418,7 @@ const FullExcelFile = () => {
                               }
 
                               debounceRef.current = setTimeout(() => {
-                                bifurcatedExcelData(rr.name, selectedSheet, idx);
+                                bifurcatedExcelData(rr.name, copyFromSheet, idx);
                               }, 500);
                             }}
                             placeholder="e.g. 1-10"
