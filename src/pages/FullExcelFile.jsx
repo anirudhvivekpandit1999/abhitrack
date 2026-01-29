@@ -29,13 +29,11 @@ const FullExcelFile = () => {
   const [yAxis, setYAxis] = useState("");
   const [bifurcateSlices, setBifurcateSlices] = useState([]);
   const fileInputRef = useRef(null);
-
   const debounceRef = useRef(null);
-
   const addGridRef = useRef(null);
   const [addGridHeight, setAddGridHeight] = useState(560);
-
   const [rowRanges, setRowRanges] = useState([{ name: "", startRange: "", endRange: "" }]);
+  const [activeTarget, setActiveTarget] = useState(null);
 
   useEffect(() => {
     const found = excelData.find((s) => s.sheetName === selectedSheet);
@@ -99,7 +97,6 @@ const FullExcelFile = () => {
     new Date(Math.round((n - 25569) * 86400 * 1000));
   const formatDate = (v) => {
     let d = null;
-
     if (v instanceof Date && !isNaN(v.getTime())) {
       d = v;
     } else if (typeof v === "number") {
@@ -109,9 +106,7 @@ const FullExcelFile = () => {
       const parsed = new Date(cleaned);
       if (!isNaN(parsed.getTime())) d = parsed;
     }
-
     if (!d) return v;
-
     return `${d.getFullYear()}-${(d.getMonth() + 1)}-${(d.getDate())}`;
   };
   const handleFileChange = (e) => {
@@ -392,6 +387,16 @@ const FullExcelFile = () => {
   const previewSheet = excelData.find((s) => s.sheetName === (copyFromSheet || selectedSheet)) || { sheetData: [] };
   const previewHeaders = previewSheet.sheetData && previewSheet.sheetData.length ? Object.keys(previewSheet.sheetData[0]) : [];
 
+  const handlePreviewRowClick = (rowIndex) => {
+    if (!activeTarget) return;
+    const { idx, field } = activeTarget;
+    setRowRanges((prev) => {
+      const next = prev.map((r, i) => (i === idx ? { ...r, [field]: String(rowIndex + 1) } : r));
+      return next;
+    });
+    setActiveTarget(null);
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6 overflow-x-hidden">
       <div className="mx-auto max-w-md rounded-2xl border-2 border-dashed bg-slate-50 p-8 text-center transition hover:border-blue-500 hover:bg-blue-50 hover:shadow-lg">
@@ -444,6 +449,7 @@ const FullExcelFile = () => {
                         setSelectedColumns([""]);
                         setRowRanges([{ name: "", startRange: "", endRange: "" }]);
                         setBifurcateSlices([]);
+                        setActiveTarget(null);
                       }} className="text-slate-500 hover:text-slate-700">✕</button>
                     </div>
 
@@ -470,7 +476,7 @@ const FullExcelFile = () => {
                         {rowRanges.map((rr, idx) => (
                           <div key={idx} className="flex gap-2">
                             <input value={rr.name} onChange={(e) => handleRowRangeChange(idx, "name", e.target.value)} placeholder="New sheet name" className="w-1/3 rounded-md border px-3 py-2 text-sm" />
-                            <input value={rr.startRange} onChange={(e) => handleRowRangeChange(idx, "startRange", e.target.value)} placeholder="start e.g. 1" className="w-1/3 rounded-md border px-3 py-2 text-sm" />
+                            <input value={rr.startRange} onChange={(e) => handleRowRangeChange(idx, "startRange", e.target.value)} placeholder="start e.g. 1" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "startRange" })} />
                             <input value={rr.endRange} onChange={(e) => {
                               const value = e.target.value;
                               handleRowRangeChange(idx, "endRange", value);
@@ -480,7 +486,7 @@ const FullExcelFile = () => {
                               debounceRef.current = setTimeout(() => {
                                 buildTempSlices();
                               }, 300);
-                            }} placeholder="end e.g. 10" className="w-1/3 rounded-md border px-3 py-2 text-sm" />
+                            }} placeholder="end e.g. 10" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "endRange" })} />
                             {rowRanges.length > 1 && (
                               <button onClick={() => removeRowRange(idx)} className="ml-1 rounded-md bg-red-600 px-2 py-1 text-xs text-white">✕</button>
                             )}
@@ -511,7 +517,7 @@ const FullExcelFile = () => {
                     <div className="h-full w-full p-3">
                       <div className="px-2 py-2 sticky top-0 bg-white z-10 flex items-center justify-between border-b">
                         <div className="text-xs font-medium">Preview: {copyFromSheet || selectedSheet || "No sheet"}</div>
-                        <div className="text-xs text-slate-500">Click header to set Y-axis / toggle selection</div>
+                        <div className="text-xs text-slate-500">Click header to set Y-axis / toggle selection | Click a row to fill focused range input</div>
                       </div>
                       <div className="mt-2" style={{ height: `calc(100% - 36px)` }}>
                         {previewSheet.sheetData && previewSheet.sheetData.length > 0 ? (
@@ -532,7 +538,7 @@ const FullExcelFile = () => {
                                 </thead>
                                 <tbody>
                                   {previewSheet.sheetData.slice(0, 200).map((row, i) => (
-                                    <tr key={i}>
+                                    <tr key={i} onClick={() => handlePreviewRowClick(i)} style={{ cursor: activeTarget ? "pointer" : "default" }}>
                                       {previewHeaders.map((k, j) => (
                                         <td key={j} className="border px-2 py-1 text-xs">{row[k]}</td>
                                       ))}
@@ -599,7 +605,7 @@ const FullExcelFile = () => {
 
                     <div className="mt-3 flex gap-2">
                       <button onClick={handleAddSheetSubmit} className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-60" disabled={addLoading}>{addLoading ? "Creating..." : "Submit"}</button>
-                      <button onClick={() => { setShowAddPanel(false); setNewSheetName(""); setCopyFromSheet(""); setError(null); }} className="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 border hover:bg-slate-50">Cancel</button>
+                      <button onClick={() => { setShowAddPanel(false); setNewSheetName(""); setCopyFromSheet(""); setError(null); setActiveTarget(null); }} className="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 border hover:bg-slate-50">Cancel</button>
                     </div>
                   </div>
 
