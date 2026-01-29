@@ -32,7 +32,7 @@ const FullExcelFile = () => {
   const debounceRef = useRef(null);
   const addGridRef = useRef(null);
   const [addGridHeight, setAddGridHeight] = useState(560);
-  const [rowRanges, setRowRanges] = useState([{ name: "", startRange: "", endRange: "" }]);
+  const [rowRanges, setRowRanges] = useState([{ name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" }]);
   const [activeTarget, setActiveTarget] = useState(null);
 
   useEffect(() => {
@@ -293,7 +293,7 @@ const FullExcelFile = () => {
       setCopyFromSheet("");
       setColumnNames([]);
       setSelectedColumns([""]);
-      setRowRanges([{ name: "", startRange: "", endRange: "" }]);
+      setRowRanges([{ name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" }]);
       setBifurcateSlices([]);
       try {
         localStorage.removeItem(`temp_bifurcate_${finalName}`);
@@ -343,7 +343,7 @@ const FullExcelFile = () => {
   };
 
   const addRowRange = () => {
-    setRowRanges((prev) => [...prev, { name: "", startRange: "", endRange: "" }]);
+    setRowRanges((prev) => [...prev, { name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" }]);
   };
 
   const removeRowRange = (idx) => {
@@ -352,7 +352,13 @@ const FullExcelFile = () => {
 
   const handleRowRangeChange = (idx, field, value) => {
     setRowRanges((prev) => {
-      const next = prev.map((r, i) => (i === idx ? { ...r, [field]: value } : r));
+      const next = prev.map((r, i) => {
+        if (i !== idx) return r;
+        const updated = { ...r, [field]: value };
+        if (field === "startRange") updated.startDisplay = "";
+        if (field === "endRange") updated.endDisplay = "";
+        return updated;
+      });
       return next;
     });
   };
@@ -387,15 +393,33 @@ const FullExcelFile = () => {
   const previewSheet = excelData.find((s) => s.sheetName === (copyFromSheet || selectedSheet)) || { sheetData: [] };
   const previewHeaders = previewSheet.sheetData && previewSheet.sheetData.length ? Object.keys(previewSheet.sheetData[0]) : [];
 
+  const getPreviewRowDate = (rowIndex) => {
+    const row = previewSheet.sheetData && previewSheet.sheetData[rowIndex];
+    if (!row) return "";
+    const dateKey = previewHeaders.find((h) => h.toLowerCase().includes("date")) || previewHeaders.find((h) => h.toLowerCase().includes("time")) || previewHeaders[0];
+    const val = row[dateKey];
+    const ds = formatDate(val);
+    return ds;
+  };
+
   const handlePreviewRowClick = (rowIndex) => {
     if (!activeTarget) return;
     const { idx, field } = activeTarget;
+    const dateStr = getPreviewRowDate(rowIndex);
+    const display = dateStr || "";
     setRowRanges((prev) => {
-      const next = prev.map((r, i) => (i === idx ? { ...r, [field]: String(rowIndex + 1) } : r));
+      const next = prev.map((r, i) => {
+        if (i !== idx) return r;
+        if (field === "startRange") return { ...r, startRange: String(rowIndex + 1), startDisplay: display };
+        if (field === "endRange") return { ...r, endRange: String(rowIndex + 1), endDisplay: display };
+        return r;
+      });
       return next;
     });
     setActiveTarget(null);
   };
+
+  const isColumnSelected = (col) => selectedColumns.includes(col);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6 overflow-x-hidden">
@@ -447,7 +471,7 @@ const FullExcelFile = () => {
                         setError(null);
                         setColumnNames([]);
                         setSelectedColumns([""]);
-                        setRowRanges([{ name: "", startRange: "", endRange: "" }]);
+                        setRowRanges([{ name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" }]);
                         setBifurcateSlices([]);
                         setActiveTarget(null);
                       }} className="text-slate-500 hover:text-slate-700">✕</button>
@@ -476,8 +500,8 @@ const FullExcelFile = () => {
                         {rowRanges.map((rr, idx) => (
                           <div key={idx} className="flex gap-2">
                             <input value={rr.name} onChange={(e) => handleRowRangeChange(idx, "name", e.target.value)} placeholder="New sheet name" className="w-1/3 rounded-md border px-3 py-2 text-sm" />
-                            <input value={rr.startRange} onChange={(e) => handleRowRangeChange(idx, "startRange", e.target.value)} placeholder="start e.g. 1" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "startRange" })} />
-                            <input value={rr.endRange} onChange={(e) => {
+                            <input value={rr.startDisplay || rr.startRange} onChange={(e) => handleRowRangeChange(idx, "startRange", e.target.value)} placeholder="start e.g. 1" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "startRange" })} />
+                            <input value={rr.endDisplay || rr.endRange} onChange={(e) => {
                               const value = e.target.value;
                               handleRowRangeChange(idx, "endRange", value);
                               if (debounceRef.current) {
@@ -530,7 +554,7 @@ const FullExcelFile = () => {
                                       <th
                                         key={key}
                                         onClick={() => { setYAxis(key); toggleColumnSelection(key); }}
-                                        className={`cursor-pointer border px-2 py-2 text-left font-semibold ${yAxis === key ? "bg-blue-50 text-blue-700" : ""} ${selectedColumns.includes(key) ? "bg-green-50 text-green-700" : ""}`}>
+                                        className={`cursor-pointer border px-2 py-2 text-left font-semibold ${yAxis === key ? "bg-blue-50 text-blue-700" : ""} ${isColumnSelected(key) ? "bg-green-50 text-green-700" : ""}`}>
                                         {key}
                                       </th>
                                     ))}
@@ -540,7 +564,7 @@ const FullExcelFile = () => {
                                   {previewSheet.sheetData.slice(0, 200).map((row, i) => (
                                     <tr key={i} onClick={() => handlePreviewRowClick(i)} style={{ cursor: activeTarget ? "pointer" : "default" }}>
                                       {previewHeaders.map((k, j) => (
-                                        <td key={j} className="border px-2 py-1 text-xs">{row[k]}</td>
+                                        <td key={j} className={`border px-2 py-1 text-xs ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{row[k]}</td>
                                       ))}
                                     </tr>
                                   ))}
@@ -646,7 +670,7 @@ const FullExcelFile = () => {
                     <thead className="sticky top-0 bg-slate-100 shadow-sm">
                       <tr>
                         {Object.keys(selectedSheetData[0]).map((key) => (
-                          <th key={key} className="border px-4 py-2 text-left font-semibold text-slate-700">{key}</th>
+                          <th key={key} className={`border px-4 py-2 text-left font-semibold text-slate-700 ${isColumnSelected(key) ? "bg-green-50 text-green-700" : ""}`}>{key}</th>
                         ))}
                       </tr>
                     </thead>
@@ -654,7 +678,7 @@ const FullExcelFile = () => {
                       {selectedSheetData.map((row, i) => (
                         <tr key={i}>
                           {Object.keys(selectedSheetData[0]).map((k, j) => (
-                            <td key={j} className="border px-4 py-2">{row[k]}</td>
+                            <td key={j} className={`border px-4 py-2 ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{row[k]}</td>
                           ))}
                         </tr>
                       ))}
