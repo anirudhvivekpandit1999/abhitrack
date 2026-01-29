@@ -27,7 +27,7 @@ const FullExcelFile = () => {
   const [selectedColumns, setSelectedColumns] = useState([""]);
   const [xAxis, setXAxis] = useState("");
   const [yAxis, setYAxis] = useState("");
-  const [bifurcateSheetNames, setBifurcateSheetNames] = useState([]);
+  const [bifurcateSlices, setBifurcateSlices] = useState([]); // temporary trimmed slices
   const fileInputRef = useRef(null);
 
   const debounceRef = useRef(null);
@@ -114,17 +114,80 @@ const FullExcelFile = () => {
     return name.trim().slice(0, 31);
   };
 
-  const parseRange = (r) => {
-    if (!r) return null;
-    const parts = r.split("-").map(s => s.trim());
-    if (parts.length !== 2) return null;
-    const a = parseInt(parts[0], 10);
-    const b = parseInt(parts[1], 10);
-    if (Number.isNaN(a) || Number.isNaN(b)) return null;
-    const start = Math.max(0, Math.min(a, b) - 1);
-    const end = Math.max(0, Math.max(a, b) - 1);
-    return [start, end];
+  // parseRange accepts either a string like "1-10" or two numeric args
+  const parseRange = (a, b) => {
+    let start, end;
+    if (typeof b !== 'undefined') {
+      start = parseInt(a, 10);
+      end = parseInt(b, 10);
+    } else if (typeof a === 'string') {
+      const parts = a.split("-").map(s => s.trim());
+      if (parts.length !== 2) return null;
+      start = parseInt(parts[0], 10);
+      end = parseInt(parts[1], 10);
+    } else {
+      return null;
+    }
+    if (Number.isNaN(start) || Number.isNaN(end)) return null;
+    // user expects 1-10 to mean rows 1..10 inclusive
+    const s = Math.max(1, Math.min(start, end));
+    const e = Math.max(1, Math.max(start, end));
+    return [s - 1, e - 1]; // zero-based indices
   };
+
+  // Build temporary trimmed slices and store them in state + localStorage (but DO NOT add to excelData yet)
+  const buildTempSlices = () => {
+    const baseName = newSheetName.trim() || 'tmp';
+    const baseSheet = excelData.find(s => s.sheetName === (copyFromSheet || selectedSheet));
+    const sheetRows = baseSheet && Array.isArray(baseSheet.sheetData) ? baseSheet.sheetData : [];
+
+    const colors = ['🟢','🔴','🟡','🔵','🟣'];
+
+    const slices = rowRanges
+      .map((rr, idx) => {
+        if (!rr.name) return null;
+        const range = parseRange(rr.startRange, rr.endRange);
+        const rows = range ? sheetRows.slice(range[0], range[1] + 1) : sheetRows;
+        if (!rows.length) return null;
+        const cols = rows.length > 0 ? Object.keys(rows[0]) : [];
+        return {
+          name: rr.name.trim(),
+          start: range ? range[0] : 0,
+          end: range ? range[1] : sheetRows.length - 1,
+          rows,
+          cols,
+          color: colors[idx % colors.length],
+          fullName: `${baseName}-${rr.name.trim()}`
+        };
+      })
+      .filter(Boolean);
+
+    setBifurcateSlices(slices);
+    // store in localStorage keyed by baseName so user can refresh and still see the temp setup
+    try {
+      localStorage.setItem(`temp_bifurcate_${baseName}`, JSON.stringify(slices));
+    } catch (e) {
+      // ignore storage failures
+    }
+
+    // update columnNames to union of base sheet columns and slices columns
+    const unionCols = new Set();
+    if (baseSheet && baseSheet.sheetData && baseSheet.sheetData.length) {
+      Object.keys(baseSheet.sheetData[0]).forEach(c => unionCols.add(c));
+    }
+    slices.forEach(s => s.cols.forEach(c => unionCols.add(c)));
+    setColumnNames(Array.from(unionCols));
+  };
+
+  useEffect(() => {
+    // whenever the rowRanges, newSheetName or selected base sheet changes, rebuild temp slices (debounced)
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      buildTempSlices();
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowRanges, newSheetName, copyFromSheet, selectedSheet, excelData]);
 
   const handleAddSheetSubmit = async () => {
     setError(null);
@@ -134,36 +197,42 @@ const FullExcelFile = () => {
       return;
     }
     const finalName = normalizeSheetName(trimmed);
-    if (sheetNames.includes(finalName)) {
+
+    // if any slice names match existing sheet names, error
+    const collision = bifurcateSlices.some(s => sheetNames.includes(`${finalName}-${s.name}`));
+    if (collision) {
       setError("A sheet with that name already exists");
       return;
     }
+
     setAddLoading(true);
     try {
-      let dataToCopy = [];
-      if (rowRanges && rowRanges.length > 0 && rowRanges.some(rr => rr.name)) {
-        const foundSheet = excelData.find(s => s.sheetName === selectedSheet);
-        const sheetRows = foundSheet && Array.isArray(foundSheet.sheetData) ? foundSheet.sheetData : [];
-        for (const rr of rowRanges) {
-          if (!rr.name) continue;
-          const range = parseRange(rr.range);
-          const rows = range ? sheetRows.slice(range[0], range[1] + 1) : sheetRows;
-          const picks = selectedColumns.filter((c) => c && c !== "");
+      // If we have bifurcateSlices with names, create a separate sheet for each slice (but only when user clicks Submit)
+      if (bifurcateSlices && bifurcateSlices.length > 0) {
+        const newSheets = bifurcateSlices.map(s => {
+          const picks = selectedColumns.filter(c => c && c !== "");
+          let sheetRows = s.rows;
           if (picks.length > 0) {
-            const mapped = rows.map(row => {
-              const newRow = {};
-              picks.forEach(k => { newRow[k] = row[k]; });
-              return newRow;
+            sheetRows = sheetRows.map(row => {
+              const nr = {};
+              picks.forEach(k => nr[k] = row[k]);
+              return nr;
             });
-            dataToCopy = dataToCopy.concat(mapped);
-          } else {
-            dataToCopy = dataToCopy.concat(rows);
           }
-        }
+          return {
+            sheetName: `${finalName}-${s.name}`,
+            sheetData: sheetRows
+          };
+        });
+
+        setSheetNames((prev) => [...prev, ...newSheets.map(ns => ns.sheetName)]);
+        setExcelData((prev) => [...prev, ...newSheets]);
       } else if (copyFromSheet) {
+        // if no slices, fallback to previous behaviour: create 1 sheet from copyFromSheet
         const found = excelData.find((s) => s.sheetName === copyFromSheet);
         const sourceData = found ? found.sheetData || [] : [];
         const picks = selectedColumns.filter((c) => c && c !== "");
+        let dataToCopy = [];
         if (picks.length > 0 && sourceData.length > 0) {
           dataToCopy = sourceData.map((row) => {
             const newRow = {};
@@ -173,20 +242,27 @@ const FullExcelFile = () => {
         } else {
           dataToCopy = sourceData;
         }
+        const sheetObj = { sheetName: finalName, sheetData: dataToCopy };
+        setSheetNames((prev) => [...prev, finalName]);
+        setExcelData((prev) => [...prev, sheetObj]);
+      } else {
+        // create blank sheet
+        setSheetNames((prev) => [...prev, finalName]);
+        setExcelData((prev) => [...prev, { sheetName: finalName, sheetData: [] }]);
       }
-      setSheetNames((prev) => [...prev, finalName]);
-      setExcelData((prev) => [
-        ...prev,
-        { sheetName: finalName, sheetData: dataToCopy },
-      ]);
+
+      // clear temp state and UI
       setSelectedSheet(finalName);
       setShowAddPanel(false);
       setNewSheetName("");
       setCopyFromSheet("");
       setColumnNames([]);
       setSelectedColumns([""]);
-      setRowRanges([{ name: "", range: "" }]);
-    } catch {
+      setRowRanges([{ name: "", startRange: "", endRange: "" }]);
+      setBifurcateSlices([]);
+      try { localStorage.removeItem(`temp_bifurcate_${finalName}`); } catch(e){}
+    } catch (e) {
+      console.error(e);
       setError("Failed to create file");
     } finally {
       setAddLoading(false);
@@ -207,7 +283,7 @@ const FullExcelFile = () => {
   };
 
   const addRowRange = () => {
-    setRowRanges(prev => [...prev, { name: "", range: "" }]);
+    setRowRanges(prev => [...prev, { name: "", startRange: "", endRange: "" }]);
   };
 
   const removeRowRange = (idx) => {
@@ -215,69 +291,30 @@ const FullExcelFile = () => {
   };
 
   const handleRowRangeChange = (idx, field, value) => {
-
     setRowRanges(prev => {
       const next = prev.map((r, i) => i === idx ? { ...r, [field]: value } : r);
-      console.log("[DEBUG] handleRowRangeChange() next", next);
       return next;
     });
   };
 
-  const bifurcatedExcelData = (
-    sheetName,
-    baseSheetName,
-    idx
-  ) => {
-
-    const { startRange, endRange } = rowRanges[idx];
-    console.log("[DEBUG] bifurcatedExcelData() startRange", startRange);
-    console.log("[DEBUG] bifurcatedExcelData() endRange", endRange);
-
-    setExcelData(prev => {
-      const baseSheet = prev.find(s => s.sheetName === baseSheetName);
-      if (!baseSheet) return prev;
-
-      const sheetRows = Array.isArray(baseSheet.sheetData) ? baseSheet.sheetData : [];
-
-      const range = parseRange(`${startRange}-${endRange}`);
-      const rows = range ? sheetRows.slice(range[0], range[1] + 1) : sheetRows;
-
-      const newSheetName2 = `${newSheetName}_${sheetName}`;
-      setSheetNames([...sheetNames, newSheetName2]);
-
-      const withoutOldVersion = prev.filter(s => s.sheetName !== newSheetName2);
-
-      const newSheet = {
-        sheetName: newSheetName2 ,
-        sheetData: rows
-      };
-
-      console.log("📄 Creating bifurcated sheet:", newSheetName);
-      console.log("Rows copied:", rows.length);
-      console.table(rows.slice(0, 5));
-
-      return [...withoutOldVersion, newSheet];
-    });
-
-    console.log("[DEBUG] bifurcatedExcelData() completed", excelData);
-
-  };
-
-
-  const filteredData = selectedSheetData.map(row => {
-    const newRow = {};
-    selectedColumns.forEach(col => {
-      if (col) newRow[col] = row[col];
-    });
-    return newRow;
-  });
-
-  const scatterData = filteredData
-    .map(row => ({
-      x: Number(row[xAxis]),
-      y: Number(row[yAxis])
-    }))
-    .filter(point => !isNaN(point.x) && !isNaN(point.y));
+  // Prepare scatter data for preview: combine all temp slices if present; render one Scatter per slice
+  const scatterSlicesData = bifurcateSlices.length > 0 ? bifurcateSlices.map(s => {
+    return {
+      name: s.fullName,
+      color: (s.color === '🟢' ? '#10b981' : s.color === '🔴' ? '#ef4444' : s.color === '🟡' ? '#f59e0b' : s.color === '🔵' ? '#3b82f6' : '#8b5cf6'),
+      data: s.rows
+        .map(row => ({ x: Number(row[xAxis]), y: Number(row[yAxis]) }))
+        .filter(p => !isNaN(p.x) && !isNaN(p.y))
+    };
+  }) : [
+    {
+      name: selectedSheet,
+      color: '#6366f1',
+      data: selectedSheetData
+        .map(row => ({ x: Number(row[xAxis]), y: Number(row[yAxis]) }))
+        .filter(p => !isNaN(p.x) && !isNaN(p.y))
+    }
+  ];
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
@@ -350,7 +387,8 @@ const FullExcelFile = () => {
                         setError(null);
                         setColumnNames([]);
                         setSelectedColumns([""]);
-                        setRowRanges([{ name: "", range: "" }]);
+                        setRowRanges([{ name: "", startRange: "", endRange: "" }]);
+                        setBifurcateSlices([]);
                       }}
                       className="text-slate-500 hover:text-slate-700"
                     >
@@ -398,19 +436,18 @@ const FullExcelFile = () => {
                             value={rr.name}
                             onChange={(e) => handleRowRangeChange(idx, "name", e.target.value)}
                             placeholder="New sheet name"
-                            className="w-1/2 rounded-md border px-3 py-2 text-sm"
+                            className="w-1/3 rounded-md border px-3 py-2 text-sm"
                           />
                           <input
                             value={rr.startRange}
                             onChange={(e) => handleRowRangeChange(idx, "startRange", e.target.value)}
-                            placeholder="e.g. 1"
-                            className="w-1/2 rounded-md border px-3 py-2 text-sm"
+                            placeholder="start e.g. 1"
+                            className="w-1/3 rounded-md border px-3 py-2 text-sm"
                           />
                           <input
                             value={rr.endRange}
                             onChange={(e) => {
                               const value = e.target.value;
-
                               handleRowRangeChange(idx, "endRange", value);
 
                               if (debounceRef.current) {
@@ -418,11 +455,11 @@ const FullExcelFile = () => {
                               }
 
                               debounceRef.current = setTimeout(() => {
-                                bifurcatedExcelData(rr.name, copyFromSheet, idx);
-                              }, 500);
+                                buildTempSlices();
+                              }, 300);
                             }}
-                            placeholder="e.g. 1-10"
-                            className="w-1/2 rounded-md border px-3 py-2 text-sm"
+                            placeholder="end e.g. 10"
+                            className="w-1/3 rounded-md border px-3 py-2 text-sm"
                           />
                           {rowRanges.length > 1 && (
                             <button
@@ -435,6 +472,23 @@ const FullExcelFile = () => {
                         </div>
                       ))}
                     </div>
+
+                    {/* Legend for temp slices with colors */}
+                    {bifurcateSlices.length > 0 && (
+                      <div className="mt-3 text-xs">
+                        <div className="font-medium mb-1">Trimmed slices preview</div>
+                        <div className="flex flex-col gap-1">
+                          {bifurcateSlices.map(s => (
+                            <div key={s.fullName} className="flex items-center gap-2 text-xs">
+                              <div className="text-sm">{s.color}</div>
+                              <div className="font-medium">{s.fullName}</div>
+                              <div className="text-slate-500">({s.start + 1} to {s.end + 1}, {s.rows.length} rows)</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-4">
@@ -446,10 +500,9 @@ const FullExcelFile = () => {
                         className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm"
                       >
                         <option value="">Select column</option>
-                        {selectedSheetData.length > 0 &&
-                          Object.keys(selectedSheetData[0]).map((col) => (
-                            <option key={col} value={col}>{col}</option>
-                          ))}
+                        {columnNames.map((col) => (
+                          <option key={col} value={col}>{col}</option>
+                        ))}
                       </select>
                     </div>
 
@@ -461,10 +514,9 @@ const FullExcelFile = () => {
                         className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm"
                       >
                         <option value="">Select column</option>
-                        {selectedSheetData.length > 0 &&
-                          Object.keys(selectedSheetData[0]).map((col) => (
-                            <option key={col} value={col}>{col}</option>
-                          ))}
+                        {columnNames.map((col) => (
+                          <option key={col} value={col}>{col}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -485,17 +537,18 @@ const FullExcelFile = () => {
                       {selectedColumns.map((sel, idx) => {
                         const available = columnNames.filter((c) => c === sel || !selectedColumns.includes(c));
                         return (
-                          <select
-                            key={idx}
-                            value={sel}
-                            onChange={(e) => handleColumnChange(idx, e.target.value)}
-                            className="w-full rounded-md border px-3 py-2 text-sm"
-                          >
-                            <option value="">-- select column --</option>
-                            {available.map((col) => (
-                              <option key={col} value={col}>{col}</option>
-                            ))}
-                          </select>
+                          <div key={idx}>
+                            <select
+                              value={sel}
+                              onChange={(e) => handleColumnChange(idx, e.target.value)}
+                              className="w-full rounded-md border px-3 py-2 text-sm"
+                            >
+                              <option value="">-- select column --</option>
+                              {available.map((col) => (
+                                <option key={col} value={col}>{col}</option>
+                              ))}
+                            </select>
+                          </div>
                         );
                       })}
                     </div>
@@ -527,7 +580,7 @@ const FullExcelFile = () => {
 
 
                 <div className="flex-1 rounded-md border bg-white p-3 shadow-lg">
-                  {scatterData.length > 0 && addPanelHeight > 0 ? (
+                  {scatterSlicesData.some(s => s.data && s.data.length > 0) && addPanelHeight > 0 ? (
                     <div style={{ height: addPanelHeight }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
@@ -535,7 +588,9 @@ const FullExcelFile = () => {
                           <XAxis type="number" dataKey="x" name={xAxis} />
                           <YAxis type="number" dataKey="y" name={yAxis} />
                           <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-                          <Scatter data={scatterData} fill="#6366f1" />
+                          {scatterSlicesData.map((s, i) => (
+                            <Scatter key={i} data={s.data} fill={s.color} name={s.name} />
+                          ))}
                         </ScatterChart>
                       </ResponsiveContainer>
                     </div>
