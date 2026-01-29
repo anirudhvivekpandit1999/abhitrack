@@ -242,13 +242,13 @@ const FullExcelFile = () => {
       const range = parseRange(`${startRange}-${endRange}`);
       const rows = range ? sheetRows.slice(range[0], range[1] + 1) : sheetRows;
 
-      const newSheetName = `${sheetName}_${idx}`;
-      setSheetNames([...sheetNames, newSheetName]);
+      const newSheetName2 = `${newSheetName}_${sheetName}`;
+      setSheetNames([...sheetNames, newSheetName2]);
 
-      const withoutOldVersion = prev.filter(s => s.sheetName !== newSheetName);
+      const withoutOldVersion = prev.filter(s => s.sheetName !== newSheetName2);
 
       const newSheet = {
-        sheetName: newSheetName,
+        sheetName: newSheetName2 ,
         sheetData: rows
       };
 
