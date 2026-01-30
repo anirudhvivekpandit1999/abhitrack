@@ -112,6 +112,21 @@ const FullExcelFile = () => {
     if (!d) return v;
     return `${d.getFullYear()}-${(d.getMonth() + 1)}-${(d.getDate())}`;
   };
+
+  const renderCellValue = (v) => {
+    if (v instanceof Date && !isNaN(v.getTime())) {
+      return formatDate(v);
+    }
+    if (v && typeof v === "object") {
+      try {
+        return JSON.stringify(v);
+      } catch (e) {
+        return String(v);
+      }
+    }
+    return v;
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -612,7 +627,7 @@ const FullExcelFile = () => {
                                   {previewSheet.sheetData.slice(0, 200).map((row, i) => (
                                     <tr key={i} onClick={() => handlePreviewRowClick(i)} style={{ cursor: activeTarget ? "pointer" : "default" }}>
                                       {previewHeaders.map((k, j) => (
-                                        <td key={j} className={`border px-2 py-1 text-xs ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{row[k]}</td>
+                                        <td key={j} className={`border px-2 py-1 text-xs ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{renderCellValue(row[k])}</td>
                                       ))}
                                     </tr>
                                   ))}
@@ -726,7 +741,7 @@ const FullExcelFile = () => {
                       {selectedSheetData.map((row, i) => (
                         <tr key={i}>
                           {Object.keys(selectedSheetData[0]).map((k, j) => (
-                            <td key={j} className={`border px-4 py-2 ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{row[k]}</td>
+                            <td key={j} className={`border px-4 py-2 ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{renderCellValue(row[k])}</td>
                           ))}
                         </tr>
                       ))}
