@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts";
+import { useNavigate } from "react-router-dom";
 
 const FullExcelFile = () => {
   const [fileName, setFileName] = useState("");
@@ -34,6 +35,8 @@ const FullExcelFile = () => {
   const [addGridHeight, setAddGridHeight] = useState(560);
   const [rowRanges, setRowRanges] = useState([{ name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" }]);
   const [activeTarget, setActiveTarget] = useState(null);
+
+  const navigation = useNavigate();
 
   useEffect(() => {
     const found = excelData.find((s) => s.sheetName === selectedSheet);
@@ -419,6 +422,34 @@ const FullExcelFile = () => {
     setActiveTarget(null);
   };
 
+  const handleDownloadExcel = () => {
+    if (!excelData || excelData.length === 0) return;
+
+    const wb = XLSX.utils.book_new();
+
+    excelData.forEach((sheet) => {
+      const data = sheet.sheetData || [];
+
+      const cleaned = data.map((row) => {
+        const newRow = {};
+        Object.keys(row).forEach((key) => {
+          if (!key.startsWith("__num__")) {
+            newRow[key] = row[key];
+          }
+        });
+        return newRow;
+      });
+
+      const ws = XLSX.utils.json_to_sheet(cleaned);
+      XLSX.utils.book_append_sheet(wb, ws, sheet.sheetName.substring(0, 31));
+    });
+
+    const outName = (fileName || "excel_data").replace(/\.(xlsx|xls)$/i, "") + "_modified.xlsx";
+
+    XLSX.writeFile(wb, outName);
+  };
+
+
   const isColumnSelected = (col) => selectedColumns.includes(col);
 
   return (
@@ -436,6 +467,16 @@ const FullExcelFile = () => {
           <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-100 px-4 py-1.5 text-sm font-medium text-blue-700">{fileName}</div>
         )}
       </div>
+      <div className="mt-6 flex justify-center">
+        <button
+          onClick={() => navigation("/data-file-checks")}
+          disabled={!fileName}
+          className="relative inline-flex items-center justify-center rounded-xl bg-blue-600 px-10 py-3 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:bg-blue-700 hover:shadow-xl active:scale-95 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
+        >
+          Continue to Data Checks →
+        </button>
+      </div>
+
 
       {sheetNames.length > 0 && (
         <div className="rounded-xl border bg-white shadow-sm">
@@ -443,6 +484,13 @@ const FullExcelFile = () => {
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold text-slate-700">Sheets</div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDownloadExcel}
+                  disabled={excelData.length === 0}
+                  className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-50"
+                >
+                  Download Excel
+                </button>
                 <button onClick={() => setShowAddPanel((s) => !s)} className="ml-2 inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-green-700 focus:outline-none">
                   <span className="text-lg leading-none">+</span>
                 </button>
