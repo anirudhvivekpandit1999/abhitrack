@@ -468,7 +468,7 @@ const FullExcelFile = () => {
   const isColumnSelected = (col) => selectedColumns.includes(col);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 space-y-6 overflow-x-hidden">
+    <div className="max-h-[calc(100vh-12rem)] min-h-[calc(100vh-12rem)] mx-auto max-w-5xl px-4 py-6 space-y-6 overflow-x-hidden overflow-y-scroll">
       <div className="mx-auto max-w-md rounded-2xl border-2 border-dashed bg-slate-50 p-8 text-center transition hover:border-blue-500 hover:bg-blue-50 hover:shadow-lg">
         <CloudUploadIcon className="mb-3 text-[52px] text-slate-700" />
         <div className="text-sm">
