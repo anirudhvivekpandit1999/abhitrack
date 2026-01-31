@@ -32,14 +32,21 @@ const VisualizeData = () => {
         sessionId,
         clientName = '',
         plantName = '',
-        productName = ''
+        productName = '',
+        availableCols,
+        preProductData,
+        postProductData,
     } = location.state || {};
 
-    const availableColumns = data_info?.available_columns || [];
-    const withProductData = data_info?.with_product?.data || [];
-    const withoutProductData = data_info?.without_product?.data || [];
+    const availableColumns = availableCols;
+    console.log('Available Columns:', availableCols);
+    const withProductData = preProductData;
+    console.log('preProductData: ',preProductData);
+    console.log('postProductData: ',postProductData);
+    
+    const withoutProductData = postProductData;
     const bootstrapAnalysis = bootstrap_analysis || {};
-
+    console.log('VisualizeData received data_info:', data_info);
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
     };
