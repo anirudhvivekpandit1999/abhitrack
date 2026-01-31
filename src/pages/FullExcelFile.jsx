@@ -11,7 +11,8 @@ import {
   ResponsiveContainer
 } from "recharts";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, Grid, TextField, Typography } from "@mui/material";
+import { Card, CardContent, Grid, TextField, Typography, Button } from "@mui/material";
+import FormulaBuilder from "../components/FormulaBuilder";
 
 const FullExcelFile = () => {
   const [fileName, setFileName] = useState("");
@@ -42,6 +43,8 @@ const FullExcelFile = () => {
   const [clientName,setClientName] = useState('');
   const [plantName,setPlantName] = useState('');
   const [productName,setProductName] = useState('');
+  const [showColumnBuilder, setShowColumnBuilder] = useState(false);
+  const [builderRows, setBuilderRows] = useState([]);
 
   const navigation = useNavigate();
 
@@ -64,6 +67,38 @@ const FullExcelFile = () => {
     setColumnNames(cols);
     setSelectedColumns([""]);
   }, [copyFromSheet, excelData]);
+
+  const refreshColumnsFromSession = () => {
+    try {
+      const stored = sessionStorage.getItem('availableColumns');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length) {
+          setColumnNames(prev => Array.from(new Set([...(prev || []), ...parsed])));
+        }
+      }
+    } catch (e) {
+    }
+    try {
+      const pending = sessionStorage.getItem('pendingColumnsToAdd');
+      if (pending) {
+        const parsed = JSON.parse(pending);
+        if (Array.isArray(parsed) && parsed.length) {
+          const names = parsed.map(p => p.name).filter(Boolean);
+          if (names.length) {
+            setColumnNames(prev => Array.from(new Set([...(prev || []), ...names])));
+          }
+        }
+      }
+    } catch (e) {
+    }
+  };
+
+  useEffect(() => {
+    if (showAddPanel) {
+      refreshColumnsFromSession();
+    }
+  }, [showAddPanel, copyFromSheet, selectedSheet, excelData]);
 
   useEffect(() => {
     if (xAxis && !selectedColumns.includes(xAxis)) {
@@ -140,7 +175,7 @@ const FullExcelFile = () => {
     setFileName(file.name);
     setError(null);
     const ext = file.name.split(".").pop().toLowerCase();
-    if (!["xlsx", "xls"].includes(ext)) {
+    if (!["xlsx", "xls", "xlsm"].includes(ext)) {
       setError("Unsupported file type");
       return;
     }
@@ -256,6 +291,15 @@ const FullExcelFile = () => {
       Object.keys(baseSheet.sheetData[0]).forEach((c) => unionCols.add(c));
     }
     slices.forEach((s) => s.cols.forEach((c) => unionCols.add(c)));
+    try {
+      const pending = sessionStorage.getItem('pendingColumnsToAdd');
+      if (pending) {
+        const parsed = JSON.parse(pending);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(p => { if (p && p.name) unionCols.add(p.name) });
+        }
+      }
+    } catch (e) {}
     setColumnNames(Array.from(unionCols));
   };
 
@@ -266,6 +310,45 @@ const FullExcelFile = () => {
     }, 300);
     return () => clearTimeout(debounceRef.current);
   }, [rowRanges, newSheetName, copyFromSheet, selectedSheet, excelData]);
+
+  const escapeRegExp = (string) => {
+    return String(string).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  };
+
+  const evaluateFormulaForRow = (formula, row) => {
+    if (!formula || typeof formula !== "string") return "";
+    const cols = Object.keys(row).sort((a, b) => b.length - a.length);
+    let expr = formula;
+    cols.forEach((col) => {
+      const val = row[col];
+      const num = Number(val);
+      const replacement = `(${isNaN(num) ? 0 : num})`;
+      const pattern = new RegExp(escapeRegExp(col), "g");
+      expr = expr.replace(pattern, replacement);
+    });
+    try {
+      const fn = new Function(`return (${expr});`);
+      const result = fn();
+      return result === undefined || result === null ? "" : result;
+    } catch (e) {
+      return "";
+    }
+  };
+
+  const resolvePendingValue = (pc, row, globalIndex) => {
+    if (!pc) return "";
+    if (Array.isArray(pc.values) && typeof globalIndex === "number") {
+      if (globalIndex >= 0 && globalIndex < pc.values.length) return pc.values[globalIndex];
+    }
+    if (pc.value !== undefined) return pc.value;
+    if (pc.formula && typeof pc.formula === "string") {
+      return evaluateFormulaForRow(pc.formula, row);
+    }
+    if (pc.expression && typeof pc.expression === "string") {
+      return evaluateFormulaForRow(pc.expression, row);
+    }
+    return "";
+  };
 
   const handleAddSheetSubmit = async () => {
     setError(null);
@@ -282,14 +365,35 @@ const FullExcelFile = () => {
     }
     setAddLoading(true);
     try {
+      let pendingCols = [];
+      try {
+        const pendingRaw = sessionStorage.getItem('pendingColumnsToAdd');
+        if (pendingRaw) pendingCols = JSON.parse(pendingRaw);
+      } catch (e) { pendingCols = []; }
+
       if (bifurcateSlices && bifurcateSlices.length > 0) {
         const newSheets = bifurcateSlices.map((s) => {
           const picks = selectedColumns.filter((c) => c && c !== "");
           let sheetRows = s.rows;
           if (picks.length > 0) {
-            sheetRows = sheetRows.map((row) => {
+            sheetRows = sheetRows.map((row, idx) => {
               const nr = {};
               picks.forEach((k) => (nr[k] = row[k]));
+              pendingCols.forEach(pc => { if (pc && pc.name) {
+                const globalIndex = s.start + idx;
+                const val = resolvePendingValue(pc, row, globalIndex);
+                nr[pc.name] = val;
+              }});
+              return nr;
+            });
+          } else {
+            sheetRows = sheetRows.map((row, idx) => {
+              const nr = { ...row };
+              pendingCols.forEach(pc => { if (pc && pc.name) {
+                const globalIndex = s.start + idx;
+                const val = resolvePendingValue(pc, row, globalIndex);
+                nr[pc.name] = val;
+              }});
               return nr;
             });
           }
@@ -306,20 +410,35 @@ const FullExcelFile = () => {
         const picks = selectedColumns.filter((c) => c && c !== "");
         let dataToCopy = [];
         if (picks.length > 0 && sourceData.length > 0) {
-          dataToCopy = sourceData.map((row) => {
+          dataToCopy = sourceData.map((row, idx) => {
             const newRow = {};
             picks.forEach((k) => (newRow[k] = row[k]));
+            pendingCols.forEach(pc => { if (pc && pc.name) {
+              const globalIndex = idx;
+              const val = resolvePendingValue(pc, row, globalIndex);
+              newRow[pc.name] = val;
+            }});
             return newRow;
           });
         } else {
-          dataToCopy = sourceData;
+          dataToCopy = sourceData.map((row, idx) => {
+            const nr = { ...row };
+            pendingCols.forEach(pc => { if (pc && pc.name) {
+              const globalIndex = idx;
+              const val = resolvePendingValue(pc, row, globalIndex);
+              nr[pc.name] = val;
+            }});
+            return nr;
+          });
         }
         const sheetObj = { sheetName: finalName, sheetData: dataToCopy };
         setSheetNames((prev) => [...prev, finalName]);
         setExcelData((prev) => [...prev, sheetObj]);
       } else {
+        const emptyRows = [];
+        const sheetObj = { sheetName: finalName, sheetData: emptyRows };
         setSheetNames((prev) => [...prev, finalName]);
-        setExcelData((prev) => [...prev, { sheetName: finalName, sheetData: [] }]);
+        setExcelData((prev) => [...prev, sheetObj]);
       }
       setSelectedSheet(finalName);
       setShowAddPanel(false);
@@ -334,6 +453,9 @@ const FullExcelFile = () => {
       try {
         localStorage.removeItem(`temp_bifurcate_${finalName}`);
       } catch (e) { }
+      try {
+        sessionStorage.removeItem('pendingColumnsToAdd');
+      } catch (e) {}
     } catch (e) {
       console.error(e);
       setError("Failed to create file");
@@ -479,11 +601,40 @@ const FullExcelFile = () => {
       XLSX.utils.book_append_sheet(wb, ws, sheet.sheetName.substring(0, 31));
     });
 
-    const outName = (fileName || "excel_data").replace(/\.(xlsx|xls)$/i, "") + "_modified.xlsx";
+    const outName = (fileName || "excel_data").replace(/\.(xlsx|xls|xlsm)$/i, "") + "_modified.xlsx";
 
     XLSX.writeFile(wb, outName);
   };
 
+  const openColumnBuilder = () => {
+    const baseSheet = excelData.find((s) => s.sheetName === (copyFromSheet || selectedSheet));
+    const rows = baseSheet && Array.isArray(baseSheet.sheetData) ? baseSheet.sheetData : [];
+    setBuilderRows(rows);
+    setShowColumnBuilder(true);
+  };
+
+  const handleAddColumn = (newColumn) => {
+    try {
+      const raw = sessionStorage.getItem('pendingColumnsToAdd');
+      const parsed = raw ? JSON.parse(raw) : [];
+      const toStore = { ...newColumn, values: Array.isArray(newColumn.values) ? newColumn.values : (newColumn.values ? [newColumn.values] : []) };
+      const existsIndex = parsed.findIndex(p => p.name === toStore.name);
+      if (existsIndex === -1) parsed.push(toStore);
+      else parsed[existsIndex] = toStore;
+      sessionStorage.setItem('pendingColumnsToAdd', JSON.stringify(parsed));
+    } catch (e) {}
+    setColumnNames(prev => Array.from(new Set([...(prev || []), newColumn.name])));
+    setSelectedColumns(prev => {
+      if (prev.includes("")) {
+        const next = [...prev];
+        const idx = next.indexOf("");
+        next[idx] = newColumn.name;
+        return next;
+      }
+      return [...prev, newColumn.name];
+    });
+    setShowColumnBuilder(false);
+  };
 
   const isColumnSelected = (col) => selectedColumns.includes(col);
 
@@ -537,7 +688,7 @@ const FullExcelFile = () => {
           <label htmlFor="fileUpload" className="cursor-pointer font-semibold text-slate-800 hover:text-blue-600">
             {fileName ? "Change file" : "Upload Excel file"}
           </label>
-          <input id="fileUpload" type="file" ref={fileInputRef} accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} disabled={isLoading} />
+          <input id="fileUpload" type="file" ref={fileInputRef} accept=".xlsx,.xls,.xlsm" className="hidden" onChange={handleFileChange} disabled={isLoading} />
           {!fileName && <p className="mt-1 text-xs text-slate-500">or drag & drop</p>}
         </div>
         {fileName && (
@@ -553,8 +704,6 @@ const FullExcelFile = () => {
             console.log("[DEBUG] preProductData", preSheetData);
             const sheet = sheetNames;
             console.log("[DEBUG] sheetNames =", sheet);
-
-
             const postSheetData = (excelData.find(s => s.sheetName === postProduct)).sheetData
             console.log("[DEBUG] postProductData", postSheetData);
             const postSheetName = postProduct;
@@ -576,7 +725,6 @@ const FullExcelFile = () => {
           Continue to Data Checks →
         </button>
       </div>
-
 
       {sheetNames.length > 0 && (
         <div className="rounded-xl border bg-white shadow-sm">
@@ -753,7 +901,10 @@ const FullExcelFile = () => {
                     <div className="mt-4">
                       <div className="flex items-center justify-between mb-2">
                         <div className="text-xs font-medium text-slate-600">Select columns to keep</div>
-                        <button onClick={handleAddColumnSelector} disabled={columnNames.length === 0 || selectedColumns.length >= columnNames.length} className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50">+</button>
+                        <div className="flex gap-2">
+                          <button onClick={handleAddColumnSelector} disabled={columnNames.length === 0 || selectedColumns.length >= columnNames.length} className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50">+</button>
+                          <button onClick={openColumnBuilder} className="inline-flex items-center rounded-md bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700">Column Builder</button>
+                        </div>
                       </div>
 
                       <div className="space-y-2">
@@ -779,6 +930,23 @@ const FullExcelFile = () => {
                       <button onClick={handleAddSheetSubmit} className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-60" disabled={addLoading}>{addLoading ? "Creating..." : "Submit"}</button>
                       <button onClick={() => { setShowAddPanel(false); setNewSheetName(""); setCopyFromSheet(""); setError(null); setActiveTarget(null); }} className="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 border hover:bg-slate-50">Cancel</button>
                     </div>
+
+                    {showColumnBuilder && (
+                      <div className="mt-4 p-3 rounded-md border bg-gray-50">
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="text-sm font-medium">Column Builder</div>
+                          <Button size="small" onClick={() => setShowColumnBuilder(false)}>Close</Button>
+                        </div>
+                        <FormulaBuilder
+                          availableColumns={columnNames}
+                          updatedColumns={[]}
+                          onAddColumn={handleAddColumn}
+                          withProductData={builderRows}
+                          withoutProductData={builderRows}
+                        />
+                      </div>
+                    )}
+
                   </div>
 
                   <div className="rounded-md border bg-white p-3 overflow-auto h-full">
