@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import MicIcon from "@mui/icons-material/Mic";
 import * as XLSX from "xlsx";
 import {
   ScatterChart,
@@ -45,8 +46,37 @@ const FullExcelFile = () => {
   const [productName,setProductName] = useState('');
   const [showColumnBuilder, setShowColumnBuilder] = useState(false);
   const [builderRows, setBuilderRows] = useState([]);
+  const [isListening, setIsListening] = useState(false);
+  const [lastCommand, setLastCommand] = useState("");
+  const recognitionRef = useRef(null);
 
   const navigation = useNavigate();
+
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const r = new SpeechRecognition();
+      r.continuous = false;
+      r.lang = "en-US";
+      r.interimResults = false;
+      r.maxAlternatives = 1;
+      r.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.trim();
+        setLastCommand(transcript);
+        handleVoiceCommand(transcript.toLowerCase());
+      };
+      r.onend = () => {
+        setIsListening(false);
+      };
+      r.onerror = () => {
+        setIsListening(false);
+      };
+      recognitionRef.current = r;
+    } else {
+      recognitionRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const found = excelData.find((s) => s.sheetName === selectedSheet);
@@ -181,44 +211,54 @@ const FullExcelFile = () => {
     }
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const workbook = XLSX.read(evt.target.result, { type: "binary", cellDates: true, cellNF: true });
-      const sheets = workbook.SheetNames;
-      setSheetNames(sheets);
-      const parsed = sheets.map((name) => {
-        const ws = workbook.Sheets[name];
-        const rawRows = XLSX.utils.sheet_to_json(ws, { defval: "", raw: true });
-        const formattedRows = rawRows.map((row) => {
-          const newRow = { ...row };
-          Object.keys(newRow).forEach((k) => {
-            const v = newRow[k];
-            const keyLower = k.toLowerCase();
-            if (keyLower.includes("date")) {
-              if (v instanceof Date && !isNaN(v.getTime())) {
-                const y = v.getFullYear();
-                const m = v.getMonth();
-                const d = v.getDate();
-                newRow[k] = `${y}-${(m + 1)}-${(d)}`;
-                newRow[`__num__${k}`] = Date.UTC(y, m, d);
+      try {
+        const workbook = XLSX.read(evt.target.result, { type: "binary", cellDates: true, cellNF: true });
+        const sheets = workbook.SheetNames;
+        setSheetNames(sheets);
+        const parsed = sheets.map((name) => {
+          const ws = workbook.Sheets[name];
+          const rawRows = XLSX.utils.sheet_to_json(ws, { defval: "", raw: true });
+          const formattedRows = rawRows.map((row) => {
+            const newRow = { ...row };
+            Object.keys(newRow).forEach((k) => {
+              const v = newRow[k];
+              const keyLower = k.toLowerCase();
+              if (keyLower.includes("date")) {
+                if (v instanceof Date && !isNaN(v.getTime())) {
+                  const y = v.getFullYear();
+                  const m = v.getMonth();
+                  const d = v.getDate();
+                  newRow[k] = `${y}-${(m + 1)}-${(d)}`;
+                  newRow[`__num__${k}`] = Date.UTC(y, m, d);
+                }
+              } else if (keyLower.includes("time")) {
+                if (v instanceof Date && !isNaN(v.getTime())) {
+                  const hh = v.getHours();
+                  const mm = v.getMinutes();
+                  const ss = v.getSeconds();
+                  newRow[k] = `${hh}:${mm}:${ss}`;
+                  newRow[`__num__${k}`] = hh * 3600 + mm * 60 + ss;
+                }
               }
-            } else if (keyLower.includes("time")) {
-              if (v instanceof Date && !isNaN(v.getTime())) {
-                const hh = v.getHours();
-                const mm = v.getMinutes();
-                const ss = v.getSeconds();
-                newRow[k] = `${hh}:${mm}:${ss}`;
-                newRow[`__num__${k}`] = hh * 3600 + mm * 60 + ss;
-              }
-            }
+            });
+            return newRow;
           });
-          return newRow;
+          return {
+            sheetName: name,
+            sheetData: formattedRows,
+          };
         });
-        return {
-          sheetName: name,
-          sheetData: formattedRows,
-        };
-      });
-      setExcelData(parsed);
-      if (sheets.length > 0) setSelectedSheet(sheets[0]);
+        setExcelData(parsed);
+        if (sheets.length > 0) setSelectedSheet(sheets[0]);
+      } catch (err) {
+        const msg = String(err?.message || err || "");
+        if (msg.toLowerCase().includes("password") || msg.toLowerCase().includes("protected")) {
+          setError("This Excel file appears to be password protected. Please remove the password and upload again.");
+        } else {
+          setError("Failed to read the Excel file. Please upload a valid file.");
+        }
+        setFileName("");
+      }
     };
     reader.readAsBinaryString(file);
   };
@@ -638,6 +678,113 @@ const FullExcelFile = () => {
 
   const isColumnSelected = (col) => selectedColumns.includes(col);
 
+  const startListening = () => {
+    if (!recognitionRef.current) {
+      setError("Voice recognition not supported in this browser");
+      return;
+    }
+    try {
+      setLastCommand("");
+      recognitionRef.current.start();
+      setIsListening(true);
+    } catch (e) {
+      setIsListening(false);
+    }
+  };
+
+  const stopListening = () => {
+    if (!recognitionRef.current) return;
+    try {
+      recognitionRef.current.stop();
+    } catch (e) {}
+    setIsListening(false);
+  };
+
+  const handleVoiceCommand = (text) => {
+    if (!text) return;
+    if (text.includes("select all") || text.includes("select every column") || text.includes("select all columns")) {
+      const all = Array.from(new Set(columnNames));
+      setSelectedColumns(all.length ? all : [""]);
+      return;
+    }
+    if (text.includes("clear selection") || text.includes("clear columns") || text.includes("reset selection") || text.includes("deselect")) {
+      setSelectedColumns([""]);
+      return;
+    }
+    if (text.includes("select") || text.includes("choose") || text.includes("pick")) {
+      handleSelectColumns(text);
+      return;
+    }
+    if (text.includes("set x-axis to") || text.includes("x axis")) {
+      handleSetAxisFromVoice(text, "x");
+      return;
+    }
+    if (text.includes("set y-axis to") || text.includes("y axis")) {
+      handleSetAxisFromVoice(text, "y");
+      return;
+    }
+  };
+
+  const normalize = (s) => {
+    return String(s || "").toLowerCase().replace(/[_\-]/g, " ").replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
+  };
+
+  const handleSelectColumns = (text) => {
+    const cleaned = normalize(text);
+    const matches = [];
+    const headerCandidates = columnNames.slice();
+    headerCandidates.forEach((col) => {
+      const normCol = normalize(col);
+      if (cleaned.includes(normCol)) {
+        matches.push(col);
+      } else {
+        const colWords = normCol.split(" ");
+        let allPresent = true;
+        for (const w of colWords) {
+          if (!w) continue;
+          if (!cleaned.includes(w)) {
+            allPresent = false;
+            break;
+          }
+        }
+        if (allPresent) matches.push(col);
+      }
+    });
+    if (matches.length === 0) {
+      const tokens = cleaned.split(/(?:,| and | & )/).map(t => t.trim()).filter(Boolean);
+      tokens.forEach(t => {
+        headerCandidates.forEach(col => {
+          if (normalize(col).startsWith(t) || normalize(col).includes(` ${t}`) || normalize(col).endsWith(` ${t}`)) {
+            if (!matches.includes(col)) matches.push(col);
+          }
+        });
+      });
+    }
+    if (matches.length > 0) {
+      setSelectedColumns(matches);
+    }
+  };
+
+  const handleSetAxisFromVoice = (text, axis) => {
+    const cleaned = normalize(text);
+    let target = "";
+    columnNames.forEach((col) => {
+      if (cleaned.includes(normalize(col))) target = col;
+    });
+    if (!target) {
+      const tokens = cleaned.split(/\s+/);
+      for (const t of tokens) {
+        columnNames.forEach((col) => {
+          if (normalize(col).includes(t)) target = col;
+        });
+      }
+    }
+    if (target) {
+      if (axis === "x") setXAxis(target);
+      else setYAxis(target);
+    }
+  };
+
   return (
     <div className="max-h-[calc(100vh-12rem)] min-h-[calc(100vh-12rem)] mx-auto max-w-5xl px-4 py-6 space-y-6 overflow-x-hidden overflow-y-scroll">
       <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 1 }}>
@@ -691,9 +838,15 @@ const FullExcelFile = () => {
           <input id="fileUpload" type="file" ref={fileInputRef} accept=".xlsx,.xls,.xlsm" className="hidden" onChange={handleFileChange} disabled={isLoading} />
           {!fileName && <p className="mt-1 text-xs text-slate-500">or drag & drop</p>}
         </div>
-        {fileName && (
-          <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-100 px-4 py-1.5 text-sm font-medium text-blue-700">{fileName}</div>
-        )}
+        <div className="mt-4 flex items-center justify-center gap-3">
+          {fileName && (
+            <div className="inline-flex items-center gap-2 rounded-lg bg-blue-100 px-4 py-1.5 text-sm font-medium text-blue-700">{fileName}</div>
+          )}
+          <Button variant="outlined" startIcon={<MicIcon />} onClick={() => (isListening ? stopListening() : startListening())}>
+            {isListening ? "Listening..." : "Voice"}
+          </Button>
+        </div>
+        {lastCommand && <div className="mt-2 text-xs text-slate-600">Last: {lastCommand}</div>}
       </div>
       <div className="mt-6 flex justify-center">
         <button
