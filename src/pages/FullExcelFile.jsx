@@ -254,8 +254,10 @@ const FullExcelFile = () => {
         const msg = String(err?.message || err || "");
         if (msg.toLowerCase().includes("password") || msg.toLowerCase().includes("protected")) {
           setError("This Excel file appears to be password protected. Please remove the password and upload again.");
+          alert("This Excel file appears to be password protected. Please remove the password and upload again.");
         } else {
           setError("Failed to read the Excel file. Please upload a valid file.");
+          alert("Failed to read the Excel file. Please upload a valid file.");
         }
         setFileName("");
       }
