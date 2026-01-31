@@ -11,6 +11,7 @@ import {
   ResponsiveContainer
 } from "recharts";
 import { useNavigate } from "react-router-dom";
+import { Card, CardContent, Grid, TextField, Typography } from "@mui/material";
 
 const FullExcelFile = () => {
   const [fileName, setFileName] = useState("");
@@ -36,8 +37,11 @@ const FullExcelFile = () => {
   const [rowRanges, setRowRanges] = useState([{ name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" }]);
   const [activeTarget, setActiveTarget] = useState(null);
   const [preProduct, setPreProduct] = useState("");
-  const [postProduct,setPostProduct] = useState("");
-  const [cols,setCols] = useState([]);
+  const [postProduct, setPostProduct] = useState("");
+  const [cols, setCols] = useState([]);
+  const [clientName,setClientName] = useState('');
+  const [plantName,setPlantName] = useState('');
+  const [productName,setProductName] = useState('');
 
   const navigation = useNavigate();
 
@@ -222,11 +226,11 @@ const FullExcelFile = () => {
         if (!rows.length) return null;
         const cols = rows.length > 0 ? Object.keys(rows[0]) : [];
         const emoji = emojiColors[idx % emojiColors.length];
-        if(idx === 0){
+        if (idx === 0) {
           setPreProduct(`${baseName}-${rr.name.trim()}`)
           console.log('PreProduct set to:', preProduct);
         }
-        if(idx === 1){
+        if (idx === 1) {
           setPostProduct(`${baseName}-${rr.name.trim()}`)
           console.log('PostProduct set to:', postProduct);
         }
@@ -326,7 +330,7 @@ const FullExcelFile = () => {
       setSelectedColumns([""]);
       setRowRanges([{ name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" }]);
       setBifurcateSlices([]);
-      
+
       try {
         localStorage.removeItem(`temp_bifurcate_${finalName}`);
       } catch (e) { }
@@ -382,13 +386,13 @@ const FullExcelFile = () => {
     setRowRanges((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleRowRangeChange = (idx, field, value,name) => {
+  const handleRowRangeChange = (idx, field, value, name) => {
     setRowRanges((prev) => {
       const next = prev.map((r, i) => {
         if (i !== idx) return r;
         const updated = { ...r, [field]: value };
-        if (field === "startRange"){ updated.startDisplay = ""; setPreProduct(name + "-" + updated.name);}
-        if (field === "endRange") {updated.endDisplay = ""; setPostProduct(name + "-" + updated.name);}
+        if (field === "startRange") { updated.startDisplay = ""; setPreProduct(name + "-" + updated.name); }
+        if (field === "endRange") { updated.endDisplay = ""; setPostProduct(name + "-" + updated.name); }
         console.log('Updated rowRanges:', preProduct, postProduct);
         return updated;
       });
@@ -485,6 +489,48 @@ const FullExcelFile = () => {
 
   return (
     <div className="max-h-[calc(100vh-12rem)] min-h-[calc(100vh-12rem)] mx-auto max-w-5xl px-4 py-6 space-y-6 overflow-x-hidden overflow-y-scroll">
+      <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 1 }}>
+        <CardContent>
+          <Typography variant="h6" component="h3" color="primary.main" sx={{ mb: 2 }}>
+            Project Information (Optional)
+          </Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Client Name"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                variant="outlined"
+                size="medium"
+                placeholder="Enter client name"
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Plant Name"
+                value={plantName}
+                onChange={(e) => setPlantName(e.target.value)}
+                variant="outlined"
+                size="medium"
+                placeholder="Enter plant name"
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Product Name"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+                variant="outlined"
+                size="medium"
+                placeholder="Enter product name"
+              />
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
       <div className="mx-auto max-w-md rounded-2xl border-2 border-dashed bg-slate-50 p-8 text-center transition hover:border-blue-500 hover:bg-blue-50 hover:shadow-lg">
         <CloudUploadIcon className="mb-3 text-[52px] text-slate-700" />
         <div className="text-sm">
@@ -501,20 +547,21 @@ const FullExcelFile = () => {
       <div className="mt-6 flex justify-center">
         <button
           onClick={() => {
-            const preSheetData = (excelData.find(s => s.sheetName === preProduct)).sheetData 
+            const preSheetData = (excelData.find(s => s.sheetName === preProduct)).sheetData
             console.log("[DEBUG] cols =", cols);
-            console.log("[DEBUG] preProductData",preSheetData);
-            
-            
-            const postSheetData = (excelData.find(s => s.sheetName === postProduct)).sheetData 
-            console.log("[DEBUG] postProductData",postSheetData);
-            navigation("/visualize-data",{
-            state:{
-              availableCols : cols,
-              preProductData :  preSheetData,
-              postProductData :  postSheetData,
-            }
-          })}}
+            console.log("[DEBUG] preProductData", preSheetData);
+
+
+            const postSheetData = (excelData.find(s => s.sheetName === postProduct)).sheetData
+            console.log("[DEBUG] postProductData", postSheetData);
+            navigation("/visualize-data", {
+              state: {
+                availableCols: cols,
+                preProductData: preSheetData,
+                postProductData: postSheetData,
+              }
+            })
+          }}
           disabled={!fileName}
           className="relative inline-flex items-center justify-center rounded-xl bg-blue-600 px-10 py-3 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:bg-blue-700 hover:shadow-xl active:scale-95 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
         >
@@ -592,11 +639,11 @@ const FullExcelFile = () => {
                       <div className="space-y-2">
                         {rowRanges.map((rr, idx) => (
                           <div key={idx} className="flex gap-2">
-                            <input value={rr.name} onChange={(e) => handleRowRangeChange(idx, "name", e.target.value,newSheetName)} placeholder="New sheet name" className="w-1/3 rounded-md border px-3 py-2 text-sm" />
-                            <input value={rr.startDisplay || rr.startRange} onChange={(e) => handleRowRangeChange(idx, "startRange", e.target.value,newSheetName)} placeholder="start e.g. 1" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "startRange" })} />
+                            <input value={rr.name} onChange={(e) => handleRowRangeChange(idx, "name", e.target.value, newSheetName)} placeholder="New sheet name" className="w-1/3 rounded-md border px-3 py-2 text-sm" />
+                            <input value={rr.startDisplay || rr.startRange} onChange={(e) => handleRowRangeChange(idx, "startRange", e.target.value, newSheetName)} placeholder="start e.g. 1" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "startRange" })} />
                             <input value={rr.endDisplay || rr.endRange} onChange={(e) => {
                               const value = e.target.value;
-                              handleRowRangeChange(idx, "endRange", value,newSheetName);
+                              handleRowRangeChange(idx, "endRange", value, newSheetName);
                               if (debounceRef.current) {
                                 clearTimeout(debounceRef.current);
                               }
