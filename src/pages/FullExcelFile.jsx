@@ -548,17 +548,25 @@ const FullExcelFile = () => {
         <button
           onClick={() => {
             const preSheetData = (excelData.find(s => s.sheetName === preProduct)).sheetData
+            const preSheetName = preProduct;
             console.log("[DEBUG] cols =", cols);
             console.log("[DEBUG] preProductData", preSheetData);
+            const sheet = sheetNames;
+            console.log("[DEBUG] sheetNames =", sheet);
 
 
             const postSheetData = (excelData.find(s => s.sheetName === postProduct)).sheetData
             console.log("[DEBUG] postProductData", postSheetData);
+            const postSheetName = postProduct;
             navigation("/visualize-data", {
               state: {
                 availableCols: cols,
                 preProductData: preSheetData,
                 postProductData: postSheetData,
+                excelData : excelData,
+                sheetNames : sheet,
+                preSheetName: preSheetName,
+                postSheetName: postSheetName
               }
             })
           }}
