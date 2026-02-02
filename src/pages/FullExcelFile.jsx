@@ -48,9 +48,50 @@ const FullExcelFile = () => {
   const [builderRows, setBuilderRows] = useState([]);
   const [isListening, setIsListening] = useState(false);
   const [lastCommand, setLastCommand] = useState("");
+  const [voiceFeedback, setVoiceFeedback] = useState("");
+  const [recentFiles, setRecentFiles] = useState([]);
+  const [awaitingFileVoiceInput, setAwaitingFileVoiceInput] = useState(false);
+  const [lastVoiceFileCommand, setLastVoiceFileCommand] = useState("");
+  const [showFileSearchModal, setShowFileSearchModal] = useState(false);
+  const [matchedRecentFiles, setMatchedRecentFiles] = useState([]);
   const recognitionRef = useRef(null);
+  const feedbackRef = useRef(null);
+  const fileObjectsRef = useRef({});
 
   const navigation = useNavigate();
+
+  useEffect(() => {
+    const saved = localStorage.getItem('recentFiles');
+    console.log('📂 Loading recent files from localStorage:', saved);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        console.log('  Parsed:', parsed, 'Array?', Array.isArray(parsed), 'Length:', parsed?.length);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          console.log('  ✓ Setting recentFiles state to:', parsed);
+          setRecentFiles(parsed);
+        }
+      } catch (e) {
+        console.error('Failed to parse recent files:', e);
+      }
+    } else {
+      console.log('ℹ No recent files in localStorage yet');
+    }
+  }, []);
+
+  // Sync recent files to localStorage whenever it changes
+  useEffect(() => {
+    if (recentFiles.length > 0) {
+      try {
+        localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
+        console.log('💾 Recent files synced to localStorage:', recentFiles);
+        // Expose to window for debugging
+        window.recentFilesDebug = recentFiles;
+      } catch (e) {
+        console.error('Failed to save recent files to localStorage:', e);
+      }
+    }
+  }, [recentFiles]);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -76,7 +117,7 @@ const FullExcelFile = () => {
     } else {
       recognitionRef.current = null;
     }
-  }, []);
+  }, [recentFiles]);
 
   useEffect(() => {
     const found = excelData.find((s) => s.sheetName === selectedSheet);
@@ -202,11 +243,67 @@ const FullExcelFile = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    
+    console.log('📥 File selected:', file.name);
+    
+    // Check if selected file matches voice command
+    if (lastVoiceFileCommand) {
+      const fileName = file.name.toLowerCase();
+      const fileNameWithoutExt = fileName.split('.')[0];
+      const voiceCmd = lastVoiceFileCommand.toLowerCase();
+      
+      const isMatch = voiceCmd.includes(fileName) || voiceCmd.includes(fileNameWithoutExt) || 
+                      fileName.includes(voiceCmd) || fileNameWithoutExt.includes(voiceCmd);
+      
+      if (!isMatch) {
+        setVoiceFeedback(`Selected: ${file.name}. Processing...`);
+      } else {
+        setVoiceFeedback(`Found match! Loading: ${file.name}`);
+      }
+    }
+    
+    console.log('  Before processFile - recentFiles state:', recentFiles);
+    processFile(file);
+    setLastVoiceFileCommand("");
+    
+    // Reset file input so same file can be selected again
+    if (e.target) {
+      e.target.value = '';
+    }
+    
+    console.log('  After processFile - recentFiles state:', recentFiles);
+  };
+
+  const processFile = (file) => {
+    console.log('📝 processFile called with:', file.name);
+    
     setFileName(file.name);
     setError(null);
+    setVoiceFeedback("File selected: " + file.name + ". Processing...");
+    
+    // Store file object for current session access
+    fileObjectsRef.current[file.name] = file;
+    fileObjectsRef.current[file.name.split('.')[0]] = file;
+    
+    // Update recent files - add new file to the top
+    const newRecent = [file.name, ...recentFiles.filter(f => f !== file.name)].slice(0, 10);
+    console.log('  Updating recentFiles from:', recentFiles);
+    console.log('  To:', newRecent);
+    setRecentFiles(newRecent);
+    
+    // Save immediately to localStorage
+    try {
+      localStorage.setItem('recentFiles', JSON.stringify(newRecent));
+      console.log('  ✓ Saved to localStorage:', newRecent);
+    } catch (e) {
+      console.error('  ✗ Failed to save to localStorage:', e);
+    }
+    
     const ext = file.name.split(".").pop().toLowerCase();
     if (!["xlsx", "xls", "xlsm"].includes(ext)) {
       setError("Unsupported file type");
+      setVoiceFeedback("Error: Unsupported file type. Please select an Excel file.");
+      setTimeout(() => setVoiceFeedback(""), 3000);
       return;
     }
     const reader = new FileReader();
@@ -250,15 +347,21 @@ const FullExcelFile = () => {
         });
         setExcelData(parsed);
         if (sheets.length > 0) setSelectedSheet(sheets[0]);
+        const sheetText = sheets.length > 1 ? "sheets" : "sheet";
+        setVoiceFeedback("File loaded! Found " + sheets.length + " " + sheetText);
+        setTimeout(() => setVoiceFeedback(""), 3000);
       } catch (err) {
         const msg = String(err?.message || err || "");
         if (msg.toLowerCase().includes("password") || msg.toLowerCase().includes("protected")) {
           setError("This Excel file appears to be password protected. Please remove the password and upload again.");
+          setVoiceFeedback("Error: File is password protected. Please remove the password and try again.");
           alert("This Excel file appears to be password protected. Please remove the password and upload again.");
         } else {
           setError("Failed to read the Excel file. Please upload a valid file.");
+          setVoiceFeedback("Error: Failed to read Excel file. Please upload a valid file.");
           alert("Failed to read the Excel file. Please upload a valid file.");
         }
+        setTimeout(() => setVoiceFeedback(""), 4000);
         setFileName("");
       }
     };
@@ -704,6 +807,39 @@ const FullExcelFile = () => {
 
   const handleVoiceCommand = (text) => {
     if (!text) return;
+
+    // Voice command to upload file by name - priority check
+    if (text.includes("upload")) {
+      handleVoiceFileUpload(text);
+      return;
+    }
+
+    // Voice command to list recent files
+    if (text.includes("list files") || text.includes("show files") || text.includes("recent files") || text.includes("what files")) {
+      if (recentFiles.length > 0) {
+        const fileList = recentFiles.slice(0, 5).join(", ");
+        setVoiceFeedback("Recent files: " + fileList);
+      } else {
+        setVoiceFeedback("No recent files. Say 'open file' to upload.");
+      }
+      setTimeout(() => setVoiceFeedback(""), 5000);
+      return;
+    }
+
+    // Voice command to open file dialog
+    if (text.includes("open file") || text.includes("select file") || text.includes("choose file")) {
+      setVoiceFeedback("Opening file selector...");
+      setTimeout(() => setVoiceFeedback(""), 3000);
+      fileInputRef.current?.click();
+      return;
+    }
+
+    // Voice command to select a sheet by name
+    if (text.includes("select sheet") || text.includes("open sheet") || text.includes("go to sheet") || text.includes("click sheet")) {
+      handleSelectSheetByVoice(text);
+      return;
+    }
+
     if (text.includes("select all") || text.includes("select every column") || text.includes("select all columns")) {
       const all = Array.from(new Set(columnNames));
       setSelectedColumns(all.length ? all : [""]);
@@ -727,47 +863,133 @@ const FullExcelFile = () => {
     }
   };
 
+  const handleSelectSheetByVoice = (text) => {
+    const cleaned = normalize(text);
+    let foundSheet = "";
+    
+    // Try to match exact sheet names
+    sheetNames.forEach((sheet) => {
+      const normSheet = normalize(sheet);
+      if (cleaned.includes(normSheet)) {
+        foundSheet = sheet;
+      }
+    });
+
+    // If no exact match, try partial matching
+    if (!foundSheet) {
+      const tokens = cleaned.split(/\s+/).filter(Boolean);
+      for (const sheet of sheetNames) {
+        const normSheet = normalize(sheet);
+        for (const token of tokens) {
+          if (normSheet.includes(token) || normSheet.startsWith(token)) {
+            foundSheet = sheet;
+            break;
+          }
+        }
+        if (foundSheet) break;
+      }
+    }
+
+    if (foundSheet) {
+      setSelectedSheet(foundSheet);
+      setVoiceFeedback(`Sheet "${foundSheet}" selected`);
+      if (feedbackRef.current) clearTimeout(feedbackRef.current);
+      feedbackRef.current = setTimeout(() => setVoiceFeedback(""), 2000);
+      // Show feedback
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj==');
+      audio.play().catch(() => {});
+    }
+  };
+
+  const handleVoiceFileUpload = (text) => {
+    const cleaned = text.toLowerCase();
+
+    // Debug: Check what's in state AND localStorage
+    const storedInLS = localStorage.getItem('recentFiles');
+    console.log('🎤 VOICE UPLOAD CALLED');
+    console.log('  Current recentFiles state:', recentFiles);
+    console.log('  Data in localStorage:', storedInLS ? JSON.parse(storedInLS) : 'NOTHING');
+    console.log('  window.recentFilesDebug:', window.recentFilesDebug);
+
+    // Extract the search term (everything after "upload")
+    const uploadMatch = cleaned.match(/upload\s+(.+)/);
+    const searchTerm = uploadMatch ? uploadMatch[1].trim() : cleaned.replace("upload", "").trim();
+
+    // Debug log
+    console.log('🔍 Voice upload search:', {
+      searchTerm,
+      searchTermType: typeof searchTerm,
+      searchTermLength: searchTerm.length,
+      recentFilesCount: recentFiles.length,
+      recentFilesList: recentFiles
+    });
+
+    // Find files matching the search term in recent files
+    const matches = recentFiles.filter(file => {
+      const fileName = file.toLowerCase();
+      const fileNameWithoutExt = fileName.split('.')[0];
+      const match1 = fileName.includes(searchTerm);
+      const match2 = fileNameWithoutExt.includes(searchTerm);
+      const isMatch = match1 || match2;
+      console.log(`  "${file}" -> fileName.includes("${searchTerm}"): ${match1}, fileNameWithoutExt.includes("${searchTerm}"): ${match2} = ${isMatch}`);
+      return isMatch;
+    });
+
+    console.log('📝 Matches found:', matches.length, matches);
+
+    if (matches.length > 0) {
+      // Found matching files - auto-load the first one
+      const fileToLoad = matches[0];
+      console.log('✅ Auto-loading first match:', fileToLoad);
+      const file = fileObjectsRef.current[fileToLoad] || fileObjectsRef.current[fileToLoad.split('.')[0]];
+      
+      if (file) {
+        setVoiceFeedback("Found match! Loading: " + fileToLoad);
+        processFile(file);
+        setLastVoiceFileCommand("");
+        setTimeout(() => setVoiceFeedback(""), 2000);
+      } else {
+        // File object not cached in this session, open picker
+        console.log('⚠ File object not in cache, opening picker');
+        setLastVoiceFileCommand(searchTerm);
+        setVoiceFeedback("File found but need to select. Opening file picker...");
+        setTimeout(() => fileInputRef.current?.click(), 300);
+      }
+    } else {
+      // No matches in recent files - open file picker
+      setLastVoiceFileCommand(searchTerm);
+      setVoiceFeedback("No recent files found. Opening file picker...");
+      setTimeout(() => fileInputRef.current?.click(), 300);
+    }
+  };
+
+  const handleDirectFileSelection = (fileName) => {
+    const file = fileObjectsRef.current[fileName] || fileObjectsRef.current[fileName.split('.')[0]];
+    if (file) {
+      setVoiceFeedback("Found match! Loading: " + fileName);
+      processFile(file);
+      setShowFileSearchModal(false);
+      setTimeout(() => setVoiceFeedback(""), 2000);
+      setLastVoiceFileCommand("");
+    } else {
+      // File not in objects, open picker
+      fileInputRef.current?.click();
+      setShowFileSearchModal(false);
+    }
+  };
+
+  const handleBrowseMoreFiles = () => {
+    setShowFileSearchModal(false);
+    setTimeout(() => {
+      fileInputRef.current?.click();
+    }, 300);
+  };
+
   const normalize = (s) => {
     return String(s || "").toLowerCase().replace(/[_\-]/g, " ").replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
   };
 
   const handleSelectColumns = (text) => {
-    const cleaned = normalize(text);
-    const matches = [];
-    const headerCandidates = columnNames.slice();
-    headerCandidates.forEach((col) => {
-      const normCol = normalize(col);
-      if (cleaned.includes(normCol)) {
-        matches.push(col);
-      } else {
-        const colWords = normCol.split(" ");
-        let allPresent = true;
-        for (const w of colWords) {
-          if (!w) continue;
-          if (!cleaned.includes(w)) {
-            allPresent = false;
-            break;
-          }
-        }
-        if (allPresent) matches.push(col);
-      }
-    });
-    if (matches.length === 0) {
-      const tokens = cleaned.split(/(?:,| and | & )/).map(t => t.trim()).filter(Boolean);
-      tokens.forEach(t => {
-        headerCandidates.forEach(col => {
-          if (normalize(col).startsWith(t) || normalize(col).includes(` ${t}`) || normalize(col).endsWith(` ${t}`)) {
-            if (!matches.includes(col)) matches.push(col);
-          }
-        });
-      });
-    }
-    if (matches.length > 0) {
-      setSelectedColumns(matches);
-    }
-  };
-
-  const handleSetAxisFromVoice = (text, axis) => {
     const cleaned = normalize(text);
     let target = "";
     columnNames.forEach((col) => {
@@ -788,6 +1010,54 @@ const FullExcelFile = () => {
   };
 
   return (
+    <>
+      {showFileSearchModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6 border-b">
+              <h2 className="text-lg font-bold text-slate-900">Find File</h2>
+              <p className="text-sm text-slate-600 mt-1">Searching for: <span className="font-semibold text-blue-600">{lastVoiceFileCommand}</span></p>
+            </div>
+            
+            {matchedRecentFiles.length > 0 ? (
+              <div className="p-4">
+                <div className="text-xs font-semibold text-slate-700 mb-2">Matching Files:</div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {matchedRecentFiles.map((file) => (
+                    <button
+                      key={file}
+                      onClick={() => handleDirectFileSelection(file)}
+                      className="w-full text-left p-3 rounded-md hover:bg-blue-50 border border-slate-200 hover:border-blue-400 transition"
+                    >
+                      <div className="font-medium text-slate-800">{file}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 text-center text-slate-500">
+                <div className="text-sm">No matching files found in recent.</div>
+              </div>
+            )}
+            
+            <div className="p-4 border-t flex gap-2">
+              <button
+                onClick={handleBrowseMoreFiles}
+                className="flex-1 bg-blue-600 text-white rounded-md py-2 font-medium hover:bg-blue-700 transition"
+              >
+                Browse Files
+              </button>
+              <button
+                onClick={() => setShowFileSearchModal(false)}
+                className="flex-1 bg-slate-200 text-slate-800 rounded-md py-2 font-medium hover:bg-slate-300 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    
     <div className="max-h-[calc(100vh-12rem)] min-h-[calc(100vh-12rem)] mx-auto max-w-5xl px-4 py-6 space-y-6 overflow-x-hidden overflow-y-scroll">
       <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 1 }}>
         <CardContent>
@@ -837,7 +1107,16 @@ const FullExcelFile = () => {
           <label htmlFor="fileUpload" className="cursor-pointer font-semibold text-slate-800 hover:text-blue-600">
             {fileName ? "Change file" : "Upload Excel file"}
           </label>
-          <input id="fileUpload" type="file" ref={fileInputRef} accept=".xlsx,.xls,.xlsm" className="hidden" onChange={handleFileChange} disabled={isLoading} />
+          <input 
+            id="fileUpload" 
+            type="file" 
+            ref={fileInputRef} 
+            accept=".xlsx,.xls,.xlsm" 
+            className="hidden" 
+            onChange={handleFileChange} 
+            disabled={isLoading}
+            title={lastVoiceFileCommand ? `Looking for: ${lastVoiceFileCommand}` : "Select an Excel file"}
+          />
           {!fileName && <p className="mt-1 text-xs text-slate-500">or drag & drop</p>}
         </div>
         <div className="mt-4 flex items-center justify-center gap-3">
@@ -849,6 +1128,13 @@ const FullExcelFile = () => {
           </Button>
         </div>
         {lastCommand && <div className="mt-2 text-xs text-slate-600">Last: {lastCommand}</div>}
+        {voiceFeedback && <div className="mt-2 text-xs font-medium text-blue-600">{voiceFeedback}</div>}
+        {lastVoiceFileCommand && (
+          <div className="mt-3 p-2 rounded-lg bg-yellow-50 border border-yellow-200">
+            <div className="text-xs font-semibold text-yellow-800">🔍 Looking for:</div>
+            <div className="text-sm font-medium text-yellow-900">{lastVoiceFileCommand}</div>
+          </div>
+        )}
       </div>
       <div className="mt-6 flex justify-center">
         <button
@@ -1164,7 +1450,9 @@ const FullExcelFile = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 
 export default FullExcelFile;
+
