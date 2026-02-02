@@ -79,13 +79,11 @@ const FullExcelFile = () => {
     }
   }, []);
 
-  // Sync recent files to localStorage whenever it changes
   useEffect(() => {
     if (recentFiles.length > 0) {
       try {
         localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
         console.log('💾 Recent files synced to localStorage:', recentFiles);
-        // Expose to window for debugging
         window.recentFilesDebug = recentFiles;
       } catch (e) {
         console.error('Failed to save recent files to localStorage:', e);
@@ -246,7 +244,6 @@ const FullExcelFile = () => {
     
     console.log('📥 File selected:', file.name);
     
-    // Check if selected file matches voice command
     if (lastVoiceFileCommand) {
       const fileName = file.name.toLowerCase();
       const fileNameWithoutExt = fileName.split('.')[0];
@@ -266,7 +263,6 @@ const FullExcelFile = () => {
     processFile(file);
     setLastVoiceFileCommand("");
     
-    // Reset file input so same file can be selected again
     if (e.target) {
       e.target.value = '';
     }
@@ -281,17 +277,14 @@ const FullExcelFile = () => {
     setError(null);
     setVoiceFeedback("File selected: " + file.name + ". Processing...");
     
-    // Store file object for current session access
     fileObjectsRef.current[file.name] = file;
     fileObjectsRef.current[file.name.split('.')[0]] = file;
     
-    // Update recent files - add new file to the top
     const newRecent = [file.name, ...recentFiles.filter(f => f !== file.name)].slice(0, 10);
     console.log('  Updating recentFiles from:', recentFiles);
     console.log('  To:', newRecent);
     setRecentFiles(newRecent);
     
-    // Save immediately to localStorage
     try {
       localStorage.setItem('recentFiles', JSON.stringify(newRecent));
       console.log('  ✓ Saved to localStorage:', newRecent);
@@ -808,13 +801,11 @@ const FullExcelFile = () => {
   const handleVoiceCommand = (text) => {
     if (!text) return;
 
-    // Voice command to upload file by name - priority check
     if (text.includes("upload")) {
       handleVoiceFileUpload(text);
       return;
     }
 
-    // Voice command to list recent files
     if (text.includes("list files") || text.includes("show files") || text.includes("recent files") || text.includes("what files")) {
       if (recentFiles.length > 0) {
         const fileList = recentFiles.slice(0, 5).join(", ");
@@ -826,7 +817,6 @@ const FullExcelFile = () => {
       return;
     }
 
-    // Voice command to open file dialog
     if (text.includes("open file") || text.includes("select file") || text.includes("choose file")) {
       setVoiceFeedback("Opening file selector...");
       setTimeout(() => setVoiceFeedback(""), 3000);
@@ -834,7 +824,6 @@ const FullExcelFile = () => {
       return;
     }
 
-    // Voice command to select a sheet by name
     if (text.includes("select sheet") || text.includes("open sheet") || text.includes("go to sheet") || text.includes("click sheet")) {
       handleSelectSheetByVoice(text);
       return;
@@ -867,7 +856,6 @@ const FullExcelFile = () => {
     const cleaned = normalize(text);
     let foundSheet = "";
     
-    // Try to match exact sheet names
     sheetNames.forEach((sheet) => {
       const normSheet = normalize(sheet);
       if (cleaned.includes(normSheet)) {
@@ -875,7 +863,6 @@ const FullExcelFile = () => {
       }
     });
 
-    // If no exact match, try partial matching
     if (!foundSheet) {
       const tokens = cleaned.split(/\s+/).filter(Boolean);
       for (const sheet of sheetNames) {
@@ -895,7 +882,6 @@ const FullExcelFile = () => {
       setVoiceFeedback(`Sheet "${foundSheet}" selected`);
       if (feedbackRef.current) clearTimeout(feedbackRef.current);
       feedbackRef.current = setTimeout(() => setVoiceFeedback(""), 2000);
-      // Show feedback
       const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj==');
       audio.play().catch(() => {});
     }
@@ -904,18 +890,15 @@ const FullExcelFile = () => {
   const handleVoiceFileUpload = (text) => {
     const cleaned = text.toLowerCase();
 
-    // Debug: Check what's in state AND localStorage
     const storedInLS = localStorage.getItem('recentFiles');
     console.log('🎤 VOICE UPLOAD CALLED');
     console.log('  Current recentFiles state:', recentFiles);
     console.log('  Data in localStorage:', storedInLS ? JSON.parse(storedInLS) : 'NOTHING');
     console.log('  window.recentFilesDebug:', window.recentFilesDebug);
 
-    // Extract the search term (everything after "upload")
     const uploadMatch = cleaned.match(/upload\s+(.+)/);
     const searchTerm = uploadMatch ? uploadMatch[1].trim() : cleaned.replace("upload", "").trim();
 
-    // Debug log
     console.log('🔍 Voice upload search:', {
       searchTerm,
       searchTermType: typeof searchTerm,
@@ -924,7 +907,6 @@ const FullExcelFile = () => {
       recentFilesList: recentFiles
     });
 
-    // Find files matching the search term in recent files
     const matches = recentFiles.filter(file => {
       const fileName = file.toLowerCase();
       const fileNameWithoutExt = fileName.split('.')[0];
@@ -938,7 +920,6 @@ const FullExcelFile = () => {
     console.log('📝 Matches found:', matches.length, matches);
 
     if (matches.length > 0) {
-      // Found matching files - auto-load the first one
       const fileToLoad = matches[0];
       console.log('✅ Auto-loading first match:', fileToLoad);
       const file = fileObjectsRef.current[fileToLoad] || fileObjectsRef.current[fileToLoad.split('.')[0]];
@@ -949,14 +930,12 @@ const FullExcelFile = () => {
         setLastVoiceFileCommand("");
         setTimeout(() => setVoiceFeedback(""), 2000);
       } else {
-        // File object not cached in this session, open picker
         console.log('⚠ File object not in cache, opening picker');
         setLastVoiceFileCommand(searchTerm);
         setVoiceFeedback("File found but need to select. Opening file picker...");
         setTimeout(() => fileInputRef.current?.click(), 300);
       }
     } else {
-      // No matches in recent files - open file picker
       setLastVoiceFileCommand(searchTerm);
       setVoiceFeedback("No recent files found. Opening file picker...");
       setTimeout(() => fileInputRef.current?.click(), 300);
@@ -972,7 +951,6 @@ const FullExcelFile = () => {
       setTimeout(() => setVoiceFeedback(""), 2000);
       setLastVoiceFileCommand("");
     } else {
-      // File not in objects, open picker
       fileInputRef.current?.click();
       setShowFileSearchModal(false);
     }
