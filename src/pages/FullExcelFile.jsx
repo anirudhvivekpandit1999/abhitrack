@@ -850,6 +850,10 @@ const FullExcelFile = () => {
       handleSetAxisFromVoice(text, "y");
       return;
     }
+
+    if (text.toLowerCase().includes("add new sheet")){
+      setShowAddPanel(true);
+    }
   };
 
   const handleSelectSheetByVoice = (text) => {
