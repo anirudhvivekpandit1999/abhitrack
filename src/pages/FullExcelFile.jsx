@@ -488,6 +488,34 @@ const FullExcelFile = () => {
     return "";
   };
 
+  const getPendingColumns = () => {
+    try {
+      const raw = sessionStorage.getItem('pendingColumnsToAdd');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+      return [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const applyPendingColumnsToRows = (rows) => {
+    if (!Array.isArray(rows) || rows.length === 0) return rows || [];
+    const pending = getPendingColumns();
+    if (!pending || pending.length === 0) return rows;
+    return rows.map((row, idx) => {
+      const nr = { ...row };
+      pending.forEach((pc) => {
+        if (pc && pc.name) {
+          const val = resolvePendingValue(pc, row, idx);
+          nr[pc.name] = val;
+        }
+      });
+      return nr;
+    });
+  };
+
   const handleAddSheetSubmit = async () => {
     setError(null);
     const trimmed = newSheetName.trim();
@@ -689,10 +717,14 @@ const FullExcelFile = () => {
       ];
 
   const previewSheet = excelData.find((s) => s.sheetName === (copyFromSheet || selectedSheet)) || { sheetData: [] };
-  const previewHeaders = previewSheet.sheetData && previewSheet.sheetData.length ? Object.keys(previewSheet.sheetData[0]) : [];
+  const previewSheetWithPending = {
+    ...previewSheet,
+    sheetData: applyPendingColumnsToRows(previewSheet.sheetData || [])
+  };
+  const previewHeaders = previewSheetWithPending.sheetData && previewSheetWithPending.sheetData.length ? Object.keys(previewSheetWithPending.sheetData[0]) : [];
 
   const getPreviewRowDate = (rowIndex) => {
-    const row = previewSheet.sheetData && previewSheet.sheetData[rowIndex];
+    const row = previewSheetWithPending.sheetData && previewSheetWithPending.sheetData[rowIndex];
     if (!row) return "";
     const dateKey = previewHeaders.find((h) => h.toLowerCase().includes("date")) || previewHeaders.find((h) => h.toLowerCase().includes("time")) || previewHeaders[0];
     const val = row[dateKey];
@@ -991,6 +1023,8 @@ const FullExcelFile = () => {
     }
   };
 
+  const displayedSelectedSheetData = applyPendingColumnsToRows(selectedSheetData || []);
+
   return (
     <>
       {showFileSearchModal && (
@@ -1263,7 +1297,7 @@ const FullExcelFile = () => {
                         <div className="text-xs text-slate-500">Click header to set Y-axis / toggle selection | Click a row to fill focused range input</div>
                       </div>
                       <div className="mt-2" style={{ height: `calc(100% - 36px)` }}>
-                        {previewSheet.sheetData && previewSheet.sheetData.length > 0 ? (
+                        {previewSheetWithPending.sheetData && previewSheetWithPending.sheetData.length > 0 ? (
                           <div className="w-full h-full overflow-auto">
                             <div className="w-full overflow-x-auto h-full">
                               <table className="text-xs border-separate" style={{ borderSpacing: 0, width: "max-content" }}>
@@ -1280,7 +1314,7 @@ const FullExcelFile = () => {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {previewSheet.sheetData.slice(0, 200).map((row, i) => (
+                                  {previewSheetWithPending.sheetData.map((row, i) => (
                                     <tr key={i} onClick={() => handlePreviewRowClick(i)} style={{ cursor: activeTarget ? "pointer" : "default" }}>
                                       {previewHeaders.map((k, j) => (
                                         <td key={j} className={`border px-2 py-1 text-xs ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{renderCellValue(row[k])}</td>
@@ -1400,7 +1434,7 @@ const FullExcelFile = () => {
           </div>
 
           <div className="p-4">
-            {selectedSheetData.length > 0 ? (
+            {displayedSelectedSheetData.length > 0 ? (
               <div className="relative rounded-lg border overflow-hidden">
                 <div className="absolute right-2 top-2 z-10 rounded bg-slate-800 px-2 py-0.5 text-xs text-white md:hidden">Scroll →</div>
 
@@ -1408,15 +1442,15 @@ const FullExcelFile = () => {
                   <table className="text-sm border-separate" style={{ borderSpacing: 0, width: "max-content" }}>
                     <thead className="sticky top-0 bg-slate-100 shadow-sm">
                       <tr>
-                        {Object.keys(selectedSheetData[0]).map((key) => (
+                        {Object.keys(displayedSelectedSheetData[0]).map((key) => (
                           <th key={key} className={`border px-4 py-2 text-left font-semibold text-slate-700 ${isColumnSelected(key) ? "bg-green-50 text-green-700" : ""}`}>{key}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedSheetData.map((row, i) => (
+                      {displayedSelectedSheetData.map((row, i) => (
                         <tr key={i}>
-                          {Object.keys(selectedSheetData[0]).map((k, j) => (
+                          {Object.keys(displayedSelectedSheetData[0]).map((k, j) => (
                             <td key={j} className={`border px-4 py-2 ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{renderCellValue(row[k])}</td>
                           ))}
                         </tr>
@@ -1437,4 +1471,3 @@ const FullExcelFile = () => {
 };
 
 export default FullExcelFile;
-
