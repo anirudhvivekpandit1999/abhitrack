@@ -1074,398 +1074,446 @@ const FullExcelFile = () => {
         </div>
       )}
     
-    <div className="max-h-[calc(100vh-12rem)] min-h-[calc(100vh-12rem)] mx-auto max-w-5xl px-4 py-6 space-y-6 overflow-x-hidden overflow-y-scroll">
-      <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 1 }}>
-        <CardContent>
-          <Typography variant="h6" component="h3" color="primary.main" sx={{ mb: 2 }}>
-            Project Information (Optional)
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Client Name"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                variant="outlined"
-                size="medium"
-                placeholder="Enter client name"
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Plant Name"
-                value={plantName}
-                onChange={(e) => setPlantName(e.target.value)}
-                variant="outlined"
-                size="medium"
-                placeholder="Enter plant name"
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Product Name"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                variant="outlined"
-                size="medium"
-                placeholder="Enter product name"
-              />
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-      <div className="mx-auto max-w-md rounded-2xl border-2 border-dashed bg-slate-50 p-8 text-center transition hover:border-blue-500 hover:bg-blue-50 hover:shadow-lg">
-        <CloudUploadIcon className="mb-3 text-[52px] text-slate-700" />
-        <div className="text-sm">
-          <label htmlFor="fileUpload" className="cursor-pointer font-semibold text-slate-800 hover:text-blue-600">
-            {fileName ? "Change file" : "Upload Excel file"}
-          </label>
-          <input 
-            id="fileUpload" 
-            type="file" 
-            ref={fileInputRef} 
-            accept=".xlsx,.xls,.xlsm" 
-            className="hidden" 
-            onChange={handleFileChange} 
-            disabled={isLoading}
-            title={lastVoiceFileCommand ? `Looking for: ${lastVoiceFileCommand}` : "Select an Excel file"}
-          />
-          {!fileName && <p className="mt-1 text-xs text-slate-500">or drag & drop</p>}
-        </div>
-        <div className="mt-4 flex items-center justify-center gap-3">
-          {fileName && (
-            <div className="inline-flex items-center gap-2 rounded-lg bg-blue-100 px-4 py-1.5 text-sm font-medium text-blue-700">{fileName}</div>
-          )}
-          <Button variant="outlined" startIcon={<MicIcon />} onClick={() => (isListening ? stopListening() : startListening())}>
-            {isListening ? "Listening..." : "Voice"}
-          </Button>
-        </div>
-        {lastCommand && <div className="mt-2 text-xs text-slate-600">Last: {lastCommand}</div>}
-        {voiceFeedback && <div className="mt-2 text-xs font-medium text-blue-600">{voiceFeedback}</div>}
-        {lastVoiceFileCommand && (
-          <div className="mt-3 p-2 rounded-lg bg-yellow-50 border border-yellow-200">
-            <div className="text-xs font-semibold text-yellow-800">🔍 Looking for:</div>
-            <div className="text-sm font-medium text-yellow-900">{lastVoiceFileCommand}</div>
-          </div>
-        )}
-      </div>
-      <div className="mt-6 flex justify-center">
-        <button
-          onClick={() => {
-            const preSheetData = (excelData.find(s => s.sheetName === preProduct)).sheetData
-            const preSheetName = preProduct;
-            console.log("[DEBUG] cols =", cols);
-            console.log("[DEBUG] preProductData", preSheetData);
-            const sheet = sheetNames;
-            console.log("[DEBUG] sheetNames =", sheet);
-            const postSheetData = (excelData.find(s => s.sheetName === postProduct)).sheetData
-            console.log("[DEBUG] postProductData", postSheetData);
-            const postSheetName = postProduct;
-            navigation("/visualize-data", {
-              state: {
-                availableCols: cols,
-                preProductData: preSheetData,
-                postProductData: postSheetData,
-                excelData : excelData,
-                sheetNames : sheet,
-                preSheetName: preSheetName,
-                postSheetName: postSheetName
-              }
-            })
-          }}
-          disabled={!fileName}
-          className="relative inline-flex items-center justify-center rounded-xl bg-blue-600 px-10 py-3 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:bg-blue-700 hover:shadow-xl active:scale-95 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
-        >
-          Continue to Data Checks →
-        </button>
-      </div>
+      <div className="flex gap-6 max-w-7xl mx-auto px-4 py-6 justify-center">
+        <div className="flex-1 max-h-[calc(100vh-12rem)] overflow-y-scroll space-y-6 max-w-[68%]">
+          <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 1 }}>
+            <CardContent>
+              <Typography variant="h6" component="h3" color="primary.main" sx={{ mb: 2 }}>
+                Project Information (Optional)
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Client Name"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    variant="outlined"
+                    size="medium"
+                    placeholder="Enter client name"
+                  />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Plant Name"
+                    value={plantName}
+                    onChange={(e) => setPlantName(e.target.value)}
+                    variant="outlined"
+                    size="medium"
+                    placeholder="Enter plant name"
+                  />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Product Name"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    variant="outlined"
+                    size="medium"
+                    placeholder="Enter product name"
+                  />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
 
-      {sheetNames.length > 0 && (
-        <div className="rounded-xl border bg-white shadow-sm">
-          <div className="relative border-b px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold text-slate-700">Sheets</div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleDownloadExcel}
-                  disabled={excelData.length === 0}
-                  className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-50"
-                >
-                  Download Excel
-                </button>
-                <button onClick={() => setShowAddPanel((s) => !s)} className="ml-2 inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-green-700 focus:outline-none">
-                  <span className="text-lg leading-none">+</span>
-                </button>
+          <div className="mx-auto max-w-md rounded-2xl border-2 border-dashed bg-slate-50 p-8 text-center transition hover:border-blue-500 hover:bg-blue-50 hover:shadow-lg">
+            <CloudUploadIcon className="mb-3 text-[52px] text-slate-700" />
+            <div className="text-sm">
+              <label htmlFor="fileUpload" className="cursor-pointer font-semibold text-slate-800 hover:text-blue-600">
+                {fileName ? "Change file" : "Upload Excel file"}
+              </label>
+              <input 
+                id="fileUpload" 
+                type="file" 
+                ref={fileInputRef} 
+                accept=".xlsx,.xls,.xlsm" 
+                className="hidden" 
+                onChange={handleFileChange} 
+                disabled={isLoading}
+                title={lastVoiceFileCommand ? `Looking for: ${lastVoiceFileCommand}` : "Select an Excel file"}
+              />
+              {!fileName && <p className="mt-1 text-xs text-slate-500">or drag & drop</p>}
+            </div>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              {fileName && (
+                <div className="inline-flex items-center gap-2 rounded-lg bg-blue-100 px-4 py-1.5 text-sm font-medium text-blue-700">{fileName}</div>
+              )}
+            </div>
+            {lastCommand && <div className="mt-2 text-xs text-slate-600">Last: {lastCommand}</div>}
+            {voiceFeedback && <div className="mt-2 text-xs font-medium text-blue-600">{voiceFeedback}</div>}
+            {lastVoiceFileCommand && (
+              <div className="mt-3 p-2 rounded-lg bg-yellow-50 border border-yellow-200">
+                <div className="text-xs font-semibold text-yellow-800">🔍 Looking for:</div>
+                <div className="text-sm font-medium text-yellow-900">{lastVoiceFileCommand}</div>
               </div>
-            </div>
+            )}
+          </div>
 
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
-              {sheetNames.map((sheet) => (
-                <button key={sheet} onClick={() => setSelectedSheet(sheet)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition
-                    ${selectedSheet === sheet ? "bg-blue-600 text-white shadow" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
-                  {sheet}
-                </button>
-              ))}
-            </div>
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={() => {
+                const preSheetData = (excelData.find(s => s.sheetName === preProduct)).sheetData
+                const preSheetName = preProduct;
+                console.log("[DEBUG] cols =", cols);
+                console.log("[DEBUG] preProductData", preSheetData);
+                const sheet = sheetNames;
+                console.log("[DEBUG] sheetNames =", sheet);
+                const postSheetData = (excelData.find(s => s.sheetName === postProduct)).sheetData
+                console.log("[DEBUG] postProductData", postSheetData);
+                const postSheetName = postProduct;
+                navigation("/visualize-data", {
+                  state: {
+                    availableCols: cols,
+                    preProductData: preSheetData,
+                    postProductData: postSheetData,
+                    excelData : excelData,
+                    sheetNames : sheet,
+                    preSheetName: preSheetName,
+                    postSheetName: postSheetName
+                  }
+                })
+              }}
+              disabled={!fileName}
+              className="relative inline-flex items-center justify-center rounded-xl bg-blue-600 px-10 py-3 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:bg-blue-700 hover:shadow-xl active:scale-95 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
+            >
+              Continue to Data Checks →
+            </button>
+          </div>
 
-            {showAddPanel && (
-              <div className="mt-3">
-                <div ref={addGridRef} className="grid grid-cols-2 grid-rows-2 gap-4" style={{ height: addGridHeight }}>
-                  <div className="rounded-md border bg-slate-50 p-3 overflow-auto h-full">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-sm font-medium text-slate-800">Create new Excel</div>
-                      <button onClick={() => {
-                        setShowAddPanel(false);
-                        setNewSheetName("");
-                        setCopyFromSheet("");
-                        setError(null);
-                        setColumnNames([]);
-                        setSelectedColumns([""]);
-                        setRowRanges([{ name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" }]);
-                        setBifurcateSlices([]);
-                        setActiveTarget(null);
-                      }} className="text-slate-500 hover:text-slate-700">✕</button>
-                    </div>
+          {sheetNames.length > 0 && (
+            <div className="rounded-xl border bg-white shadow-sm">
+              <div className="relative border-b px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-slate-700">Sheets</div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleDownloadExcel}
+                      disabled={excelData.length === 0}
+                      className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      Download Excel
+                    </button>
+                    <button onClick={() => setShowAddPanel((s) => !s)} className="ml-2 inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-green-700 focus:outline-none">
+                      <span className="text-lg leading-none">+</span>
+                    </button>
+                  </div>
+                </div>
 
-                    <div className="mt-3">
-                      <input value={newSheetName} onChange={(e) => setNewSheetName(e.target.value)} placeholder="Enter sheet/file name" className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-                    </div>
+                <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
+                  {sheetNames.map((sheet) => (
+                    <button key={sheet} onClick={() => setSelectedSheet(sheet)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition
+                        ${selectedSheet === sheet ? "bg-blue-600 text-white shadow" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
+                      {sheet}
+                    </button>
+                  ))}
+                </div>
 
-                    <div className="mt-3">
-                      <label className="block text-xs text-slate-600">Copy from existing sheet (optional)</label>
-                      <select value={copyFromSheet} onChange={(e) => setCopyFromSheet(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
-                        <option value="">-- Do not copy (create blank sheet) --</option>
-                        {sheetNames.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </div>
+                {showAddPanel && (
+                  <div className="mt-3">
+                    <div ref={addGridRef} className="grid grid-cols-2 grid-rows-2 gap-4" style={{ height: addGridHeight }}>
+                      <div className="rounded-md border bg-slate-50 p-3 overflow-auto h-full">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-sm font-medium text-slate-800">Create new Excel</div>
+                          <button onClick={() => {
+                            setShowAddPanel(false);
+                            setNewSheetName("");
+                            setCopyFromSheet("");
+                            setError(null);
+                            setColumnNames([]);
+                            setSelectedColumns([""]);
+                            setRowRanges([{ name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" }]);
+                            setBifurcateSlices([]);
+                            setActiveTarget(null);
+                          }} className="text-slate-500 hover:text-slate-700">✕</button>
+                        </div>
 
-                    <div className="mt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs font-medium text-slate-600">Add sheet name & row range</div>
-                        <button onClick={addRowRange} className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700">+</button>
-                      </div>
-                      <div className="space-y-2">
-                        {rowRanges.map((rr, idx) => (
-                          <div key={idx} className="flex gap-2">
-                            <input value={rr.name} onChange={(e) => handleRowRangeChange(idx, "name", e.target.value, newSheetName)} placeholder="New sheet name" className="w-1/3 rounded-md border px-3 py-2 text-sm" />
-                            <input value={rr.startDisplay || rr.startRange} onChange={(e) => handleRowRangeChange(idx, "startRange", e.target.value, newSheetName)} placeholder="start e.g. 1" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "startRange" })} />
-                            <input value={rr.endDisplay || rr.endRange} onChange={(e) => {
-                              const value = e.target.value;
-                              handleRowRangeChange(idx, "endRange", value, newSheetName);
-                              if (debounceRef.current) {
-                                clearTimeout(debounceRef.current);
-                              }
-                              debounceRef.current = setTimeout(() => {
-                                buildTempSlices();
-                              }, 300);
-                            }} placeholder="end e.g. 10" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "endRange" })} />
-                            {rowRanges.length > 1 && (
-                              <button onClick={() => removeRowRange(idx)} className="ml-1 rounded-md bg-red-600 px-2 py-1 text-xs text-white">✕</button>
-                            )}
+                        <div className="mt-3">
+                          <input value={newSheetName} onChange={(e) => setNewSheetName(e.target.value)} placeholder="Enter sheet/file name" className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                        </div>
+
+                        <div className="mt-3">
+                          <label className="block text-xs text-slate-600">Copy from existing sheet (optional)</label>
+                          <select value={copyFromSheet} onChange={(e) => setCopyFromSheet(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+                            <option value="">-- Do not copy (create blank sheet) --</option>
+                            {sheetNames.map((s) => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs font-medium text-slate-600">Add sheet name & row range</div>
+                            <button onClick={addRowRange} className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700">+</button>
                           </div>
-                        ))}
-                      </div>
-
-                      {bifurcateSlices.length > 0 && (
-                        <div className="mt-3 text-xs">
-                          <div className="font-medium mb-1">Trimmed slices preview</div>
-                          <div className="flex flex-col gap-1">
-                            {bifurcateSlices.map((s) => (
-                              <div key={s.fullName} className="flex items-center gap-2 text-xs">
-                                <div style={{ width: 12, height: 12, borderRadius: 4, background: s.colorHex }} />
-                                <div className="font-medium">{s.fullName}</div>
-                                <div className="text-slate-500">({s.start + 1} to {s.end + 1}, {s.rows.length} rows)</div>
+                          <div className="space-y-2">
+                            {rowRanges.map((rr, idx) => (
+                              <div key={idx} className="flex gap-2">
+                                <input value={rr.name} onChange={(e) => handleRowRangeChange(idx, "name", e.target.value, newSheetName)} placeholder="New sheet name" className="w-1/3 rounded-md border px-3 py-2 text-sm" />
+                                <input value={rr.startDisplay || rr.startRange} onChange={(e) => handleRowRangeChange(idx, "startRange", e.target.value, newSheetName)} placeholder="start e.g. 1" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "startRange" })} />
+                                <input value={rr.endDisplay || rr.endRange} onChange={(e) => {
+                                  const value = e.target.value;
+                                  handleRowRangeChange(idx, "endRange", value, newSheetName);
+                                  if (debounceRef.current) {
+                                    clearTimeout(debounceRef.current);
+                                  }
+                                  debounceRef.current = setTimeout(() => {
+                                    buildTempSlices();
+                                  }, 300);
+                                }} placeholder="end e.g. 10" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "endRange" })} />
+                                {rowRanges.length > 1 && (
+                                  <button onClick={() => removeRowRange(idx)} className="ml-1 rounded-md bg-red-600 px-2 py-1 text-xs text-white">✕</button>
+                                )}
                               </div>
                             ))}
                           </div>
+
+                          {bifurcateSlices.length > 0 && (
+                            <div className="mt-3 text-xs">
+                              <div className="font-medium mb-1">Trimmed slices preview</div>
+                              <div className="flex flex-col gap-1">
+                                {bifurcateSlices.map((s) => (
+                                  <div key={s.fullName} className="flex items-center gap-2 text-xs">
+                                    <div style={{ width: 12, height: 12, borderRadius: 4, background: s.colorHex }} />
+                                    <div className="font-medium">{s.fullName}</div>
+                                    <div className="text-slate-500">({s.start + 1} to {s.end + 1}, {s.rows.length} rows)</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                         </div>
-                      )}
 
-                    </div>
-
-                  </div>
-
-                  <div className="rounded-md border bg-white p-0 overflow-auto h-full">
-                    <div className="h-full w-full p-3">
-                      <div className="px-2 py-2 sticky top-0 bg-white z-10 flex items-center justify-between border-b">
-                        <div className="text-xs font-medium">Preview: {copyFromSheet || selectedSheet || "No sheet"}</div>
-                        <div className="text-xs text-slate-500">Click header to set Y-axis / toggle selection | Click a row to fill focused range input</div>
                       </div>
-                      <div className="mt-2" style={{ height: `calc(100% - 36px)` }}>
-                        {previewSheetWithPending.sheetData && previewSheetWithPending.sheetData.length > 0 ? (
-                          <div className="w-full h-full overflow-auto">
-                            <div className="w-full overflow-x-auto h-full">
-                              <table className="text-xs border-separate" style={{ borderSpacing: 0, width: "max-content" }}>
-                                <thead className="bg-slate-50">
-                                  <tr>
-                                    {previewHeaders.map((key) => (
-                                      <th
-                                        key={key}
-                                        onClick={() => { setYAxis(key); toggleColumnSelection(key); }}
-                                        className={`cursor-pointer border px-2 py-2 text-left font-semibold ${yAxis === key ? "bg-blue-50 text-blue-700" : ""} ${isColumnSelected(key) ? "bg-green-50 text-green-700" : ""}`}>
-                                        {key}
-                                      </th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {previewSheetWithPending.sheetData.map((row, i) => (
-                                    <tr key={i} onClick={() => handlePreviewRowClick(i)} style={{ cursor: activeTarget ? "pointer" : "default" }}>
-                                      {previewHeaders.map((k, j) => (
-                                        <td key={j} className={`border px-2 py-1 text-xs ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{renderCellValue(row[k])}</td>
+
+                      <div className="rounded-md border bg-white p-0 overflow-auto h-full">
+                        <div className="h-full w-full p-3">
+                          <div className="px-2 py-1 bg-gradient-to-r from-slate-50 to-white flex items-center justify-between border-b">
+                            <div className="text-xs font-medium">Preview: {copyFromSheet || selectedSheet || "No sheet"}</div>
+                            <div className="text-xs text-slate-500">Click header to set Y-axis / toggle selection | Click a row to fill focused range input</div>
+                          </div>
+                          <div className="mt-2" style={{ height: `calc(100% - 34px)` }}>
+                            {previewSheetWithPending.sheetData && previewSheetWithPending.sheetData.length > 0 ? (
+                              <div className="w-full h-full overflow-auto">
+                                <div className="w-full overflow-x-auto h-full">
+                                  <table className="min-w-full divide-y divide-slate-200">
+                                    <thead className="bg-gradient-to-r from-slate-50 to-slate-100">
+                                      <tr>
+                                        {previewHeaders.map((key) => (
+                                          <th
+                                            key={key}
+                                            onClick={() => { setYAxis(key); toggleColumnSelection(key); }}
+                                            className={`cursor-pointer px-2 py-1 text-left text-xs font-semibold text-slate-700 ${yAxis === key ? "bg-blue-50 text-blue-700" : ""} ${isColumnSelected(key) ? "bg-green-50 text-green-700" : ""}`}>
+                                            {key}
+                                          </th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-slate-100">
+                                      {previewSheetWithPending.sheetData.map((row, i) => (
+                                        <tr key={i} onClick={() => handlePreviewRowClick(i)} className={`${activeTarget ? "cursor-pointer" : ""} hover:bg-slate-50`}>
+                                          {previewHeaders.map((k, j) => (
+                                            <td key={j} className={`px-2 py-1 text-xs ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{renderCellValue(row[k])}</td>
+                                          ))}
+                                        </tr>
                                       ))}
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="p-4 text-xs text-slate-500 h-full flex items-center justify-center">No data to preview</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-md border bg-white p-3 overflow-auto h-full">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">X-Axis</label>
+                            <select value={xAxis} onChange={(e) => setXAxis(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm">
+                              <option value="">Select column</option>
+                              {columnNames.map((col) => (
+                                <option key={col} value={col}>{col}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Y-Axis</label>
+                            <select value={yAxis} onChange={(e) => setYAxis(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm">
+                              <option value="">Select column</option>
+                              {columnNames.map((col) => (
+                                <option key={col} value={col}>{col}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="mt-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs font-medium text-slate-600">Select columns to keep</div>
+                            <div className="flex gap-2">
+                              <button onClick={handleAddColumnSelector} disabled={columnNames.length === 0 || selectedColumns.length >= columnNames.length} className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50">+</button>
+                              <button onClick={openColumnBuilder} className="inline-flex items-center rounded-md bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700">Column Builder</button>
                             </div>
                           </div>
-                        ) : (
-                          <div className="p-4 text-xs text-slate-500 h-full flex items-center justify-center">No data to preview</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="rounded-md border bg-white p-3 overflow-auto h-full">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-medium text-slate-600 mb-1">X-Axis</label>
-                        <select value={xAxis} onChange={(e) => setXAxis(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm">
-                          <option value="">Select column</option>
-                          {columnNames.map((col) => (
-                            <option key={col} value={col}>{col}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-slate-600 mb-1">Y-Axis</label>
-                        <select value={yAxis} onChange={(e) => setYAxis(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm">
-                          <option value="">Select column</option>
-                          {columnNames.map((col) => (
-                            <option key={col} value={col}>{col}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs font-medium text-slate-600">Select columns to keep</div>
-                        <div className="flex gap-2">
-                          <button onClick={handleAddColumnSelector} disabled={columnNames.length === 0 || selectedColumns.length >= columnNames.length} className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50">+</button>
-                          <button onClick={openColumnBuilder} className="inline-flex items-center rounded-md bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700">Column Builder</button>
+                          <div className="space-y-2">
+                            {selectedColumns.map((sel, idx) => {
+                              const available = columnNames.filter((c) => c === sel || !selectedColumns.includes(c));
+                              return (
+                                <div key={idx}>
+                                  <select value={sel} onChange={(e) => handleColumnChange(idx, e.target.value)} className="w-full rounded-md border px-3 py-2 text-sm">
+                                    <option value="">-- select column --</option>
+                                    {available.map((col) => (
+                                      <option key={col} value={col}>{col}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="space-y-2">
-                        {selectedColumns.map((sel, idx) => {
-                          const available = columnNames.filter((c) => c === sel || !selectedColumns.includes(c));
-                          return (
-                            <div key={idx}>
-                              <select value={sel} onChange={(e) => handleColumnChange(idx, e.target.value)} className="w-full rounded-md border px-3 py-2 text-sm">
-                                <option value="">-- select column --</option>
-                                {available.map((col) => (
-                                  <option key={col} value={col}>{col}</option>
-                                ))}
-                              </select>
+                        {error && <div className="mt-3 text-xs text-red-600">{error}</div>}
+
+                        <div className="mt-3 flex gap-2">
+                          <button onClick={handleAddSheetSubmit} className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-60" disabled={addLoading}>{addLoading ? "Creating..." : "Submit"}</button>
+                          <button onClick={() => { setShowAddPanel(false); setNewSheetName(""); setCopyFromSheet(""); setError(null); setActiveTarget(null); }} className="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 border hover:bg-slate-50">Cancel</button>
+                        </div>
+
+                        {showColumnBuilder && (
+                          <div className="mt-4 p-3 rounded-md border bg-gray-50">
+                            <div className="flex justify-between items-center mb-2">
+                              <div className="text-sm font-medium">Column Builder</div>
+                              <Button size="small" onClick={() => setShowColumnBuilder(false)}>Close</Button>
                             </div>
-                          );
-                        })}
+                            <FormulaBuilder
+                              availableColumns={columnNames}
+                              updatedColumns={[]}
+                              onAddColumn={handleAddColumn}
+                              withProductData={builderRows}
+                              withoutProductData={builderRows}
+                            />
+                          </div>
+                        )}
+
                       </div>
-                    </div>
 
-                    {error && <div className="mt-3 text-xs text-red-600">{error}</div>}
-
-                    <div className="mt-3 flex gap-2">
-                      <button onClick={handleAddSheetSubmit} className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-60" disabled={addLoading}>{addLoading ? "Creating..." : "Submit"}</button>
-                      <button onClick={() => { setShowAddPanel(false); setNewSheetName(""); setCopyFromSheet(""); setError(null); setActiveTarget(null); }} className="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 border hover:bg-slate-50">Cancel</button>
-                    </div>
-
-                    {showColumnBuilder && (
-                      <div className="mt-4 p-3 rounded-md border bg-gray-50">
-                        <div className="flex justify-between items-center mb-2">
-                          <div className="text-sm font-medium">Column Builder</div>
-                          <Button size="small" onClick={() => setShowColumnBuilder(false)}>Close</Button>
+                      <div className="rounded-md border bg-white p-3 overflow-auto h-full">
+                        <div className="h-full w-full" style={{ minHeight: 0 }}>
+                          {scatterSlicesData.some((s) => s.data && s.data.length > 0) ? (
+                            <div style={{ height: "100%", minHeight: 120 }}>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+                                  <CartesianGrid />
+                                  <XAxis type="number" dataKey="x" name={xAxis} />
+                                  <YAxis type="number" dataKey="y" name={yAxis} />
+                                  <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                                  {scatterSlicesData.map((s, i) => (
+                                    <Scatter key={i} data={s.data} fill={s.color} name={s.name} />
+                                  ))}
+                                </ScatterChart>
+                              </ResponsiveContainer>
+                            </div>
+                          ) : (
+                            <div className="h-full flex items-center justify-center text-xs text-slate-500 p-4">No scatter data</div>
+                          )}
                         </div>
-                        <FormulaBuilder
-                          availableColumns={columnNames}
-                          updatedColumns={[]}
-                          onAddColumn={handleAddColumn}
-                          withProductData={builderRows}
-                          withoutProductData={builderRows}
-                        />
                       </div>
-                    )}
 
-                  </div>
-
-                  <div className="rounded-md border bg-white p-3 overflow-auto h-full">
-                    <div className="h-full w-full" style={{ minHeight: 0 }}>
-                      {scatterSlicesData.some((s) => s.data && s.data.length > 0) ? (
-                        <div style={{ height: "100%", minHeight: 120 }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
-                              <CartesianGrid />
-                              <XAxis type="number" dataKey="x" name={xAxis} />
-                              <YAxis type="number" dataKey="y" name={yAxis} />
-                              <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-                              {scatterSlicesData.map((s, i) => (
-                                <Scatter key={i} data={s.data} fill={s.color} name={s.name} />
-                              ))}
-                            </ScatterChart>
-                          </ResponsiveContainer>
-                        </div>
-                      ) : (
-                        <div className="h-full flex items-center justify-center text-xs text-slate-500 p-4">No scatter data</div>
-                      )}
                     </div>
                   </div>
-
-                </div>
+                )}
               </div>
-            )}
-          </div>
 
-          <div className="p-4">
-            {displayedSelectedSheetData.length > 0 ? (
-              <div className="relative rounded-lg border overflow-hidden">
-                <div className="absolute right-2 top-2 z-10 rounded bg-slate-800 px-2 py-0.5 text-xs text-white md:hidden">Scroll →</div>
+              <div className="p-4">
+                {displayedSelectedSheetData.length > 0 ? (
+                  <div className="relative rounded-lg border overflow-hidden shadow-sm">
+                    <div className="absolute right-2 top-2 z-10 rounded bg-slate-800 px-2 py-0.5 text-xs text-white md:hidden">Scroll →</div>
 
-                <div className="w-full overflow-x-auto">
-                  <table className="text-sm border-separate" style={{ borderSpacing: 0, width: "max-content" }}>
-                    <thead className="sticky top-0 bg-slate-100 shadow-sm">
-                      <tr>
-                        {Object.keys(displayedSelectedSheetData[0]).map((key) => (
-                          <th key={key} className={`border px-4 py-2 text-left font-semibold text-slate-700 ${isColumnSelected(key) ? "bg-green-50 text-green-700" : ""}`}>{key}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {displayedSelectedSheetData.map((row, i) => (
-                        <tr key={i}>
-                          {Object.keys(displayedSelectedSheetData[0]).map((k, j) => (
-                            <td key={j} className={`border px-4 py-2 ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{renderCellValue(row[k])}</td>
+                    <div className="w-full overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200">
+                        <thead className="bg-gradient-to-r from-slate-100 to-white">
+                          <tr>
+                            {Object.keys(displayedSelectedSheetData[0]).map((key) => (
+                              <th key={key} className={`px-3 py-2 text-left text-sm font-semibold text-slate-700 ${isColumnSelected(key) ? "bg-green-50 text-green-700" : ""}`}>{key}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-slate-100">
+                          {displayedSelectedSheetData.map((row, i) => (
+                            <tr key={i} className="hover:bg-slate-50">
+                              {Object.keys(displayedSelectedSheetData[0]).map((k, j) => (
+                                <td key={j} className={`px-4 py-2 text-sm ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{renderCellValue(row[k])}</td>
+                              ))}
+                            </tr>
                           ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed p-8 text-center text-sm text-slate-500">No data available for this sheet</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <aside className="fixed right-6 top-20 w-64 hidden md:flex flex-col border-l bg-gradient-to-b from-white to-slate-50 shadow-sm z-40">
+          <div className="p-3 border-b font-semibold text-slate-700 bg-gradient-to-r from-white to-slate-50">Assistant</div>
+          <div className="flex-1 p-3 overflow-y-auto space-y-3">
+            {lastCommand ? (
+              <div className="bg-slate-50 rounded-lg p-2 text-sm">
+                <div className="text-xs text-slate-500 mb-1">Last command</div>
+                <div className="text-sm text-slate-800">{lastCommand}</div>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed p-8 text-center text-sm text-slate-500">No data available for this sheet</div>
+              <div className="text-xs text-slate-500">No commands yet. Click the mic and speak.</div>
             )}
+            {voiceFeedback && (
+              <div className="bg-blue-50 rounded-lg p-2 text-sm">
+                <div className="text-xs text-blue-600 font-medium">Feedback</div>
+                <div className="text-sm text-blue-800">{voiceFeedback}</div>
+              </div>
+            )}
+            <div>
+              <div className="text-xs text-slate-500 mb-2">Recent files</div>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {recentFiles.length ? recentFiles.map((f, idx) => (
+                  <div key={idx} className="text-xs text-slate-700 truncate">{f}</div>
+                )) : <div className="text-xs text-slate-400">— none —</div>}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+          <div className="p-3 border-t bg-gradient-to-r from-white to-slate-50">
+            <div className="flex gap-2 items-center">
+              <input
+                value=""
+                placeholder="Type a command (optional)"
+                className="flex-1 min-w-0 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                onChange={() => {}}
+              />
+              <button
+                onClick={() => (isListening ? stopListening() : startListening())}
+                className={`flex items-center gap-1 shrink-0 rounded-md px-2 py-1 text-sm font-medium ${
+                  isListening ? "bg-red-600 text-white" : "bg-blue-600 text-white"
+                }`}
+              >
+                <MicIcon fontSize="small" />
+                <span className="whitespace-nowrap">{isListening ? "Listening" : "Speak"}</span>
+              </button>
+            </div>
+          </div>
+        </aside>
+      </div>
     </>
   );
 };
