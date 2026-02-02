@@ -1075,7 +1075,7 @@ const FullExcelFile = () => {
       )}
     
       <div className="flex gap-6 max-w-7xl mx-auto px-4 py-6 justify-center">
-        <div className="flex-1 max-h-[calc(100vh-12rem)] overflow-y-scroll space-y-6 max-w-[68%]">
+        <div className="flex-1 h-[calc(100vh-12rem)] overflow-y-auto space-y-6 max-w-[88%]">
           <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 1 }}>
             <CardContent>
               <Typography variant="h6" component="h3" color="primary.main" sx={{ mb: 2 }}>
@@ -1467,7 +1467,7 @@ const FullExcelFile = () => {
           )}
         </div>
 
-        <aside className="fixed right-6 top-20 w-64 hidden md:flex flex-col border-l bg-gradient-to-b from-white to-slate-50 shadow-sm z-40">
+     <aside className="w-64 hidden md:flex flex-col border-l bg-gradient-to-b from-white to-slate-50 shadow-sm h-[calc(100vh-12rem)]">
           <div className="p-3 border-b font-semibold text-slate-700 bg-gradient-to-r from-white to-slate-50">Assistant</div>
           <div className="flex-1 p-3 overflow-y-auto space-y-3">
             {lastCommand ? (
