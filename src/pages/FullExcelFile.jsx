@@ -1353,7 +1353,7 @@ const FullExcelFile = () => {
                           <div className="space-y-2">
                             {rowRanges.map((rr, idx) => (
                               <div key={idx} className="flex gap-2">
-                                <input value={rr.name} onChange={(e) => handleRowRangeChange(idx, "name", e.target.value, newSheetName)} placeholder="New sheet name" className="w-1/3 rounded-md border px-3 py-2 text-sm" />
+                                <input value={rr.name} onChange={(e) => handleRowRangeChange(idx, "name", e.target.value, newSheetName)} placeholder="Pre/Post" className="w-1/3 rounded-md border px-3 py-2 text-sm" />
                                 <input value={rr.startDisplay || rr.startRange} onChange={(e) => handleRowRangeChange(idx, "startRange", e.target.value, newSheetName)} placeholder="start e.g. 1" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "startRange" })} />
                                 <input value={rr.endDisplay || rr.endRange} onChange={(e) => {
                                   const value = e.target.value;
