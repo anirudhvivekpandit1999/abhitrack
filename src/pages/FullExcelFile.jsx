@@ -144,7 +144,11 @@ const FullExcelFile = () => {
   useEffect(() => {
     if (!copyFromSheet) {
       setColumnNames([]);
-      setSelectedColumns([""]);
+      setSelectedColumns((prev) => {
+        // preserve any existing non-empty selections (e.g., axes) when not copying
+        const kept = (prev || []).filter(Boolean);
+        return kept.length ? kept : [""];
+      });
       return;
     }
     const found = excelData.find((s) => s.sheetName === copyFromSheet);
@@ -153,8 +157,15 @@ const FullExcelFile = () => {
         ? Object.keys(found.sheetData[0])
         : [];
     setColumnNames(cols);
-    setSelectedColumns([""]);
-  }, [copyFromSheet, excelData]);
+    setSelectedColumns((prev) => {
+      // keep previously selected columns that still exist in the new set of cols
+      const prevSel = (prev || []).filter(Boolean).filter((c) => cols.includes(c));
+      // ensure axis columns are present if available in the new cols
+      if (xAxis && cols.includes(xAxis) && !prevSel.includes(xAxis)) prevSel.unshift(xAxis);
+      if (yAxis && cols.includes(yAxis) && !prevSel.includes(yAxis)) prevSel.unshift(yAxis);
+      return prevSel.length ? prevSel : [""];
+    });
+  }, [copyFromSheet, excelData, xAxis, yAxis]);
 
   const refreshColumnsFromSession = () => {
     try {
@@ -1627,8 +1638,8 @@ const FullExcelFile = () => {
                                           <th
                                             key={key}
                                             onClick={() => { setYAxis(key); toggleColumnSelection(key); }}
-                                            className={`cursor-pointer px-2 py-1 text-left text-xs font-semibold text-white border-r border-slate-200 ${yAxis === key ? "bg-blue-700 text-white" : ""} ${isColumnSelected(key) ? "bg-green-600 text-white" : ""} ${idx === previewHeaders.length - 1 ? "last:border-r-0" : ""}`}>
-                                            {key}
+                                            className={`cursor-pointer px-2 py-1 text-left text-xs font-semibold text-white border-r border-slate-200 ${isColumnSelected(key) ? "bg-green-600 text-white" : ""} ${xAxis === key ? "bg-blue-500 text-white" : ""} ${yAxis === key ? "bg-blue-700 text-white" : ""} ${idx === previewHeaders.length - 1 ? "last:border-r-0" : ""}`}>
+                                            {key}{(yAxis === key || xAxis === key) && <span className="ml-1 inline-block text-[10px] font-normal">{yAxis === key ? 'Y' : 'X'}</span>}
                                           </th>
                                         ))}
                                       </tr>
@@ -1637,7 +1648,7 @@ const FullExcelFile = () => {
                                       {previewSheetWithPending.sheetData.map((row, i) => (
                                         <tr key={i} onClick={() => handlePreviewRowClick(i)} className={`${activeTarget ? "cursor-pointer" : ""} hover:bg-slate-50`}>
                                           {previewHeaders.map((k, j) => (
-                                            <td key={j} className={`px-2 py-1 text-xs ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""}`}>{renderCellValue(row[k])}</td>
+                                            <td key={j} className={`px-2 py-1 text-xs ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""} ${xAxis === k ? "bg-blue-50 text-blue-700" : ""} ${yAxis === k ? "bg-blue-100 text-blue-800" : ""}`}>{renderCellValue(row[k])}</td>
                                           ))}
                                         </tr>
                                       ))}
