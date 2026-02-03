@@ -932,10 +932,11 @@ const FullExcelFile = () => {
 
         if (baseSheetName) {
           const cleanedName = baseSheetName.split(".")[0];
+          const sheet = sheetNames.find((s) => s.toLowerCase() === cleanedName.toLowerCase());
 
           console.log("📝 Voice set base sheet match:", cleanedName);
 
-          setCopyFromSheet(cleanedName);
+          setCopyFromSheet(sheet);
           setVoiceFeedback(`Base sheet set to: ${cleanedName}`);
         } else {
           setFocusId("basesheet");
