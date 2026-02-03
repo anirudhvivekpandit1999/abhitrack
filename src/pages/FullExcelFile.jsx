@@ -1261,7 +1261,25 @@ const FullExcelFile = () => {
       }
     }
 
+    if(text.toLowerCase().includes("plus")){
+      localStorage.setItem('selectedOperator', '+');
+      window.dispatchEvent(new Event('selectedOperatorChanged'));
+    }
 
+    if(text.toLowerCase().includes("minus")){
+      localStorage.setItem('selectedOperator', '-');
+      window.dispatchEvent(new Event('selectedOperatorChanged'));
+    }
+
+    if(text.toLowerCase().includes("times")){
+      localStorage.setItem("selectedOperator","*");
+      window.dispatchEvent(new Event('selectedOperatorChanged'));
+    }
+
+    if(text.toLowerCase().includes("divided")){
+      localStorage.setItem("selectedOperator","/");
+      window.dispatchEvent(new Event('selectedOperatorChanged'));
+    }
   }
 
   const handleSelectSheetByVoice = (text) => {

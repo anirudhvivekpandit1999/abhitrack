@@ -30,8 +30,8 @@ import FormulaPreviewSection from './FormulaPreviewSection';
 const operators = [
   { value: '+', display: '+' },
   { value: '-', display: '-' },
-  { value: '*', display: '×' },
-  { value: '/', display: '÷' },
+  { value: '*', display:'*' },
+  { value: '/', display: '/' },
   { value: '(', display: '(' },
   { value: ')', display: ')' },
 ];
@@ -95,13 +95,24 @@ useEffect(() => {
     addColumnToFormula(saved);
   };
 
-  // 🔥 Run once on mount in case value already exists
   
 
   window.addEventListener('selectedColumnNameChanged', syncSelectedColumnName);
   return () =>
     window.removeEventListener('selectedColumnNameChanged', syncSelectedColumnName);
 }, []);
+
+useEffect(()=> {
+  const syncSelectedOperator = () => {
+    const saved = localStorage.getItem('selectedOperator');
+    setFormulaElements(prev => [...prev, { type: 'operator', value: saved, display: saved }]);
+  }
+
+  window.addEventListener('selectedOperatorChanged', syncSelectedOperator);
+  return () => window.removeEventListener('selectedOperatorChanged', syncSelectedOperator);
+},[])
+
+
   const addColumnToFormula = useCallback((column) => {
     if (column) {
       setFormulaElements(prev => [...prev, { type: 'column', value: column, display: column }]);
