@@ -58,6 +58,7 @@ const FullExcelFile = () => {
   const [showFileSearchModal, setShowFileSearchModal] = useState(false);
   const [matchedRecentFiles, setMatchedRecentFiles] = useState([]);
   const [focusId, setFocusId] = useState('');
+  const [pendingVoiceAction, setPendingVoiceAction] = useState(null);
   const recognitionRef = useRef(null);
   const feedbackRef = useRef(null);
   const fileObjectsRef = useRef({});
@@ -762,6 +763,66 @@ const FullExcelFile = () => {
   };
   const previewHeaders = previewSheetWithPending.sheetData && previewSheetWithPending.sheetData.length ? Object.keys(previewSheetWithPending.sheetData[0]) : [];
 
+  // Debug: log preview headers whenever they change so we can inspect via console
+  useEffect(() => {
+    console.log('🔎 previewHeaders updated:', previewHeaders, 'len:', previewHeaders.length, 'selectedSheet:', selectedSheet, 'copyFromSheet:', copyFromSheet, 'columnNames:', columnNames);
+  }, [previewHeaders, selectedSheet, copyFromSheet, columnNames]);
+
+  // If a voice axis command was queued while data was loading, apply it once previewHeaders become available
+  useEffect(() => {
+    if (!pendingVoiceAction) return;
+    if (!previewHeaders || previewHeaders.length === 0) return;
+
+    const { axis, candidate } = pendingVoiceAction;
+    console.log('⏳ Processing pendingVoiceAction:', pendingVoiceAction, 'previewHeadersLen:', previewHeaders.length);
+
+    const found = findHeaderMatch(candidate);
+    if (found) {
+      if (axis === 'x') {
+        setXAxis(found);
+      } else {
+        setYAxis(found);
+      }
+      setColumnNames(prev => (prev.includes(found) ? prev : [...prev, found]));
+      setSelectedColumns(prev => (prev.includes(found) ? prev : (prev[0] === "" ? [found, ...prev.slice(1)] : [...prev, found])));
+      setVoiceFeedback(`${axis.toUpperCase()} axis set to: ${found}`);
+      setPendingVoiceAction(null);
+      setTimeout(() => setVoiceFeedback(""), 3000);
+    } else {
+      console.log('Pending action could not find a match even after previewHeaders populated for candidate:', candidate);
+    }
+  }, [previewHeaders, pendingVoiceAction]);
+
+  // Helper: try multiple strategies to match a spoken term to a header from previewHeaders (or provided headers)
+  const findHeaderMatch = (text, headers = previewHeaders) => {
+    if (!text) return null;
+    const cleaned = normalize(text);
+
+    const source = Array.isArray(headers) ? headers : [];
+
+    // 1) exact normalized match
+    let found = source.find((h) => normalize(h) === cleaned || h.toLowerCase() === text.toLowerCase());
+    if (found) return found;
+
+    // 2) header contains the candidate or vice versa
+    found = source.find((h) => cleaned.includes(normalize(h)) || normalize(h).includes(cleaned));
+    if (found) return found;
+
+    // 3) token-based fuzzy match
+    const tokens = cleaned.split(/\s+/).filter(Boolean);
+    for (const t of tokens) {
+      const f = source.find((h) => normalize(h).includes(t) || t.includes(normalize(h)));
+      if (f) return f;
+    }
+
+    // 4) fallback to columnNames (in case previewHeaders is empty or different)
+    for (const col of columnNames) {
+      if (normalize(col) === cleaned) return col;
+    }
+
+    return null;
+  };
+
   const getPreviewRowDate = (rowIndex) => {
     const row = previewSheetWithPending.sheetData && previewSheetWithPending.sheetData[rowIndex];
     if (!row) return "";
@@ -871,6 +932,7 @@ const FullExcelFile = () => {
 
   const handleVoiceCommand = (text) => {
     if (!text) return;
+    console.log('🔊 Voice command received:', text, 'selectedSheet:', selectedSheet, 'copyFromSheet:', copyFromSheet, 'previewHeadersLen:', previewHeaders.length, 'columnNamesLen:', columnNames.length);
 
     if (text.includes("upload")) {
       handleVoiceFileUpload(text);
@@ -1008,16 +1070,139 @@ const FullExcelFile = () => {
       return;
     }
 
-    if(text.toLowerCase().includes("select x axis")){
-      const xMatch = text.match(/select x axis (is|to)?\s*(.+)/i);
-      console.log('🆕 Voice select x axis column match:', xMatch[2].trim().split('.')[0]);
-      if(xMatch){
-        const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}')
-        const y = xMatch[2].trim().split('.')[0]
-        console.log(copyFromSheet);
-        const ae = columnNames.find((col) => normalize(col) === normalize(y));
-        setXAxis(ae);
+    // Voice: set X axis or Y axis using preview headers (more robust, with debug info)
+    if (text.toLowerCase().includes("set x axis") || text.toLowerCase().includes("set x-axis") || text.toLowerCase().includes("select x axis") || text.toLowerCase().includes("select x-axis")) {
+      console.log('🎤 Voice (set X axis) received:', text, 'previewHeaders:', previewHeaders, 'columnNames:', columnNames);
+      // Prefer matching the longer form (x-axis) first so we don't accidentally capture the trailing "-axis ..." text
+      const match = text.match(/(?:set|select)\s*(?:x(?:[- ]?axis)?)(?:\s*(?:is|to))?\s*(.+)/i);
+      let candidate = match && match[1] ? match[1].split(/[.,]/)[0].trim() : "";
+
+      // Fallback cleanup: if candidate looks malformed (contains 'axis' or starts with '-') try extracting the token after 'to' or 'is'
+      if (!candidate || /^[-\s]*axis/i.test(candidate) || candidate.toLowerCase().includes('axis')) {
+        const fallback = text.match(/(?:is|to)\s+(.+)$/i);
+        candidate = fallback && fallback[1] ? fallback[1].split(/[.,]/)[0].trim() : candidate;
       }
+
+      console.log('  parsed candidate (post-cleanup):', candidate);
+
+      if (!previewHeaders || previewHeaders.length === 0) {
+        console.log('  No preview headers available to match. Attempting to find a saved sheet that contains the column:', candidate);
+        try {
+          const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
+          for (const sName of Object.keys(saved || {})) {
+            const sData = saved[sName];
+            const headers = Array.isArray(sData) && sData.length > 0 ? Object.keys(sData[0]) : [];
+            const foundInSaved = findHeaderMatch(candidate, headers);
+            if (foundInSaved) {
+              console.log('  Matched header in saved sheet:', sName, foundInSaved);
+              if (!sheetNames.includes(sName)) {
+                setSheetNames(prev => [...prev, sName]);
+                setExcelData(prev => [...prev, { sheetName: sName, sheetData: sData }]);
+              }
+              setSelectedSheet(sName);
+              setXAxis(foundInSaved);
+              setColumnNames(prev => (prev.includes(foundInSaved) ? prev : [...prev, foundInSaved]));
+              setSelectedColumns(prev => (prev.includes(foundInSaved) ? prev : (prev[0] === "" ? [foundInSaved, ...prev.slice(1)] : [...prev, foundInSaved])));
+              setVoiceFeedback(`X axis set to: ${foundInSaved} (loaded from ${sName})`);
+              setTimeout(() => setVoiceFeedback(""), 4000);
+              return;
+            }
+          }
+        } catch (e) { console.error(e); }
+
+        // Not found — queue a pending action to apply when previewHeaders becomes available
+        const pending = { axis: 'x', candidate, ts: Date.now() };
+        setPendingVoiceAction(pending);
+        console.log('  Queued pending voice action:', pending);
+        setVoiceFeedback(`Waiting for preview data — will set X axis to "${candidate}" when data is ready.`);
+        setTimeout(() => setPendingVoiceAction((curr) => (curr && curr.ts === pending.ts ? null : curr)), 10000);
+        return;
+      }
+
+      const found = findHeaderMatch(candidate);
+      console.log('  candidate:', candidate, 'matched header:', found);
+      if (found) {
+        setXAxis(found);
+        // Ensure columnNames & selectedColumns include the new axis so the UI updates
+        setColumnNames(prev => (prev.includes(found) ? prev : [...prev, found]));
+        setSelectedColumns(prev => (prev.includes(found) ? prev : (prev[0] === "" ? [found, ...prev.slice(1)] : [...prev, found])));
+        setVoiceFeedback(`X axis set to: ${found}`);
+      } else {
+        console.log('  No match for X axis. previewHeaders:', previewHeaders, 'columnNames:', columnNames);
+        try {
+          const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
+          console.log('  saved_excel_sheets keys:', Object.keys(saved).length);
+        } catch (e) { console.error(e); }
+        setVoiceFeedback(`Could not find column for X axis: "${candidate}"`);
+      }
+      setTimeout(() => setVoiceFeedback(""), 3000);
+      return;
+    }
+
+    if (text.toLowerCase().includes("set y axis") || text.toLowerCase().includes("set y-axis") || text.toLowerCase().includes("select y axis") || text.toLowerCase().includes("select y-axis")) {
+      console.log('🎤 Voice (set Y axis) received:', text, 'previewHeaders:', previewHeaders, 'columnNames:', columnNames);
+      // Prefer matching the longer form (y-axis) first so we don't accidentally capture the trailing "-axis ..." text
+      const match = text.match(/(?:set|select)\s*(?:y(?:[- ]?axis)?)(?:\s*(?:is|to))?\s*(.+)/i);
+      let candidate = match && match[1] ? match[1].split(/[.,]/)[0].trim() : "";
+
+      if (!candidate || /^[-\s]*axis/i.test(candidate) || candidate.toLowerCase().includes('axis')) {
+        const fallback = text.match(/(?:is|to)\s+(.+)$/i);
+        candidate = fallback && fallback[1] ? fallback[1].split(/[.,]/)[0].trim() : candidate;
+      }
+
+      console.log('  parsed candidate (post-cleanup):', candidate);
+
+      if (!previewHeaders || previewHeaders.length === 0) {
+        console.log('  No preview headers available to match. Attempting to find a saved sheet that contains the column:', candidate);
+        try {
+          const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
+          for (const sName of Object.keys(saved || {})) {
+            const sData = saved[sName];
+            const headers = Array.isArray(sData) && sData.length > 0 ? Object.keys(sData[0]) : [];
+            const foundInSaved = findHeaderMatch(candidate, headers);
+            if (foundInSaved) {
+              console.log('  Matched header in saved sheet:', sName, foundInSaved);
+              if (!sheetNames.includes(sName)) {
+                setSheetNames(prev => [...prev, sName]);
+                setExcelData(prev => [...prev, { sheetName: sName, sheetData: sData }]);
+              }
+              setSelectedSheet(sName);
+              setYAxis(foundInSaved);
+              setColumnNames(prev => (prev.includes(foundInSaved) ? prev : [...prev, foundInSaved]));
+              setSelectedColumns(prev => (prev.includes(foundInSaved) ? prev : (prev[0] === "" ? [foundInSaved, ...prev.slice(1)] : [...prev, foundInSaved])));
+              setVoiceFeedback(`Y axis set to: ${foundInSaved} (loaded from ${sName})`);
+              setTimeout(() => setVoiceFeedback(""), 4000);
+              return;
+            }
+          }
+        } catch (e) { console.error(e); }
+
+        // Not found — queue a pending action to apply when previewHeaders becomes available
+        const pending = { axis: 'y', candidate, ts: Date.now() };
+        setPendingVoiceAction(pending);
+        console.log('  Queued pending voice action:', pending);
+        setVoiceFeedback(`Waiting for preview data — will set Y axis to "${candidate}" when data is ready.`);
+        setTimeout(() => setPendingVoiceAction((curr) => (curr && curr.ts === pending.ts ? null : curr)), 10000);
+        return;
+      }
+
+      const found = findHeaderMatch(candidate);
+      console.log('  candidate:', candidate, 'matched header:', found);
+      if (found) {
+        setYAxis(found);
+        setColumnNames(prev => (prev.includes(found) ? prev : [...prev, found]));
+        setSelectedColumns(prev => (prev.includes(found) ? prev : (prev[0] === "" ? [found, ...prev.slice(1)] : [...prev, found])));
+        setVoiceFeedback(`Y axis set to: ${found}`);
+      } else {
+        console.log('  No match for Y axis. previewHeaders:', previewHeaders, 'columnNames:', columnNames);
+        try {
+          const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
+          console.log('  saved_excel_sheets keys:', Object.keys(saved).length);
+        } catch (e) { console.error(e); }
+        setVoiceFeedback(`Could not find column for Y axis: "${candidate}"`);
+      }
+      setTimeout(() => setVoiceFeedback(""), 3000);
+      return;
     }
 
 
