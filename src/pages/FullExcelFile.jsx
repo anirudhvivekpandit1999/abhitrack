@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import MicIcon from "@mui/icons-material/Mic";
+import Assistant from "../components/Assistant";
 import * as XLSX from "xlsx";
 import {
   ScatterChart,
@@ -1898,61 +1899,24 @@ const FullExcelFile = () => {
           )}
         </div>
 
-        {assistantCollapsed ? (
-          <div className="hidden md:flex fixed right-0 top-1/2 transform -translate-y-1/2 z-50">
-            <button onClick={() => setAssistantCollapsed(false)} aria-label="Open Assistant" className="w-12 h-12 rounded-l-lg bg-blue-600 text-white shadow-md flex items-center justify-center px-3 transform transition-all duration-300 hover:scale-105">💬</button>
-          </div>
-        ) : (
-          <aside className="w-64 hidden md:flex flex-col border-l bg-gradient-to-b from-white to-slate-50 shadow-xl h-[calc(100vh-12rem)] fixed right-0 top-20 z-40 transform transition-all duration-300 ease-in-out translate-x-0 rounded-l-lg" style={{ animation: 'subtle-pop 300ms ease-out both' }}>
-            <div className="p-3 border-b font-semibold text-slate-700 bg-gradient-to-r from-white to-slate-50 flex items-center justify-between">
-              <div>Assistant</div>
-              <button onClick={() => setAssistantCollapsed(true)} aria-label="Collapse Assistant" className="text-sm text-slate-500 px-2 py-1 rounded hover:bg-slate-100">◀</button>
-            </div>
-            <div className="flex-1 p-3 overflow-y-auto space-y-3">
-              {lastCommand ? (
-                <div className="bg-slate-50 rounded-lg p-2 text-sm">
-                  <div className="text-xs text-slate-500 mb-1">Last command</div>
-                  <div className="text-sm text-slate-800">{lastCommand}</div>
-                </div>
-              ) : (
-                <div className="text-xs text-slate-500">No commands yet. Click the mic and speak.</div>
-              )}
-              {voiceFeedback && (
-                <div className="bg-blue-50 rounded-lg p-2 text-sm">
-                  <div className="text-xs text-blue-600 font-medium">Feedback</div>
-                  <div className="text-sm text-blue-800">{voiceFeedback}</div>
-                </div>
-              )}
-              <div>
-                <div className="text-xs text-slate-500 mb-2">Recent files</div>
-                <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {recentFiles.length ? recentFiles.map((f, idx) => (
-                    <div key={idx} className="text-xs text-slate-700 truncate">{f}</div>
-                  )) : <div className="text-xs text-slate-400">— none —</div>}
-                </div>
-              </div>
-            </div>
-            <div className="p-3 border-t bg-gradient-to-r from-white to-slate-50">
-              <div className="flex gap-2 items-center">
-                <input
-                  value=""
-                  placeholder="Type a command (optional)"
-                  className="flex-1 min-w-0 rounded-md border px-3 py-2 text-sm focus:outline-none"
-                  onChange={() => { }}
-                />
-                <button
-                  onClick={() => (isListening ? stopListening() : startListening())}
-                  className={`flex items-center gap-1 shrink-0 rounded-md px-2 py-1 text-sm font-medium ${isListening ? "bg-red-600 text-white" : "bg-blue-600 text-white"
-                    }`}
-                >
-                  <MicIcon fontSize="small" />
-                  <span className="whitespace-nowrap">{isListening ? "Listening" : "Speak"}</span>
-                </button>
-              </div>
-            </div>
-          </aside>
-        )}
-      </div>
+        <Assistant
+          isListening={isListening}
+          lastCommand={lastCommand}
+          voiceFeedback={voiceFeedback}
+          assistantCollapsed={assistantCollapsed}
+          setAssistantCollapsed={setAssistantCollapsed}
+          startListening={startListening}
+          stopListening={stopListening}
+          recentFiles={recentFiles}
+          setRecentFiles={setRecentFiles}
+          showFileSearchModal={showFileSearchModal}
+          setShowFileSearchModal={setShowFileSearchModal}
+          matchedRecentFiles={matchedRecentFiles}
+          handleDirectFileSelection={handleDirectFileSelection}
+          handleBrowseMoreFiles={handleBrowseMoreFiles}
+          fileInputRef={fileInputRef}
+        />
+      </div> 
     </>
   );
 };

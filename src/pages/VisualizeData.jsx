@@ -21,6 +21,7 @@ import ScatterPlotTab from '../components/visualize/ScatterPlotTab';
 import BootstrappingTab from '../components/visualize/BootstrappingTab';
 import MultiVariateScatterPlotTab from '../components/visualize/MultiVariateScatterPlotTab';
 import CorrelationAnalysisTab from '../components/visualize/CorrelationAnalysisTab';
+import Assistant from '../components/Assistant';
 
 const VisualizeData = () => {
     const location = useLocation();
@@ -218,6 +219,8 @@ const VisualizeData = () => {
                         </Paper>
 
                         <Divider sx={{ my: 2 }} />
+
+                        <Assistant />
 
                         <NavigationButtons
                             onPrevious={handlePreviousStep}
