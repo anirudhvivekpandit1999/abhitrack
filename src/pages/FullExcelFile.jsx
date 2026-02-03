@@ -36,7 +36,10 @@ const FullExcelFile = () => {
   const debounceRef = useRef(null);
   const addGridRef = useRef(null);
   const [addGridHeight, setAddGridHeight] = useState(560);
-  const [rowRanges, setRowRanges] = useState([{ name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" }]);
+  const [rowRanges, setRowRanges] = useState([
+    { name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" },
+    { name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" },
+  ]);
   const [activeTarget, setActiveTarget] = useState(null);
   const [preProduct, setPreProduct] = useState("");
   const [postProduct, setPostProduct] = useState("");
@@ -354,6 +357,19 @@ const FullExcelFile = () => {
           };
         });
         setExcelData(parsed);
+
+        try {
+          const existing = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
+          const merged = { ...(existing || {}) };
+          parsed.forEach((s) => { merged[s.sheetName] = s.sheetData; });
+          localStorage.setItem('saved_excel_sheets', JSON.stringify(merged));
+          const existingNames = JSON.parse(localStorage.getItem('saved_sheet_names') || '[]');
+          const mergedNames = Array.from(new Set([...(existingNames || []), ...parsed.map((s) => s.sheetName)]));
+          localStorage.setItem('saved_sheet_names', JSON.stringify(mergedNames));
+          console.log('Saved sheets to localStorage:', mergedNames);
+        } catch (e) {
+          console.error('Failed to save sheets to localStorage', e);
+        }
         if (sheets.length > 0) setSelectedSheet(sheets[0]);
         const sheetText = sheets.length > 1 ? "sheets" : "sheet";
         setVoiceFeedback("File loaded! Found " + sheets.length + " " + sheetText);
@@ -932,12 +948,35 @@ const FullExcelFile = () => {
 
         if (baseSheetName) {
           const cleanedName = baseSheetName.split(".")[0];
-          const sheet = sheetNames.find((s) => s.toLowerCase() === cleanedName.toLowerCase());
+         
+          let sheet = sheetNames.find((s) => s.toLowerCase() === cleanedName.toLowerCase());
 
-          console.log("📝 Voice set base sheet match:", cleanedName);
-
-          setCopyFromSheet(sheet);
-          setVoiceFeedback(`Base sheet set to: ${cleanedName}`);
+          if (sheet) {
+            setCopyFromSheet(sheet);
+            setVoiceFeedback(`Base sheet set to: ${sheet}`);
+          } else {
+          
+            try {
+              const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
+              const keys = Object.keys(saved || {});
+              const matchedKey = keys.find((k) => k.toLowerCase() === cleanedName.toLowerCase());
+              if (matchedKey) {
+                const sheetData = saved[matchedKey];
+                // Add the sheet into current state so it appears in the dropdown
+                setSheetNames((prev) => (prev.includes(matchedKey) ? prev : [...prev, matchedKey]));
+                setExcelData((prev) => (prev.some((s) => s.sheetName === matchedKey) ? prev : [...prev, { sheetName: matchedKey, sheetData }]));
+                setCopyFromSheet(matchedKey);
+                setVoiceFeedback(`Base sheet set to: ${matchedKey} (loaded from saved data)`);
+              } else {
+                setFocusId("basesheet");
+                setVoiceFeedback("Please choose a base sheet");
+              }
+            } catch (e) {
+              console.error('Failed to load saved sheets from localStorage', e);
+              setFocusId("basesheet");
+              setVoiceFeedback("Please choose a base sheet");
+            }
+          }
         } else {
           setFocusId("basesheet");
           setVoiceFeedback("Please choose a base sheet");
