@@ -52,6 +52,7 @@ const FullExcelFile = () => {
   const [isListening, setIsListening] = useState(false);
   const [lastCommand, setLastCommand] = useState("");
   const [voiceFeedback, setVoiceFeedback] = useState("");
+  const [assistantCollapsed, setAssistantCollapsed] = useState(false);
   const [recentFiles, setRecentFiles] = useState([]);
   const [awaitingFileVoiceInput, setAwaitingFileVoiceInput] = useState(false);
   const [lastVoiceFileCommand, setLastVoiceFileCommand] = useState("");
@@ -1468,8 +1469,8 @@ const FullExcelFile = () => {
         </div>
       )}
 
-      <div className="flex gap-6 max-w-7xl mx-auto px-4 py-6 justify-center">
-        <div className="flex-1 h-[calc(100vh-12rem)] overflow-y-auto space-y-6 max-w-[88%]">
+      <div className="max-w-7xl mx-auto px-4 py-6 items-start">
+        <div className="h-[calc(100vh-12rem)] overflow-y-auto space-y-6 w-full max-w-5xl mx-auto">
           <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 1 }}>
             <CardContent>
               <Typography variant="h6" component="h3" color="primary.main" sx={{ mb: 2 }}>
@@ -1608,9 +1609,9 @@ const FullExcelFile = () => {
                 {showAddPanel && (
                   <div className="mt-3">
                     <div ref={addGridRef} className="grid grid-cols-2 grid-rows-2 gap-4" style={{ height: addGridHeight }}>
-                      <div className="rounded-md border bg-slate-50 p-3 overflow-auto h-full">
+                      <div className="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-100 p-5 overflow-auto h-full shadow-sm transform transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl hover:scale-[1.02] hover:ring-2 hover:ring-indigo-100 focus:outline-none">
                         <div className="flex items-center justify-between gap-2">
-                          <div className="text-sm font-medium text-slate-800">Create new Excel</div>
+                          <div className="text-sm font-medium text-indigo-800">Create new Excel</div>
                           <button onClick={() => {
                             setShowAddPanel(false);
                             setNewSheetName("");
@@ -1684,10 +1685,10 @@ const FullExcelFile = () => {
 
                       </div>
 
-                      <div className="rounded-md border bg-white p-0 overflow-auto h-full">
+                      <div className="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-100 p-0 overflow-auto h-full transform transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:scale-[1.01]">
                         <div className="h-full w-full p-3">
-                          <div className="px-2 py-1 bg-gradient-to-r from-slate-50 to-white flex items-center justify-between border-b">
-                            <div className="text-xs font-medium">Preview: {copyFromSheet || selectedSheet || "No sheet"}</div>
+                          <div className="px-2 py-1 bg-gradient-to-r from-sky-50 to-white flex items-center justify-between border-b">
+                            <div className="text-xs font-medium text-indigo-700">Preview: {copyFromSheet || selectedSheet || "No sheet"}</div>
                             <div className="text-xs text-slate-500">Click header to set Y-axis / toggle selection | Click a row to fill focused range input</div>
                           </div>
                           <div className="mt-2" style={{ height: `calc(100% - 34px)` }}>
@@ -1726,10 +1727,10 @@ const FullExcelFile = () => {
                         </div>
                       </div>
 
-                      <div className="rounded-md border bg-white p-3 overflow-auto h-full">
+                      <div className="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-100 p-5 overflow-auto h-full shadow-sm transform transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl hover:scale-[1.02] hover:ring-2 hover:ring-indigo-100 focus:outline-none">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs font-medium text-slate-600 mb-1">X-Axis</label>
+                            <label className="block text-xs font-medium text-indigo-800 mb-1">X-Axis</label>
                             <select value={xAxis} onChange={(e) => setXAxis(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm">
                               <option value="">Select column</option>
                               {columnNames.map((col) => (
@@ -1739,7 +1740,7 @@ const FullExcelFile = () => {
                           </div>
 
                           <div>
-                            <label className="block text-xs font-medium text-slate-600 mb-1">Y-Axis</label>
+                            <label className="block text-xs font-medium text-indigo-800 mb-1">Y-Axis</label>
                             <select value={yAxis} onChange={(e) => setYAxis(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm">
                               <option value="">Select column</option>
                               {columnNames.map((col) => (
@@ -1800,7 +1801,7 @@ const FullExcelFile = () => {
 
                       </div>
 
-                      <div className="rounded-md border bg-white p-3 overflow-auto h-full">
+                      <div className="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-100 p-5 overflow-auto h-full shadow-sm transform transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl hover:scale-[1.02] hover:ring-2 hover:ring-indigo-100 focus:outline-none">
                         <div className="h-full w-full" style={{ minHeight: 0 }}>
                           {scatterSlicesData.some((s) => s.data && s.data.length > 0) ? (
                             <div style={{ height: "100%", minHeight: 120 }}>
@@ -1861,51 +1862,60 @@ const FullExcelFile = () => {
           )}
         </div>
 
-        <aside className="w-64 hidden md:flex flex-col border-l bg-gradient-to-b from-white to-slate-50 shadow-sm h-[calc(100vh-12rem)]">
-          <div className="p-3 border-b font-semibold text-slate-700 bg-gradient-to-r from-white to-slate-50">Assistant</div>
-          <div className="flex-1 p-3 overflow-y-auto space-y-3">
-            {lastCommand ? (
-              <div className="bg-slate-50 rounded-lg p-2 text-sm">
-                <div className="text-xs text-slate-500 mb-1">Last command</div>
-                <div className="text-sm text-slate-800">{lastCommand}</div>
-              </div>
-            ) : (
-              <div className="text-xs text-slate-500">No commands yet. Click the mic and speak.</div>
-            )}
-            {voiceFeedback && (
-              <div className="bg-blue-50 rounded-lg p-2 text-sm">
-                <div className="text-xs text-blue-600 font-medium">Feedback</div>
-                <div className="text-sm text-blue-800">{voiceFeedback}</div>
-              </div>
-            )}
-            <div>
-              <div className="text-xs text-slate-500 mb-2">Recent files</div>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {recentFiles.length ? recentFiles.map((f, idx) => (
-                  <div key={idx} className="text-xs text-slate-700 truncate">{f}</div>
-                )) : <div className="text-xs text-slate-400">— none —</div>}
+        {assistantCollapsed ? (
+          <div className="hidden md:flex fixed right-0 top-1/2 transform -translate-y-1/2 z-50">
+            <button onClick={() => setAssistantCollapsed(false)} aria-label="Open Assistant" className="w-12 h-12 rounded-l-lg bg-blue-600 text-white shadow-md flex items-center justify-center px-3 transform transition-all duration-300 hover:scale-105">💬</button>
+          </div>
+        ) : (
+          <aside className="w-64 hidden md:flex flex-col border-l bg-gradient-to-b from-white to-slate-50 shadow-xl h-[calc(100vh-12rem)] fixed right-0 top-20 z-40 transform transition-all duration-300 ease-in-out translate-x-0 rounded-l-lg" style={{ animation: 'subtle-pop 300ms ease-out both' }}>
+            <div className="p-3 border-b font-semibold text-slate-700 bg-gradient-to-r from-white to-slate-50 flex items-center justify-between">
+              <div>Assistant</div>
+              <button onClick={() => setAssistantCollapsed(true)} aria-label="Collapse Assistant" className="text-sm text-slate-500 px-2 py-1 rounded hover:bg-slate-100">◀</button>
+            </div>
+            <div className="flex-1 p-3 overflow-y-auto space-y-3">
+              {lastCommand ? (
+                <div className="bg-slate-50 rounded-lg p-2 text-sm">
+                  <div className="text-xs text-slate-500 mb-1">Last command</div>
+                  <div className="text-sm text-slate-800">{lastCommand}</div>
+                </div>
+              ) : (
+                <div className="text-xs text-slate-500">No commands yet. Click the mic and speak.</div>
+              )}
+              {voiceFeedback && (
+                <div className="bg-blue-50 rounded-lg p-2 text-sm">
+                  <div className="text-xs text-blue-600 font-medium">Feedback</div>
+                  <div className="text-sm text-blue-800">{voiceFeedback}</div>
+                </div>
+              )}
+              <div>
+                <div className="text-xs text-slate-500 mb-2">Recent files</div>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {recentFiles.length ? recentFiles.map((f, idx) => (
+                    <div key={idx} className="text-xs text-slate-700 truncate">{f}</div>
+                  )) : <div className="text-xs text-slate-400">— none —</div>}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="p-3 border-t bg-gradient-to-r from-white to-slate-50">
-            <div className="flex gap-2 items-center">
-              <input
-                value=""
-                placeholder="Type a command (optional)"
-                className="flex-1 min-w-0 rounded-md border px-3 py-2 text-sm focus:outline-none"
-                onChange={() => { }}
-              />
-              <button
-                onClick={() => (isListening ? stopListening() : startListening())}
-                className={`flex items-center gap-1 shrink-0 rounded-md px-2 py-1 text-sm font-medium ${isListening ? "bg-red-600 text-white" : "bg-blue-600 text-white"
-                  }`}
-              >
-                <MicIcon fontSize="small" />
-                <span className="whitespace-nowrap">{isListening ? "Listening" : "Speak"}</span>
-              </button>
+            <div className="p-3 border-t bg-gradient-to-r from-white to-slate-50">
+              <div className="flex gap-2 items-center">
+                <input
+                  value=""
+                  placeholder="Type a command (optional)"
+                  className="flex-1 min-w-0 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                  onChange={() => { }}
+                />
+                <button
+                  onClick={() => (isListening ? stopListening() : startListening())}
+                  className={`flex items-center gap-1 shrink-0 rounded-md px-2 py-1 text-sm font-medium ${isListening ? "bg-red-600 text-white" : "bg-blue-600 text-white"
+                    }`}
+                >
+                  <MicIcon fontSize="small" />
+                  <span className="whitespace-nowrap">{isListening ? "Listening" : "Speak"}</span>
+                </button>
+              </div>
             </div>
-          </div>
-        </aside>
+          </aside>
+        )}
       </div>
     </>
   );
