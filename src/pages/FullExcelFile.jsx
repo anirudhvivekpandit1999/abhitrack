@@ -909,18 +909,8 @@ const FullExcelFile = () => {
       setSelectedColumns([""]);
       return;
     }
-    if (text.includes("select") || text.includes("choose") || text.includes("pick")) {
-      handleSelectColumns(text);
-      return;
-    }
-    if (text.includes("set x-axis to") || text.includes("x axis")) {
-      handleSetAxisFromVoice(text, "x");
-      return;
-    }
-    if (text.includes("set y-axis to") || text.includes("y axis")) {
-      handleSetAxisFromVoice(text, "y");
-      return;
-    }
+   
+    
 
     if (text.toLowerCase().includes("add new sheet")) {
       setShowAddPanel(true);
@@ -987,6 +977,50 @@ const FullExcelFile = () => {
 
       return;
     }
+
+    if(text.toLowerCase().includes("set pre sheet name")){
+      const preMatch = text.match(/set pre sheet name (is|to)?\s*(.+)/i);
+      console.log('🆕 Voice set pre sheet name match:', preMatch);
+      if(preMatch){
+        rowRanges.forEach((range, index) => {
+          {
+            if(index === 0){
+              range.name = preMatch[2].trim().split('.')[0];
+            }
+            setVoiceFeedback(`Pre sheet name set to: ${range.name}`);
+          }
+        })
+      }
+      return;
+    }
+
+    if(text.toLowerCase().includes("set post sheet name")){
+      const postMatch = text.match(/set post sheet name (is|to)?\s*(.+)/i);
+      console.log('🆕 Voice set post sheet name match:', postMatch)
+      if(postMatch){
+        rowRanges.forEach((range,index)=>{
+          if(index === 1){
+            range.name = postMatch[2].trim().split('.')[0];
+            setVoiceFeedback(`Post sheet name set to: ${range.name}`);
+          }
+        })
+      };
+      return;
+    }
+
+    if(text.toLowerCase().includes("select x axis")){
+      const xMatch = text.match(/select x axis (is|to)?\s*(.+)/i);
+      console.log('🆕 Voice select x axis column match:', xMatch[2].trim().split('.')[0]);
+      if(xMatch){
+        const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}')
+        const y = xMatch[2].trim().split('.')[0]
+        console.log(copyFromSheet);
+        const ae = columnNames.find((col) => normalize(col) === normalize(y));
+        setXAxis(ae);
+      }
+    }
+
+
   }
 
   const handleSelectSheetByVoice = (text) => {
