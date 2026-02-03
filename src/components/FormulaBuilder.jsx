@@ -112,6 +112,17 @@ useEffect(()=> {
   return () => window.removeEventListener('selectedOperatorChanged', syncSelectedOperator);
 },[])
 
+useEffect(()=> {
+  const syncSubmission = () => {
+    handleSubmit();
+  }
+
+  window.addEventListener('submitFormula', syncSubmission);
+  return () => {
+    window.removeEventListener('submitFormula', syncSubmission);
+  }
+},[])
+
 
   const addColumnToFormula = useCallback((column) => {
     if (column) {

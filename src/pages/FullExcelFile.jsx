@@ -1281,6 +1281,29 @@ const FullExcelFile = () => {
       localStorage.setItem("selectedOperator","/");
       window.dispatchEvent(new Event('selectedOperatorChanged'));
     }
+
+    if(text.toLowerCase().includes("left bracket")){
+      localStorage.setItem('selectedOperator', '(');
+      window.dispatchEvent(new Event('selectedOperatorChanged'));
+    }
+
+    if(text.toLowerCase().includes("right bracket")){
+      localStorage.setItem('selectedOperator', ')');
+      window.dispatchEvent(new Event('selectedOperatorChanged'));
+    }
+
+    if(text.toLowerCase().includes("submit column")){
+      window.dispatchEvent(new Event('submitNewColumn'));
+    }
+
+    if(text.toLowerCase().includes("submit excel"))
+    {
+      handleAddSheetSubmit();
+    }
+
+    if(text.toLowerCase().includes('show result')){
+      navigation.navigate('/visualize-data');
+    }
   }
 
   const handleSelectSheetByVoice = (text) => {
