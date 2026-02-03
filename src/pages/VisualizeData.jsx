@@ -218,7 +218,6 @@ const VisualizeData = () => {
             setIsListening(true);
         } catch (e) {
             setIsListening(false);
-            // schedule a delayed start as fallback
             setTimeout(() => {
                 try {
                     recognitionRef.current.start();
@@ -267,7 +266,9 @@ const VisualizeData = () => {
         }
 
         if (awaitingSheetFor) {
-            const match = findSheetMatch(text);
+            let candidate = text.replace(/\b(sheet|sheet name|the sheet|named|called|is|its|it's)\b/gi, '').trim();
+            if (!candidate) candidate = text;
+            const match = findSheetMatch(candidate);
             if (match) {
                 if (awaitingSheetFor === 'pre') {
                     setSelectedPreSheet(match);
@@ -279,6 +280,7 @@ const VisualizeData = () => {
                     setVoiceFeedback(`Post sheet set to: ${match}`);
                 }
                 setAwaitingSheetFor(null);
+                stopListening();
                 setTimeout(() => setVoiceFeedback(''), 3000);
                 return;
             }
@@ -292,7 +294,8 @@ const VisualizeData = () => {
                     best = sh;
                 }
             }
-            if (best && bestScore >= 0.45) {
+
+            if (best) {
                 if (forceAcceptNextMatch && bestScore >= 0.35) {
                     if (awaitingSheetFor === 'pre') {
                         setSelectedPreSheet(best);
@@ -305,15 +308,35 @@ const VisualizeData = () => {
                     }
                     setAwaitingSheetFor(null);
                     setForceAcceptNextMatch(false);
+                    stopListening();
                     setTimeout(() => setVoiceFeedback(''), 3000);
                     return;
                 }
-                setAwaitingConfirmation({ type: 'sheet', for: awaitingSheetFor, sheet: best });
-                setVoiceFeedback(`Did you mean: ${best}? Say 'yes' to confirm or 'no' to try again.`);
-                setForceAcceptNextMatch(false);
-                setIsListening(true);
-                setTimeout(() => startListening(), 250);
-                return;
+
+                if (bestScore >= 0.5) {
+                    if (awaitingSheetFor === 'pre') {
+                        setSelectedPreSheet(best);
+                        setPreSelectOpen(false);
+                        setVoiceFeedback(`Pre sheet set to: ${best}`);
+                    } else {
+                        setSelectedPostSheet(best);
+                        setPostSelectOpen(false);
+                        setVoiceFeedback(`Post sheet set to: ${best}`);
+                    }
+                    setAwaitingSheetFor(null);
+                    stopListening();
+                    setTimeout(() => setVoiceFeedback(''), 3000);
+                    return;
+                }
+
+                if (bestScore >= 0.35) {
+                    setAwaitingConfirmation({ type: 'sheet', for: awaitingSheetFor, sheet: best });
+                    setVoiceFeedback(`Did you mean: ${best}? Say 'yes' to confirm or 'no' to try again.`);
+                    setForceAcceptNextMatch(false);
+                    setIsListening(true);
+                    setTimeout(() => startListening(), 250);
+                    return;
+                }
             }
 
             setVoiceFeedback('No matching sheet found. Please say the sheet name again.');
@@ -381,7 +404,6 @@ const VisualizeData = () => {
             return;
         }
 
-        // 3) Direct set patterns: "set pre sheet to <name>" or "set post sheet to <name>"
         const preDirect = text.match(/set\s+pre(?:\s+sheet)?(?:\s*(?:name|to|is))?\s*(.+)/i);
         if (preDirect && preDirect[1]) {
             const match = findSheetMatch(preDirect[1]);
@@ -403,7 +425,6 @@ const VisualizeData = () => {
             }
         }
 
-        // 4) Tab switching commands (fallback)
         if (text.includes('distribution')) {
             setActiveTab(0);
             setVoiceFeedback('Switched to Distribution Curve');
