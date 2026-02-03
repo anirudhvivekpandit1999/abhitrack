@@ -41,9 +41,9 @@ const FullExcelFile = () => {
   const [preProduct, setPreProduct] = useState("");
   const [postProduct, setPostProduct] = useState("");
   const [cols, setCols] = useState([]);
-  const [clientName,setClientName] = useState('');
-  const [plantName,setPlantName] = useState('');
-  const [productName,setProductName] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [plantName, setPlantName] = useState('');
+  const [productName, setProductName] = useState('');
   const [showColumnBuilder, setShowColumnBuilder] = useState(false);
   const [builderRows, setBuilderRows] = useState([]);
   const [isListening, setIsListening] = useState(false);
@@ -54,6 +54,7 @@ const FullExcelFile = () => {
   const [lastVoiceFileCommand, setLastVoiceFileCommand] = useState("");
   const [showFileSearchModal, setShowFileSearchModal] = useState(false);
   const [matchedRecentFiles, setMatchedRecentFiles] = useState([]);
+  const [focusId, setFocusId] = useState('');
   const recognitionRef = useRef(null);
   const feedbackRef = useRef(null);
   const fileObjectsRef = useRef({});
@@ -78,6 +79,20 @@ const FullExcelFile = () => {
       console.log('ℹ No recent files in localStorage yet');
     }
   }, []);
+
+  useEffect(() => {
+    if (!focusId || !showAddPanel) return;
+
+    requestAnimationFrame(() => {
+      const el = document.getElementById(focusId);
+      if (el) {
+        el.click()
+        console.log("Focused:", focusId);
+      } else {
+        console.log("Element not found:", focusId);
+      }
+    });
+  }, [focusId, showAddPanel]);
 
   useEffect(() => {
     if (recentFiles.length > 0) {
@@ -241,57 +256,57 @@ const FullExcelFile = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     console.log('📥 File selected:', file.name);
-    
+
     if (lastVoiceFileCommand) {
       const fileName = file.name.toLowerCase();
       const fileNameWithoutExt = fileName.split('.')[0];
       const voiceCmd = lastVoiceFileCommand.toLowerCase();
-      
-      const isMatch = voiceCmd.includes(fileName) || voiceCmd.includes(fileNameWithoutExt) || 
-                      fileName.includes(voiceCmd) || fileNameWithoutExt.includes(voiceCmd);
-      
+
+      const isMatch = voiceCmd.includes(fileName) || voiceCmd.includes(fileNameWithoutExt) ||
+        fileName.includes(voiceCmd) || fileNameWithoutExt.includes(voiceCmd);
+
       if (!isMatch) {
         setVoiceFeedback(`Selected: ${file.name}. Processing...`);
       } else {
         setVoiceFeedback(`Found match! Loading: ${file.name}`);
       }
     }
-    
+
     console.log('  Before processFile - recentFiles state:', recentFiles);
     processFile(file);
     setLastVoiceFileCommand("");
-    
+
     if (e.target) {
       e.target.value = '';
     }
-    
+
     console.log('  After processFile - recentFiles state:', recentFiles);
   };
 
   const processFile = (file) => {
     console.log('📝 processFile called with:', file.name);
-    
+
     setFileName(file.name);
     setError(null);
     setVoiceFeedback("File selected: " + file.name + ". Processing...");
-    
+
     fileObjectsRef.current[file.name] = file;
     fileObjectsRef.current[file.name.split('.')[0]] = file;
-    
+
     const newRecent = [file.name, ...recentFiles.filter(f => f !== file.name)].slice(0, 10);
     console.log('  Updating recentFiles from:', recentFiles);
     console.log('  To:', newRecent);
     setRecentFiles(newRecent);
-    
+
     try {
       localStorage.setItem('recentFiles', JSON.stringify(newRecent));
       console.log('  ✓ Saved to localStorage:', newRecent);
     } catch (e) {
       console.error('  ✗ Failed to save to localStorage:', e);
     }
-    
+
     const ext = file.name.split(".").pop().toLowerCase();
     if (!["xlsx", "xls", "xlsm"].includes(ext)) {
       setError("Unsupported file type");
@@ -437,7 +452,7 @@ const FullExcelFile = () => {
           parsed.forEach(p => { if (p && p.name) unionCols.add(p.name) });
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     setColumnNames(Array.from(unionCols));
   };
 
@@ -545,21 +560,25 @@ const FullExcelFile = () => {
             sheetRows = sheetRows.map((row, idx) => {
               const nr = {};
               picks.forEach((k) => (nr[k] = row[k]));
-              pendingCols.forEach(pc => { if (pc && pc.name) {
-                const globalIndex = s.start + idx;
-                const val = resolvePendingValue(pc, row, globalIndex);
-                nr[pc.name] = val;
-              }});
+              pendingCols.forEach(pc => {
+                if (pc && pc.name) {
+                  const globalIndex = s.start + idx;
+                  const val = resolvePendingValue(pc, row, globalIndex);
+                  nr[pc.name] = val;
+                }
+              });
               return nr;
             });
           } else {
             sheetRows = sheetRows.map((row, idx) => {
               const nr = { ...row };
-              pendingCols.forEach(pc => { if (pc && pc.name) {
-                const globalIndex = s.start + idx;
-                const val = resolvePendingValue(pc, row, globalIndex);
-                nr[pc.name] = val;
-              }});
+              pendingCols.forEach(pc => {
+                if (pc && pc.name) {
+                  const globalIndex = s.start + idx;
+                  const val = resolvePendingValue(pc, row, globalIndex);
+                  nr[pc.name] = val;
+                }
+              });
               return nr;
             });
           }
@@ -579,21 +598,25 @@ const FullExcelFile = () => {
           dataToCopy = sourceData.map((row, idx) => {
             const newRow = {};
             picks.forEach((k) => (newRow[k] = row[k]));
-            pendingCols.forEach(pc => { if (pc && pc.name) {
-              const globalIndex = idx;
-              const val = resolvePendingValue(pc, row, globalIndex);
-              newRow[pc.name] = val;
-            }});
+            pendingCols.forEach(pc => {
+              if (pc && pc.name) {
+                const globalIndex = idx;
+                const val = resolvePendingValue(pc, row, globalIndex);
+                newRow[pc.name] = val;
+              }
+            });
             return newRow;
           });
         } else {
           dataToCopy = sourceData.map((row, idx) => {
             const nr = { ...row };
-            pendingCols.forEach(pc => { if (pc && pc.name) {
-              const globalIndex = idx;
-              const val = resolvePendingValue(pc, row, globalIndex);
-              nr[pc.name] = val;
-            }});
+            pendingCols.forEach(pc => {
+              if (pc && pc.name) {
+                const globalIndex = idx;
+                const val = resolvePendingValue(pc, row, globalIndex);
+                nr[pc.name] = val;
+              }
+            });
             return nr;
           });
         }
@@ -621,7 +644,7 @@ const FullExcelFile = () => {
       } catch (e) { }
       try {
         sessionStorage.removeItem('pendingColumnsToAdd');
-      } catch (e) {}
+      } catch (e) { }
     } catch (e) {
       console.error(e);
       setError("Failed to create file");
@@ -792,7 +815,7 @@ const FullExcelFile = () => {
       if (existsIndex === -1) parsed.push(toStore);
       else parsed[existsIndex] = toStore;
       sessionStorage.setItem('pendingColumnsToAdd', JSON.stringify(parsed));
-    } catch (e) {}
+    } catch (e) { }
     setColumnNames(prev => Array.from(new Set([...(prev || []), newColumn.name])));
     setSelectedColumns(prev => {
       if (prev.includes("")) {
@@ -826,7 +849,7 @@ const FullExcelFile = () => {
     if (!recognitionRef.current) return;
     try {
       recognitionRef.current.stop();
-    } catch (e) {}
+    } catch (e) { }
     setIsListening(false);
   };
 
@@ -883,15 +906,53 @@ const FullExcelFile = () => {
       return;
     }
 
-    if (text.toLowerCase().includes("add new sheet")){
+    if (text.toLowerCase().includes("add new sheet")) {
       setShowAddPanel(true);
+      return;
     }
-  };
+
+    if (text.toLowerCase().includes('new sheet name')) {
+      setFocusId('newsheet');
+      const nameMatch = text.match(/new sheet name (is|to)?\s*(.+)/i);
+      console.log('🆕 Voice new sheet name match:', nameMatch);
+      setNewSheetName(nameMatch[2].split('.')[0]);
+      return;
+
+    };
+
+    if (text.toLowerCase().includes("set base sheet")) {
+      const match = text
+        .toLowerCase()
+        .match(/set base sheet(?:\s*(?:is|to))?\s*(.*)/i);
+
+      console.log("🆕 Voice set base sheet command match:", match);
+
+      if (match) {
+        const baseSheetName = match[1]?.trim();
+
+        if (baseSheetName) {
+          const cleanedName = baseSheetName.split(".")[0];
+
+          console.log("📝 Voice set base sheet match:", cleanedName);
+
+          setCopyFromSheet(cleanedName);
+          setVoiceFeedback(`Base sheet set to: ${cleanedName}`);
+        } else {
+          setFocusId("basesheet");
+          setVoiceFeedback("Please choose a base sheet");
+        }
+
+        setTimeout(() => setVoiceFeedback(""), 3000);
+      }
+
+      return;
+    }
+  }
 
   const handleSelectSheetByVoice = (text) => {
     const cleaned = normalize(text);
     let foundSheet = "";
-    
+
     sheetNames.forEach((sheet) => {
       const normSheet = normalize(sheet);
       if (cleaned.includes(normSheet)) {
@@ -919,7 +980,7 @@ const FullExcelFile = () => {
       if (feedbackRef.current) clearTimeout(feedbackRef.current);
       feedbackRef.current = setTimeout(() => setVoiceFeedback(""), 2000);
       const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj==');
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     }
   };
 
@@ -959,7 +1020,7 @@ const FullExcelFile = () => {
       const fileToLoad = matches[0];
       console.log('✅ Auto-loading first match:', fileToLoad);
       const file = fileObjectsRef.current[fileToLoad] || fileObjectsRef.current[fileToLoad.split('.')[0]];
-      
+
       if (file) {
         setVoiceFeedback("Found match! Loading: " + fileToLoad);
         processFile(file);
@@ -1034,7 +1095,7 @@ const FullExcelFile = () => {
               <h2 className="text-lg font-bold text-slate-900">Find File</h2>
               <p className="text-sm text-slate-600 mt-1">Searching for: <span className="font-semibold text-blue-600">{lastVoiceFileCommand}</span></p>
             </div>
-            
+
             {matchedRecentFiles.length > 0 ? (
               <div className="p-4">
                 <div className="text-xs font-semibold text-slate-700 mb-2">Matching Files:</div>
@@ -1055,7 +1116,7 @@ const FullExcelFile = () => {
                 <div className="text-sm">No matching files found in recent.</div>
               </div>
             )}
-            
+
             <div className="p-4 border-t flex gap-2">
               <button
                 onClick={handleBrowseMoreFiles}
@@ -1073,7 +1134,7 @@ const FullExcelFile = () => {
           </div>
         </div>
       )}
-    
+
       <div className="flex gap-6 max-w-7xl mx-auto px-4 py-6 justify-center">
         <div className="flex-1 h-[calc(100vh-12rem)] overflow-y-auto space-y-6 max-w-[88%]">
           <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 1 }}>
@@ -1125,13 +1186,13 @@ const FullExcelFile = () => {
               <label htmlFor="fileUpload" className="cursor-pointer font-semibold text-slate-800 hover:text-blue-600">
                 {fileName ? "Change file" : "Upload Excel file"}
               </label>
-              <input 
-                id="fileUpload" 
-                type="file" 
-                ref={fileInputRef} 
-                accept=".xlsx,.xls,.xlsm" 
-                className="hidden" 
-                onChange={handleFileChange} 
+              <input
+                id="fileUpload"
+                type="file"
+                ref={fileInputRef}
+                accept=".xlsx,.xls,.xlsm"
+                className="hidden"
+                onChange={handleFileChange}
                 disabled={isLoading}
                 title={lastVoiceFileCommand ? `Looking for: ${lastVoiceFileCommand}` : "Select an Excel file"}
               />
@@ -1169,8 +1230,8 @@ const FullExcelFile = () => {
                     availableCols: cols,
                     preProductData: preSheetData,
                     postProductData: postSheetData,
-                    excelData : excelData,
-                    sheetNames : sheet,
+                    excelData: excelData,
+                    sheetNames: sheet,
                     preSheetName: preSheetName,
                     postSheetName: postSheetName
                   }
@@ -1231,12 +1292,12 @@ const FullExcelFile = () => {
                         </div>
 
                         <div className="mt-3">
-                          <input value={newSheetName} onChange={(e) => setNewSheetName(e.target.value)} placeholder="Enter sheet/file name" className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                          <input id='newsheet' value={newSheetName} onChange={(e) => setNewSheetName(e.target.value)} placeholder="Enter sheet/file name" className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                         </div>
 
                         <div className="mt-3">
                           <label className="block text-xs text-slate-600">Copy from existing sheet (optional)</label>
-                          <select value={copyFromSheet} onChange={(e) => setCopyFromSheet(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+                          <select id="basesheet" value={copyFromSheet} onChange={(e) => setCopyFromSheet(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
                             <option value="">-- Do not copy (create blank sheet) --</option>
                             {sheetNames.map((s) => (
                               <option key={s} value={s}>{s}</option>
@@ -1467,7 +1528,7 @@ const FullExcelFile = () => {
           )}
         </div>
 
-     <aside className="w-64 hidden md:flex flex-col border-l bg-gradient-to-b from-white to-slate-50 shadow-sm h-[calc(100vh-12rem)]">
+        <aside className="w-64 hidden md:flex flex-col border-l bg-gradient-to-b from-white to-slate-50 shadow-sm h-[calc(100vh-12rem)]">
           <div className="p-3 border-b font-semibold text-slate-700 bg-gradient-to-r from-white to-slate-50">Assistant</div>
           <div className="flex-1 p-3 overflow-y-auto space-y-3">
             {lastCommand ? (
@@ -1499,13 +1560,12 @@ const FullExcelFile = () => {
                 value=""
                 placeholder="Type a command (optional)"
                 className="flex-1 min-w-0 rounded-md border px-3 py-2 text-sm focus:outline-none"
-                onChange={() => {}}
+                onChange={() => { }}
               />
               <button
                 onClick={() => (isListening ? stopListening() : startListening())}
-                className={`flex items-center gap-1 shrink-0 rounded-md px-2 py-1 text-sm font-medium ${
-                  isListening ? "bg-red-600 text-white" : "bg-blue-600 text-white"
-                }`}
+                className={`flex items-center gap-1 shrink-0 rounded-md px-2 py-1 text-sm font-medium ${isListening ? "bg-red-600 text-white" : "bg-blue-600 text-white"
+                  }`}
               >
                 <MicIcon fontSize="small" />
                 <span className="whitespace-nowrap">{isListening ? "Listening" : "Speak"}</span>
