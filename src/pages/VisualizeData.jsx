@@ -98,6 +98,85 @@ const VisualizeData = () => {
         window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     }, []);
 
+   
+    const recognitionRef = React.useRef(null);
+    const [isListening, setIsListening] = useState(false);
+    const [lastCommand, setLastCommand] = useState('');
+    const [voiceFeedback, setVoiceFeedback] = useState('');
+    const [assistantCollapsed, setAssistantCollapsed] = useState(false);
+
+    useEffect(() => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const r = new SpeechRecognition();
+            r.continuous = false;
+            r.lang = 'en-US';
+            r.interimResults = false;
+            r.maxAlternatives = 1;
+            r.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.trim().toLowerCase();
+                setLastCommand(transcript);
+                handleVoiceCommand(transcript);
+            };
+            r.onend = () => setIsListening(false);
+            r.onerror = () => setIsListening(false);
+            recognitionRef.current = r;
+        } else {
+            recognitionRef.current = null;
+        }
+
+        return () => {
+            if (recognitionRef.current) {
+                try { recognitionRef.current.onresult = null; recognitionRef.current.onend = null; recognitionRef.current.onerror = null; } catch (e) {}
+            }
+        };
+    }, []);
+
+    const startListening = () => {
+        if (!recognitionRef.current) {
+            setVoiceFeedback('Voice recognition not supported');
+            setTimeout(() => setVoiceFeedback(''), 3000);
+            return;
+        }
+        try {
+            setLastCommand('');
+            recognitionRef.current.start();
+            setIsListening(true);
+        } catch (e) {
+            setIsListening(false);
+        }
+    };
+
+    const stopListening = () => {
+        if (!recognitionRef.current) return;
+        try { recognitionRef.current.stop(); } catch (e) {}
+        setIsListening(false);
+    };
+
+    const handleVoiceCommand = (text) => {
+        if (!text) return;
+     
+        if (text.includes('distribution')) {
+            setActiveTab(0);
+            setVoiceFeedback('Switched to Distribution Curve');
+        } else if (text.includes('multi') || text.includes('multivariate') || text.includes('multi-variate')) {
+            setActiveTab(2);
+            setVoiceFeedback('Switched to Multi-Variate Scatter');
+        } else if (text.includes('scatter')) {
+            setActiveTab(1);
+            setVoiceFeedback('Switched to Scatter Plot');
+        } else if (text.includes('boot') || text.includes('bootstrap') || text.includes('bootstrapping')) {
+            setActiveTab(3);
+            setVoiceFeedback('Switched to Bootstrapping');
+        } else if (text.includes('correlation')) {
+            setActiveTab(4);
+            setVoiceFeedback('Switched to Correlation Analysis');
+        } else {
+            setVoiceFeedback('Command not recognized');
+        }
+        setTimeout(() => setVoiceFeedback(''), 3000);
+    };
+
     const renderTabContent = () => {
         switch (activeTab) {
             case 0:
@@ -220,7 +299,15 @@ const VisualizeData = () => {
 
                         <Divider sx={{ my: 2 }} />
 
-                        <Assistant />
+                        <Assistant
+                            isListening={isListening}
+                            lastCommand={lastCommand}
+                            voiceFeedback={voiceFeedback}
+                            assistantCollapsed={assistantCollapsed}
+                            setAssistantCollapsed={setAssistantCollapsed}
+                            startListening={startListening}
+                            stopListening={stopListening}
+                        />
 
                         <NavigationButtons
                             onPrevious={handlePreviousStep}
