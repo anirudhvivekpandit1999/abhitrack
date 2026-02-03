@@ -104,27 +104,97 @@ const VisualizeData = () => {
     const [lastCommand, setLastCommand] = useState('');
     const [voiceFeedback, setVoiceFeedback] = useState('');
     const [assistantCollapsed, setAssistantCollapsed] = useState(false);
+    const [forceAcceptNextMatch, setForceAcceptNextMatch] = useState(false);
+
+    const ensureRecognition = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            recognitionRef.current = null;
+            return;
+        }
+        const r = new SpeechRecognition();
+        r.continuous = false;
+        r.lang = 'en-US';
+        r.interimResults = false;
+        r.maxAlternatives = 1;
+        r.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.trim().toLowerCase();
+            setLastCommand(transcript);
+            handleVoiceCommand(transcript);
+        };
+        r.onend = () => {
+            setIsListening(false);
+        };
+        r.onerror = () => {
+            setIsListening(false);
+        };
+        recognitionRef.current = r;
+    };
+
+
+    const [awaitingSheetFor, setAwaitingSheetFor] = useState(null);
+    const [preSelectOpen, setPreSelectOpen] = useState(false);
+    const [postSelectOpen, setPostSelectOpen] = useState(false);
+    const [awaitingConfirmation, setAwaitingConfirmation] = useState(null);
+
+    const normalize = (s) => String(s || '').toLowerCase().replace(/[_\-]/g, ' ').replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+    const levenshtein = (a = '', b = '') => {
+        const an = a ? a.length : 0;
+        const bn = b ? b.length : 0;
+        if (an === 0) return bn;
+        if (bn === 0) return an;
+        const matrix = Array.from({ length: bn + 1 }, (_, i) => [i]);
+        for (let j = 0; j <= an; j++) matrix[0][j] = j;
+        for (let i = 1; i <= bn; i++) {
+            for (let j = 1; j <= an; j++) {
+                if (b.charAt(i - 1) === a.charAt(j - 1)) matrix[i][j] = matrix[i - 1][j - 1];
+                else matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + 1);
+            }
+        }
+        return matrix[bn][an];
+    };
+
+    const similarity = (x, y) => {
+        const a = normalize(x);
+        const b = normalize(y);
+        if (!a || !b) return 0;
+        const d = levenshtein(a, b);
+        const maxL = Math.max(a.length, b.length);
+        return 1 - d / maxL;
+    };
+
+    const findSheetMatch = (candidate) => {
+        if (!sheets || !sheets.length) return null;
+        const cleaned = normalize(candidate);
+        for (const sh of sheets) {
+            if (normalize(sh) === cleaned) return sh;
+        }
+        for (const sh of sheets) {
+            const n = normalize(sh);
+            if (n.includes(cleaned) || cleaned.includes(n)) return sh;
+        }
+        const tokens = cleaned.split(/\s+/).filter(Boolean);
+        for (const t of tokens) {
+            for (const sh of sheets) {
+                if (normalize(sh).includes(t)) return sh;
+            }
+        }
+        let best = null;
+        let bestScore = 0;
+        for (const sh of sheets) {
+            const s = similarity(sh, candidate);
+            if (s > bestScore) {
+                bestScore = s;
+                best = sh;
+            }
+        }
+        if (bestScore >= 0.6) return best;
+        return null;
+    }; 
 
     useEffect(() => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            const r = new SpeechRecognition();
-            r.continuous = false;
-            r.lang = 'en-US';
-            r.interimResults = false;
-            r.maxAlternatives = 1;
-            r.onresult = (event) => {
-                const transcript = event.results[0][0].transcript.trim().toLowerCase();
-                setLastCommand(transcript);
-                handleVoiceCommand(transcript);
-            };
-            r.onend = () => setIsListening(false);
-            r.onerror = () => setIsListening(false);
-            recognitionRef.current = r;
-        } else {
-            recognitionRef.current = null;
-        }
-
+        ensureRecognition();
         return () => {
             if (recognitionRef.current) {
                 try { recognitionRef.current.onresult = null; recognitionRef.current.onend = null; recognitionRef.current.onerror = null; } catch (e) {}
@@ -133,6 +203,7 @@ const VisualizeData = () => {
     }, []);
 
     const startListening = () => {
+        ensureRecognition();
         if (!recognitionRef.current) {
             setVoiceFeedback('Voice recognition not supported');
             setTimeout(() => setVoiceFeedback(''), 3000);
@@ -140,10 +211,22 @@ const VisualizeData = () => {
         }
         try {
             setLastCommand('');
+            if (awaitingSheetFor === 'pre') setPreSelectOpen(true);
+            if (awaitingSheetFor === 'post') setPostSelectOpen(true);
+            if (awaitingSheetFor) setForceAcceptNextMatch(true);
             recognitionRef.current.start();
             setIsListening(true);
         } catch (e) {
             setIsListening(false);
+            // schedule a delayed start as fallback
+            setTimeout(() => {
+                try {
+                    recognitionRef.current.start();
+                    setIsListening(true);
+                } catch (err) {
+                    setIsListening(false);
+                }
+            }, 250);
         }
     };
 
@@ -155,7 +238,172 @@ const VisualizeData = () => {
 
     const handleVoiceCommand = (text) => {
         if (!text) return;
-     
+
+        const t = text.trim().toLowerCase();
+
+        if (awaitingConfirmation) {
+            if (/^(yes|yep|yeah|sure|confirm|correct|right)\b/.test(t)) {
+                const { for: forWhich, sheet } = awaitingConfirmation;
+                if (forWhich === 'pre') {
+                    setSelectedPreSheet(sheet);
+                    setPreSelectOpen(false);
+                } else {
+                    setSelectedPostSheet(sheet);
+                    setPostSelectOpen(false);
+                }
+                setVoiceFeedback(`${forWhich === 'pre' ? 'Pre' : 'Post'} sheet set to: ${sheet}`);
+                setAwaitingConfirmation(null);
+                setAwaitingSheetFor(null);
+                setTimeout(() => setVoiceFeedback(''), 3000);
+                return;
+            }
+
+            if (/^(no|nope|nah)\b/.test(t)) {
+                setVoiceFeedback('Okay — please say the sheet name again.');
+                setAwaitingConfirmation(null);
+                setTimeout(() => setVoiceFeedback(''), 3000);
+                return;
+            }
+        }
+
+        if (awaitingSheetFor) {
+            const match = findSheetMatch(text);
+            if (match) {
+                if (awaitingSheetFor === 'pre') {
+                    setSelectedPreSheet(match);
+                    setPreSelectOpen(false);
+                    setVoiceFeedback(`Pre sheet set to: ${match}`);
+                } else {
+                    setSelectedPostSheet(match);
+                    setPostSelectOpen(false);
+                    setVoiceFeedback(`Post sheet set to: ${match}`);
+                }
+                setAwaitingSheetFor(null);
+                setTimeout(() => setVoiceFeedback(''), 3000);
+                return;
+            }
+
+            let best = null;
+            let bestScore = 0;
+            for (const sh of sheets || []) {
+                const s = similarity(sh, text);
+                if (s > bestScore) {
+                    bestScore = s;
+                    best = sh;
+                }
+            }
+            if (best && bestScore >= 0.45) {
+                if (forceAcceptNextMatch && bestScore >= 0.35) {
+                    if (awaitingSheetFor === 'pre') {
+                        setSelectedPreSheet(best);
+                        setPreSelectOpen(false);
+                        setVoiceFeedback(`Pre sheet set to: ${best}`);
+                    } else {
+                        setSelectedPostSheet(best);
+                        setPostSelectOpen(false);
+                        setVoiceFeedback(`Post sheet set to: ${best}`);
+                    }
+                    setAwaitingSheetFor(null);
+                    setForceAcceptNextMatch(false);
+                    setTimeout(() => setVoiceFeedback(''), 3000);
+                    return;
+                }
+                setAwaitingConfirmation({ type: 'sheet', for: awaitingSheetFor, sheet: best });
+                setVoiceFeedback(`Did you mean: ${best}? Say 'yes' to confirm or 'no' to try again.`);
+                setForceAcceptNextMatch(false);
+                setIsListening(true);
+                setTimeout(() => startListening(), 250);
+                return;
+            }
+
+            setVoiceFeedback('No matching sheet found. Please say the sheet name again.');
+            setForceAcceptNextMatch(false);
+            setIsListening(true);
+            setTimeout(() => startListening(), 250);
+            setTimeout(() => setVoiceFeedback(''), 3000);
+            return;
+        }
+
+        const isCloseToPre = (w) => {
+            const cleaned = normalize(w);
+            if (!cleaned) return false;
+            if (cleaned === 'pre') return true;
+            if (cleaned.includes('pre')) return true;
+            return similarity(cleaned, 'pre') >= 0.6;
+        };
+        const isCloseToPost = (w) => {
+            const cleaned = normalize(w);
+            if (!cleaned) return false;
+            if (cleaned === 'post') return true;
+            if (cleaned.includes('post')) return true;
+            return similarity(cleaned, 'post') >= 0.6;
+        };
+
+        if (/\b(free|tree)\b/.test(t)) {
+            setAwaitingSheetFor('pre');
+            setPreSelectOpen(true);
+            setVoiceFeedback(`Did you mean pre? Listening for pre sheet name...`);
+            setIsListening(true);
+            setTimeout(() => startListening(), 250);
+            setTimeout(() => {
+                setAwaitingSheetFor((curr) => (curr === 'pre' ? null : curr));
+                setPreSelectOpen(false);
+                setVoiceFeedback('');
+            }, 10000);
+            return;
+        }
+
+        if (isCloseToPre(t) || /\bset pre\b/i.test(t)) {
+            setAwaitingSheetFor('pre');
+            setPreSelectOpen(true);
+            setVoiceFeedback('Listening for pre sheet name...');
+            setIsListening(true);
+            setTimeout(() => startListening(), 250);
+            setTimeout(() => {
+                setAwaitingSheetFor((curr) => (curr === 'pre' ? null : curr));
+                setPreSelectOpen(false);
+                setVoiceFeedback('');
+            }, 10000);
+            return;
+        }
+
+        if (isCloseToPost(t) || /\bset post\b/i.test(t)) {
+            setAwaitingSheetFor('post');
+            setPostSelectOpen(true);
+            setVoiceFeedback('Listening for post sheet name...');
+            setIsListening(true);
+            setTimeout(() => startListening(), 250);
+            setTimeout(() => {
+                setAwaitingSheetFor((curr) => (curr === 'post' ? null : curr));
+                setPostSelectOpen(false);
+                setVoiceFeedback('');
+            }, 10000);
+            return;
+        }
+
+        // 3) Direct set patterns: "set pre sheet to <name>" or "set post sheet to <name>"
+        const preDirect = text.match(/set\s+pre(?:\s+sheet)?(?:\s*(?:name|to|is))?\s*(.+)/i);
+        if (preDirect && preDirect[1]) {
+            const match = findSheetMatch(preDirect[1]);
+            if (match) {
+                setSelectedPreSheet(match);
+                setVoiceFeedback(`Pre sheet set to: ${match}`);
+                setTimeout(() => setVoiceFeedback(''), 3000);
+                return;
+            }
+        }
+        const postDirect = text.match(/set\s+post(?:\s+sheet)?(?:\s*(?:name|to|is))?\s*(.+)/i);
+        if (postDirect && postDirect[1]) {
+            const match = findSheetMatch(postDirect[1]);
+            if (match) {
+                setSelectedPostSheet(match);
+                setVoiceFeedback(`Post sheet set to: ${match}`);
+                setTimeout(() => setVoiceFeedback(''), 3000);
+                return;
+            }
+        }
+
+        // 4) Tab switching commands (fallback)
         if (text.includes('distribution')) {
             setActiveTab(0);
             setVoiceFeedback('Switched to Distribution Curve');
@@ -259,12 +507,19 @@ const VisualizeData = () => {
                             <FormControl size="small" sx={{ minWidth: 220 }}>
                                 <InputLabel>Pre Product Sheet</InputLabel>
                                 <Select
+                                    open={preSelectOpen}
+                                    onOpen={() => setPreSelectOpen(true)}
+                                    onClose={() => setPreSelectOpen(false)}
                                     value={selectedPreSheet}
                                     label="Pre Product Sheet"
-                                    onChange={(e) => setSelectedPreSheet(e.target.value)}
+                                    onChange={(e) => { setSelectedPreSheet(e.target.value); setPreSelectOpen(false); setAwaitingSheetFor(null); setVoiceFeedback(`Pre sheet set to: ${e.target.value}`); setTimeout(() => setVoiceFeedback(''), 2000); }}
                                 >
                                     {sheets?.map((name) => (
-                                        <MenuItem key={name} value={name}>{name}</MenuItem>
+                                        <MenuItem
+                                            key={name}
+                                            value={name}
+                                            onClick={() => { setForceAcceptNextMatch(false); setSelectedPreSheet(name); setPreSelectOpen(false); setAwaitingSheetFor(null); setVoiceFeedback(`Pre sheet set to: ${name}`); setTimeout(() => setVoiceFeedback(''), 2000); }}
+                                        >{name}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
@@ -272,15 +527,29 @@ const VisualizeData = () => {
                             <FormControl size="small" sx={{ minWidth: 220 }}>
                                 <InputLabel>Post Product Sheet</InputLabel>
                                 <Select
+                                    open={postSelectOpen}
+                                    onOpen={() => setPostSelectOpen(true)}
+                                    onClose={() => setPostSelectOpen(false)}
                                     value={selectedPostSheet}
                                     label="Post Product Sheet"
-                                    onChange={(e) => setSelectedPostSheet(e.target.value)}
+                                    onChange={(e) => { setSelectedPostSheet(e.target.value); setPostSelectOpen(false); setAwaitingSheetFor(null); setVoiceFeedback(`Post sheet set to: ${e.target.value}`); setTimeout(() => setVoiceFeedback(''), 2000); }}
                                 >
                                     {sheets?.map((name) => (
-                                        <MenuItem key={name} value={name}>{name}</MenuItem>
+                                        <MenuItem
+                                            key={name}
+                                            value={name}
+                                            onClick={() => { setForceAcceptNextMatch(false); setSelectedPostSheet(name); setPostSelectOpen(false); setAwaitingSheetFor(null); setVoiceFeedback(`Post sheet set to: ${name}`); setTimeout(() => setVoiceFeedback(''), 2000); }}
+                                        >{name}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
+
+                            {awaitingSheetFor === 'pre' && (
+                                <div className="text-xs text-blue-600 mt-1">Listening for pre sheet name...</div>
+                            )}
+                            {awaitingSheetFor === 'post' && (
+                                <div className="text-xs text-blue-600 mt-1">Listening for post sheet name...</div>
+                            )}
                         </Box>
 
                         <Paper sx={{ width: '100%', mb: 3 }}>
