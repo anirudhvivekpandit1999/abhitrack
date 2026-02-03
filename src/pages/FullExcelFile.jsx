@@ -85,6 +85,11 @@ const FullExcelFile = () => {
     }
   }, []);
 
+  useEffect(()=> {
+    console.log(error);
+    
+  },[error])
+
   useEffect(() => {
     if (!focusId || !showAddPanel) return;
 
@@ -562,10 +567,14 @@ const FullExcelFile = () => {
 
   const handleAddSheetSubmit = async () => {
     setError(null);
-    const trimmed = newSheetName.trim();
+
+    let trimmed = newSheetName.trim();
     if (!trimmed) {
-      setError("Please enter a name");
-      return;
+      trimmed = localStorage.getItem("newSheetName") ;
+      if (!trimmed) {
+        setError("Please enter a name");
+        return;
+      }
     }
     const finalName = normalizeSheetName(trimmed);
     const collision = bifurcateSlices.some((s) => sheetNames.includes(`${finalName}-${s.name}`));
@@ -942,7 +951,7 @@ const FullExcelFile = () => {
     setIsListening(false);
   };
 
-  const handleVoiceCommand = (text) => {
+  const handleVoiceCommand = async (text) => {
     if (!text) return;
     console.log('🔊 Voice command received:', text, 'selectedSheet:', selectedSheet, 'copyFromSheet:', copyFromSheet, 'previewHeadersLen:', previewHeaders.length, 'columnNamesLen:', columnNames.length);
 
@@ -1293,18 +1302,21 @@ const FullExcelFile = () => {
     }
 
     if(text.toLowerCase().includes("submit column")){
-      window.dispatchEvent(new Event('submitNewColumn'));
+      console.log("Submitting new column via voice command");
+      
+      window.dispatchEvent(new Event('submitFormula'));
+      setShowColumnBuilder(false);
     }
 
     if(text.toLowerCase().includes("submit excel"))
     {
-      handleAddSheetSubmit();
+      document.getElementById('submit-excel-btn').click();
     }
 
     if(text.toLowerCase().includes('show result')){
-      navigation.navigate('/visualize-data');
-    }
+      document.getElementById('show-result-btn').click();
   }
+}
 
   const handleSelectSheetByVoice = (text) => {
     const cleaned = normalize(text);
@@ -1572,6 +1584,7 @@ const FullExcelFile = () => {
 
           <div className="mt-6 flex justify-center">
             <button
+            id='show-result-btn'
               onClick={() => {
                 const preSheetData = (excelData.find(s => s.sheetName === preProduct)).sheetData
                 const preSheetName = preProduct;
@@ -1649,7 +1662,7 @@ const FullExcelFile = () => {
                         </div>
 
                         <div className="mt-3">
-                          <input id='newsheet' value={newSheetName} onChange={(e) => setNewSheetName(e.target.value)} placeholder="Enter sheet/file name" className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                          <input id='newsheet' value={newSheetName} onChange={(e) => {setNewSheetName(e.target.value);localStorage.setItem("newSheetName", e.target.value)}} placeholder="Enter sheet/file name" className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                         </div>
 
                         <div className="mt-3">
@@ -1802,7 +1815,7 @@ const FullExcelFile = () => {
                         {error && <div className="mt-3 text-xs text-red-600">{error}</div>}
 
                         <div className="mt-3 flex gap-2">
-                          <button onClick={handleAddSheetSubmit} className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-60" disabled={addLoading}>{addLoading ? "Creating..." : "Submit"}</button>
+                          <button id="submit-excel-btn" onClick={handleAddSheetSubmit} className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-60" disabled={addLoading}>{addLoading ? "Creating..." : "Submit"}</button>
                           <button onClick={() => { setShowAddPanel(false); setNewSheetName(""); setCopyFromSheet(""); setError(null); setActiveTarget(null); }} className="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 border hover:bg-slate-50">Cancel</button>
                         </div>
 

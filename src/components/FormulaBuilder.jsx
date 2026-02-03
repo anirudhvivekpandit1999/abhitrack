@@ -124,6 +124,8 @@ useEffect(()=> {
 },[])
 
 
+
+
   const addColumnToFormula = useCallback((column) => {
     if (column) {
       setFormulaElements(prev => [...prev, { type: 'column', value: column, display: column }]);
