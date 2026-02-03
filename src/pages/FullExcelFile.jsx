@@ -982,8 +982,8 @@ const FullExcelFile = () => {
       setSelectedColumns([""]);
       return;
     }
-   
-    
+
+
 
     if (text.toLowerCase().includes("add new sheet")) {
       setShowAddPanel(true);
@@ -1011,14 +1011,14 @@ const FullExcelFile = () => {
 
         if (baseSheetName) {
           const cleanedName = baseSheetName.split(".")[0];
-         
+
           let sheet = sheetNames.find((s) => s.toLowerCase() === cleanedName.toLowerCase());
 
           if (sheet) {
             setCopyFromSheet(sheet);
             setVoiceFeedback(`Base sheet set to: ${sheet}`);
           } else {
-          
+
             try {
               const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
               const keys = Object.keys(saved || {});
@@ -1051,13 +1051,13 @@ const FullExcelFile = () => {
       return;
     }
 
-    if(text.toLowerCase().includes("set pre sheet name")){
+    if (text.toLowerCase().includes("set pre sheet name")) {
       const preMatch = text.match(/set pre sheet name (is|to)?\s*(.+)/i);
       console.log('🆕 Voice set pre sheet name match:', preMatch);
-      if(preMatch){
+      if (preMatch) {
         rowRanges.forEach((range, index) => {
           {
-            if(index === 0){
+            if (index === 0) {
               range.name = preMatch[2].trim().split('.')[0];
             }
             setVoiceFeedback(`Pre sheet name set to: ${range.name}`);
@@ -1067,12 +1067,12 @@ const FullExcelFile = () => {
       return;
     }
 
-    if(text.toLowerCase().includes("set post sheet name")){
+    if (text.toLowerCase().includes("set post sheet name")) {
       const postMatch = text.match(/set post sheet name (is|to)?\s*(.+)/i);
       console.log('🆕 Voice set post sheet name match:', postMatch)
-      if(postMatch){
-        rowRanges.forEach((range,index)=>{
-          if(index === 1){
+      if (postMatch) {
+        rowRanges.forEach((range, index) => {
+          if (index === 1) {
             range.name = postMatch[2].trim().split('.')[0];
             setVoiceFeedback(`Post sheet name set to: ${range.name}`);
           }
@@ -1214,6 +1214,51 @@ const FullExcelFile = () => {
       }
       setTimeout(() => setVoiceFeedback(""), 3000);
       return;
+    }
+
+    if (text.toLowerCase().includes("open column builder")) {
+      openColumnBuilder();
+      return;
+    }
+
+    if (text.toLowerCase().includes("set new column name")) {
+      const columnName = localStorage.getItem('newColumnName');
+      const newColumnMatch = text.match(/set new column name (is|to)?\s*(.+)/i);
+      console.log('🆕 Voice set new column name match:', newColumnMatch);
+      if (newColumnMatch) {
+        const colName = newColumnMatch[2].trim().split('.')[0];
+        localStorage.setItem('newColumnName', colName);
+        window.dispatchEvent(new Event('columnNameChanged'));
+        setVoiceFeedback(`New column name set to: ${colName}`);
+      }
+    }
+
+    if (text.toLowerCase().includes("add column")) {
+      const addColumnMatch = text.match(/add column (.+)/i);
+      console.log('🆕 Voice add column match:', addColumnMatch)
+      if (addColumnMatch) {
+        const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
+        console.log('  saved_excel_sheets keys:', Object.keys(saved).length);
+        const foundHeaders = []
+          for (const sName of Object.keys(saved || {})) {
+            const sData = saved[sName];
+            const headers = Array.isArray(sData) && sData.length > 0 ? Object.keys(sData[0]) : [];
+             foundHeaders.push(...headers.filter(h => h.toLowerCase() === addColumnMatch[1].trim().toLowerCase()));
+            ;
+
+            const foundInSaved = findHeaderMatch(addColumnMatch[1].split('.')[0], headers);
+            console.log('  candidate:', addColumnMatch[1], 'matched header:', foundInSaved);
+            if(foundInSaved){
+            localStorage.setItem('selectedColumnName', foundInSaved);
+            window.dispatchEvent(new Event('selectedColumnNameChanged'));
+            break;
+          }
+          }
+          console.log('  foundHeaders matching requested column:', foundHeaders); 
+          const x = foundHeaders.find(h => h.toLowerCase() === addColumnMatch[1].split('.')[0]);
+          console.log(x);
+          
+      }
     }
 
 

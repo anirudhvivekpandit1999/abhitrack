@@ -74,7 +74,34 @@ function FormulaBuilder({ availableColumns, updatedColumns, onAddColumn, without
     setFormulaElements([]);
     setShowPreview(false);
   }, []);
+  
+  useEffect(() => {
+  const syncColumnName = () => {
+    const saved = localStorage.getItem('newColumnName');
+    setColumnName(saved || '');
+  };
 
+  
+
+  window.addEventListener('columnNameChanged', syncColumnName);
+  
+  return () => window.removeEventListener('columnNameChanged', syncColumnName);
+}, []);
+
+useEffect(() => {
+  const syncSelectedColumnName = () => {
+    const saved = localStorage.getItem('selectedColumnName');
+    setSelectedColumn(saved || '');
+    addColumnToFormula(saved);
+  };
+
+  // 🔥 Run once on mount in case value already exists
+  
+
+  window.addEventListener('selectedColumnNameChanged', syncSelectedColumnName);
+  return () =>
+    window.removeEventListener('selectedColumnNameChanged', syncSelectedColumnName);
+}, []);
   const addColumnToFormula = useCallback((column) => {
     if (column) {
       setFormulaElements(prev => [...prev, { type: 'column', value: column, display: column }]);
@@ -361,6 +388,7 @@ function FormulaBuilder({ availableColumns, updatedColumns, onAddColumn, without
               onChange={(e) => {
                 setColumnName(e.target.value);
                 setShowPreview(false);
+                
               }}
               placeholder="Enter the name for your calculated column"
               margin="normal"
