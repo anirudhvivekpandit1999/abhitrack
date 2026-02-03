@@ -1363,13 +1363,13 @@ const FullExcelFile = () => {
                               <div className="w-full h-full overflow-auto">
                                 <div className="w-full overflow-x-auto h-full">
                                   <table className="min-w-full divide-y divide-slate-200">
-                                    <thead className="bg-gradient-to-r from-slate-50 to-slate-100">
+                                    <thead className="bg-blue-600">
                                       <tr>
-                                        {previewHeaders.map((key) => (
+                                        {previewHeaders.map((key, idx) => (
                                           <th
                                             key={key}
                                             onClick={() => { setYAxis(key); toggleColumnSelection(key); }}
-                                            className={`cursor-pointer px-2 py-1 text-left text-xs font-semibold text-slate-700 ${yAxis === key ? "bg-blue-50 text-blue-700" : ""} ${isColumnSelected(key) ? "bg-green-50 text-green-700" : ""}`}>
+                                            className={`cursor-pointer px-2 py-1 text-left text-xs font-semibold text-white border-r border-slate-200 ${yAxis === key ? "bg-blue-700 text-white" : ""} ${isColumnSelected(key) ? "bg-green-600 text-white" : ""} ${idx === previewHeaders.length - 1 ? "last:border-r-0" : ""}`}>
                                             {key}
                                           </th>
                                         ))}
