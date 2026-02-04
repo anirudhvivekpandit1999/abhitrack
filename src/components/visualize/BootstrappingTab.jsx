@@ -51,6 +51,7 @@ const BootstrappingTab = ({
     productName = ''
 }) => {
     const [selectedColumn, setSelectedColumn] = useState('');
+    const [itemSelectOpen,   setItemSelectOpen] = useState(false);
     const [significantPage, setSignificantPage] = useState(1);
     const [nonSignificantPage, setNonSignificantPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -88,6 +89,29 @@ const BootstrappingTab = ({
             setSelectedColumn(availableColumns[0]);
         }
     }, [availableColumns]);
+
+    useEffect(()=>{
+        const syncViewMode = () => {
+            const viewMode = localStorage.getItem('bootstrapViewMode') || 'grid';
+            setViewMode(viewMode);
+        };
+        syncViewMode();
+        window.addEventListener('bootstrapViewModeChanged', syncViewMode);
+        return () => {
+            window.removeEventListener('bootstrapViewModeChanged', syncViewMode);
+        };
+    },[])
+
+    useEffect(()=>{
+        const syncItemSelectOpen = () => {
+            const isOpen = localStorage.getItem('bootstrapItemSelectOpen') === 'true';
+            setItemSelectOpen(isOpen);
+        };
+        window.addEventListener('bootstrapItemSelectOpenChanged', syncItemSelectOpen);
+        return () => {
+            window.removeEventListener('bootstrapItemSelectOpenChanged', syncItemSelectOpen);
+        };
+    },[])
 
     const getColumnStatistics = (columnName) => {
         const significantResults = bootstrapAnalysis.significant_impact || [];
@@ -645,7 +669,8 @@ const BootstrappingTab = ({
                             }
                         }}
                         renderInput={(params) => (
-                            <TextField
+                            <TextField 
+                                id='bootstrap-column-select'
                                 {...params}
                                 label="Select Column for Analysis"
                                 variant="outlined"
@@ -702,6 +727,7 @@ const BootstrappingTab = ({
                                 value={itemsPerPage}
                                 label="Items per page"
                                 onChange={(e) => {
+                                    setItemSelectOpen(true);
                                     setItemsPerPage(e.target.value);
                                     setSignificantPage(1);
                                     setNonSignificantPage(1);
@@ -742,6 +768,7 @@ const BootstrappingTab = ({
                     <Grid item xs={12} sm={6} md={3}>
                         <Tooltip title="Download Excel Report">
                             <Button
+                                id='export-bootstrap-excel-btn'
                                 variant="outlined"
                                 size="small"
                                 startIcon={<DownloadIcon />}

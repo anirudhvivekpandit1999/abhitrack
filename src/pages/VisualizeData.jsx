@@ -553,28 +553,121 @@ const VisualizeData = () => {
             document.getElementById('bootstrap-btn')?.click();
             document.getElementById('bar-chart-download-btn')?.click();
             document.getElementById('multivariate-btn')?.click();
+            return;
         }
 
         if(text.includes('open settings')){
             document.getElementById('settings-button')?.click();
+            return;
         }
 
         if(text.includes('save visualization')){
             document.getElementById(`save-visualization-btn`)?.click();
+            setVoiceFeedback('Saving visualization');
+            return;
         }
 
         if(text.includes('download this visualization as png')){
             document.getElementById(`download-visualization-btn`)?.click();
+            setVoiceFeedback('Downloading visualization as PNG');
+            return;
         }
 
         if (text.includes('show chart type')){
             localStorage.setItem('showDistributionChartTypeHelp', 'true');
             window.dispatchEvent(new Event('showDistributionChartTypeHelpChanged'));
             setVoiceFeedback('Showing chart type help');
+            return;
         }
 
+        if(text.includes('open multiple x axis')){
+            document.getElementById('open-multiple-x-axis-btn')?.focus();
+            return;
+        }
 
+        if(text.includes('select x column')){
+            const match = text.match(/select x column (.+)/i);
+            if (match && match[1]) {
+                const columnName = match[1].trim();
+                localStorage.setItem('multiVariateScatterXColumn', columnName);
+                window.dispatchEvent(new Event('multiVariateScatterXColumnChanged'));
+                setVoiceFeedback(`X column set to: ${columnName}`);
+            }
+            return;
+        }
 
+        if(text.includes('show y column')){
+            document.getElementById('open-multiple-y-axis-btn')?.focus();
+            return;
+        }
+
+        if(text.includes('select y column')){
+            const match = text.match(/select y column (.+)/i);
+            if (match && match[1]) {
+                const columnName = match[1].trim();
+                localStorage.setItem('multiVariateScatterYColumn', columnName);
+                window.dispatchEvent(new Event('multiVariateScatterYColumnChanged'));
+                setVoiceFeedback(`Y column set to: ${columnName}`);
+            }
+            return;
+        }
+
+        if(text.includes('set dataset view')){
+            const match = text.match(/set dataset view to (.+)/i);
+            if (match && match[1]) {
+                const viewMode = match[1].trim();
+                localStorage.setItem('multiVariateScatterViewMode', viewMode);
+                window.dispatchEvent(new Event('multiVariateScatterViewModeChanged'));
+                setVoiceFeedback(`Dataset view set to: ${viewMode}`);
+            }
+            return;
+        }
+
+        if(text.includes('show bootsrap columns')){
+            document.getElementById('bootstrap-column-select').focus();
+            return;
+        }
+
+        if(text.includes('open bootstrap item select')){
+            localStorage.setItem('bootstrapItemSelectOpen', 'true');
+            window.dispatchEvent(new Event('bootstrapItemSelectOpenChanged'));
+            setVoiceFeedback('Opened bootstrap item select');
+            return;
+        }
+
+        if(text.includes('set bootstrap view')){
+            const match = text.match(/set bootstrap view to (.+)/i);
+            if (match && match[1]) {
+                const viewMode = match[1].trim();
+                localStorage.setItem('bootstrapViewMode', viewMode);
+                window.dispatchEvent(new Event('bootstrapViewModeChanged'));
+                setVoiceFeedback(`Bootstrap view mode set to: ${viewMode}`);
+            }
+            return;
+
+        }
+
+        if(text.includes('export bootstrap excel')){
+            document.getElementById('export-bootstrap-excel-btn')?.click();
+            setVoiceFeedback('Exporting bootstrap results to Excel');
+            return;
+        }
+
+        if(text.includes('show correlation columns')){
+            document.getElementById('correlation-column-select').focus();
+            return;
+        }
+
+        if(text.includes('set correlation column')){
+            const match = text.match(/set correlation column (.+)/i);
+            if (match && match[1]) {
+                const columnName = match[1].trim();
+                localStorage.setItem('correlationColumn', columnName);
+                window.dispatchEvent(new Event('correlationColumnChanged'));
+                setVoiceFeedback(`Correlation column set to: ${columnName}`);
+            }
+            return;
+        }
         
         
         setTimeout(() => setVoiceFeedback(''), 3000);
@@ -595,17 +688,8 @@ const VisualizeData = () => {
                         productName={productName}
                     />
                 );
+            
             case 1:
-                return (
-                    <ScatterPlotTab
-                        withProductData={withProductData}
-                        withoutProductData={withoutProductData}
-                        clientName={clientName}
-                        plantName={plantName}
-                        productName={productName}
-                    />
-                );
-            case 2:
                 return (
                     <MultiVariateScatterPlotTab
                         availableColumns={availableColumns}
@@ -616,7 +700,7 @@ const VisualizeData = () => {
                         productName={productName}
                     />
                 );
-            case 3:
+            case 2:
                 return (
                     <BootstrappingTab
                         availableColumns={availableColumns}
@@ -626,7 +710,7 @@ const VisualizeData = () => {
                         productName={productName}
                     />
                 );
-            case 4:
+            case 3:
                 return (
                     <CorrelationAnalysisTab
                         availableColumns={availableColumns}
@@ -712,7 +796,8 @@ const VisualizeData = () => {
                         <Paper sx={{ width: '100%', mb: 3 }}>
                             <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
                                 <Tab label="Distribution Curve" />
-                                {/* <Tab label="Scatter Plot" /> */}
+                                
+                                
                                 <Tab label="Multi-Variate Scatter" />
                                 <Tab label="Bootstrapping" />
                                 <Tab label="Correlation Analysis" />

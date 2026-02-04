@@ -93,6 +93,17 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
             setSelectedVariable(availableColumns[0]);
         }
     }, [availableColumns]);
+
+    useEffect(() => {
+        const syncBaseColumnName = () => {
+            const saved = localStorage.getItem('correlationColumn');
+            if (saved && availableColumns.includes(saved)) {
+                setSelectedVariable(saved);
+            }
+        }
+        window.addEventListener('correlationColumnChanged', syncBaseColumnName);
+        return () => window.removeEventListener('correlationColumnChanged', syncBaseColumnName);
+    },[])
     
     const calculateCorrelation = (xValues, yValues) => {
         if (!xValues || !yValues || xValues.length !== yValues.length || xValues.length < 2) return 0;
@@ -978,6 +989,7 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                                 Select Base Variable
                             </Typography>
                             <Autocomplete
+                                id='correlation-column-select'
                                 options={availableColumns}
                                 value={selectedVariable}
                                 onChange={(event, newValue) => {
