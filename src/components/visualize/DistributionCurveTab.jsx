@@ -172,7 +172,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
     useEffect(()=> {
         const syncOpenChartState = () => {
             const saved = localStorage.getItem('showDistributionChartTypeHelp');
-            setSettingsModalOpen(saved === 'true');
+            setSingleViewSelectOpen(saved);
         }
 
         window.addEventListener('showDistributionChartTypeHelpChanged', syncOpenChartState);
@@ -205,15 +205,15 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
             setSelectedColumn(saved || '');
         }
 
-        window.addEventListener('selectedDistributionColumnChanged', syncSelectedColumnName);
+        window.addEventListener('distributionColumnChanged', syncSelectedColumnName);
         
-        return () => window.removeEventListener('selectedDistributionColumnChanged', syncSelectedColumnName);
+        return () => window.removeEventListener('distributionColumnChanged', syncSelectedColumnName);
     },[])
 
     useEffect(()=>{
         const syncViewMode = () => {
             const saved = localStorage.getItem('selectedDistributionViewMode');
-            setViewMode(saved || 'combined');
+            setViewMode(saved);
         }
 
         window.addEventListener('distributionViewModeChanged', syncViewMode);
@@ -2634,6 +2634,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         Select Column
                     </Typography>
                     <Autocomplete
+                    id='distribution-column-select'
                         options={availableColumns}
                         value={selectedColumn}
                         onChange={(event, newValue) => {
@@ -2693,10 +2694,10 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         <ToggleButton value="combined" aria-label="combined view">
                             Combined
                         </ToggleButton>
-                        <ToggleButton value="separate" aria-label="separate view">
+                        <ToggleButton id='view-mode-separate' value="separate" aria-label="separate view">
                             Separate
                         </ToggleButton>
-                        <ToggleButton value="single" aria-label="single view">
+                        <ToggleButton id='view-mode-single' value="single" aria-label="single view">
                             Single
                         </ToggleButton>
                     </ToggleButtonGroup>
@@ -2737,6 +2738,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                 onChange={(event, newValue) => setFilterColumn(newValue || '')}
                                 renderInput={(params) => (
                                     <TextField
+                                        id='data-filter-column-select'
                                         {...params}
                                         label="Filter Column"
                                         variant="outlined"
@@ -2744,7 +2746,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                         size="small"
                                     />
                                 )}
-                                disableClearable={false}
+                                disableClearable={true}
                                 size="small"
                             />
                         </Grid>

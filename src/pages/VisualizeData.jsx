@@ -462,60 +462,16 @@ if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.i
             return;
         }
 
-        if (isCloseToPre(t) || /\bset pre\b/i.test(t)) {
-            setAwaitingSheetFor('pre');
-            setPreSelectOpen(true);
-            setVoiceFeedback('Listening for pre sheet name...');
-            setIsListening(true);
-            setTimeout(() => startListening(), 250);
-            setTimeout(() => {
-                setAwaitingSheetFor((curr) => (curr === 'pre' ? null : curr));
-                setPreSelectOpen(false);
-                setVoiceFeedback('');
-            }, 10000);
-            return;
-        }
+        
 
-        if (isCloseToPost(t) || /\bset post\b/i.test(t)) {
-            setAwaitingSheetFor('post');
-            setPostSelectOpen(true);
-            setVoiceFeedback('Listening for post sheet name...');
-            setIsListening(true);
-            setTimeout(() => startListening(), 250);
-            setTimeout(() => {
-                setAwaitingSheetFor((curr) => (curr === 'post' ? null : curr));
-                setPostSelectOpen(false);
-                setVoiceFeedback('');
-            }, 10000);
-            return;
-        }
+        
+        
 
-        const preDirect = text.match(/set\s+pre(?:\s+sheet)?(?:\s*(?:name|to|is))?\s*(.+)/i);
-        if (preDirect && preDirect[1]) {
-            const match = findSheetMatch(preDirect[1]);
-            if (match) {
-                setSelectedPreSheet(match);
-                setVoiceFeedback(`Pre sheet set to: ${match}`);
-                setTimeout(() => setVoiceFeedback(''), 3000);
-                return;
-            }
-        }
-        const postDirect = text.match(/set\s+post(?:\s+sheet)?(?:\s*(?:name|to|is))?\s*(.+)/i);
-        if (postDirect && postDirect[1]) {
-            const match = findSheetMatch(postDirect[1]);
-            if (match) {
-                setSelectedPostSheet(match);
-                setVoiceFeedback(`Post sheet set to: ${match}`);
-                setTimeout(() => setVoiceFeedback(''), 3000);
-                return;
-            }
-        }
-
-        if (text.includes('distribution')) {
+        if (text.includes('switch to distribution')) {
             setActiveTab(0);
             setVoiceFeedback('Switched to Distribution Curve');
         } 
-         if (text.includes('multi') || text.includes('multivariate') || text.includes('multi-variate')) {
+         if (text.includes('switch to multi') ) {
             setActiveTab(2);
             setVoiceFeedback('Switched to Multi-Variate Scatter');
         } 
@@ -523,11 +479,11 @@ if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.i
             setActiveTab(1);
             setVoiceFeedback('Switched to Scatter Plot');
         } 
-         if (text.includes('boot') || text.includes('bootstrap') || text.includes('bootstrapping')) {
+         if (text.includes('switch to bootstrapping') ) {
             setActiveTab(3);
             setVoiceFeedback('Switched to Bootstrapping');
         } 
-         if (text.includes('correlation')) {
+         if (text.includes('switch to correlation')) {
             setActiveTab(4);
             setVoiceFeedback('Switched to Correlation Analysis');
         } 
@@ -570,22 +526,18 @@ if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.i
             const match = text.match(/set distribution column to (.+)/i);
             if (match && match[1]) {
                 const columnName = match[1].trim();
-                localStorage.setItem('selectedDistributionColumn',columnName);
+                const column = availableColumns.find(col => normalize(col) === normalize(columnName) || normalize(col).includes(normalize(columnName)) || normalize(columnName).includes(normalize(col)));
+                localStorage.setItem('selectedDistributionColumn',column);
                 window.dispatchEvent(new Event('distributionColumnChanged'));
-                setVoiceFeedback(`Distribution column set to: ${columnName}`);
+                setVoiceFeedback(`Distribution column set to: ${column}`);
             }
             return;
         }
 
         if(text.includes('set distribution view mode'))
         {
-            const match = text.match(/set distribution view mode to (.+)/i);
-            if (match && match[1]) {
-                const viewMode = match[1].trim();
-                localStorage.setItem('selectedDistributionViewMode', viewMode);
-                window.dispatchEvent(new Event('distributionViewModeChanged'));
-                setVoiceFeedback(`Distribution view mode set to: ${viewMode}`);
-            }
+                const match = text.match(/set distribution view mode to (.+)/i);
+            document.getElementById(`view-mode-${match[1].trim().split('.')[0]}`)?.click();
             return;
         }
 
@@ -598,9 +550,10 @@ if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.i
             const match = text.match(/set data filter column to (.+)/i);
             if (match && match[1]) {
                 const filterColumn = match[1].trim();
-                localStorage.setItem('dataFilterColumn', filterColumn);
+                const x = availableColumns.find(col => normalize(col) === normalize(filterColumn) || normalize(col).includes(normalize(filterColumn)) || normalize(filterColumn).includes(normalize(col)));
+                localStorage.setItem('dataFilterColumn', x);
                 window.dispatchEvent(new Event('dataFilterColumnChanged'));
-                setVoiceFeedback(`Data filter column set to: ${filterColumn}`);
+                setVoiceFeedback(`Data filter column set to: ${x}`);
             }
             return;
         }
@@ -608,7 +561,7 @@ if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.i
         if(text.includes('set data filter min')){
             const match = text.match(/set data filter min to (.+)/i);
             if (match && match[1]) {
-                const filterMin = match[1].trim();
+                const filterMin = parseInt(match[1].trim());
                 localStorage.setItem('dataFilterMin', filterMin);
                 window.dispatchEvent(new Event('dataFilterMinChanged'));
                 setVoiceFeedback(`Data filter min set to: ${filterMin}`);
@@ -619,7 +572,7 @@ if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.i
         if(text.includes('set data filter max')){
             const match = text.match(/set data filter max to (.+)/i);
             if (match && match[1]) {
-                const filterMax = match[1].trim();
+                const filterMax = parseInt(match[1].trim());
                 localStorage.setItem('dataFilterMax', filterMax);
                 window.dispatchEvent(new Event('dataFilterMaxChanged'));
                 setVoiceFeedback(`Data filter max set to: ${filterMax}`);
@@ -660,7 +613,7 @@ if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.i
         }
 
         if (text.includes('show chart type')){
-            localStorage.setItem('showDistributionChartTypeHelp', 'true');
+            localStorage.setItem('showDistributionChartTypeHelp', true);    
             window.dispatchEvent(new Event('showDistributionChartTypeHelpChanged'));
             setVoiceFeedback('Showing chart type help');
             return;
@@ -675,9 +628,10 @@ if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.i
             const match = text.match(/select x column (.+)/i);
             if (match && match[1]) {
                 const columnName = match[1].trim();
-                localStorage.setItem('multiVariateScatterXColumn', columnName);
+                const x = availableColumns.find(col => normalize(col) === normalize(columnName) || normalize(col).includes(normalize(columnName)) || normalize(columnName).includes(normalize(col)));
+                localStorage.setItem('multiVariateScatterXColumn', x);
                 window.dispatchEvent(new Event('multiVariateScatterXColumnChanged'));
-                setVoiceFeedback(`X column set to: ${columnName}`);
+                setVoiceFeedback(`X column set to: ${x}`);
             }
             return;
         }
@@ -691,25 +645,21 @@ if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.i
             const match = text.match(/select y column (.+)/i);
             if (match && match[1]) {
                 const columnName = match[1].trim();
-                localStorage.setItem('multiVariateScatterYColumn', columnName);
+                const x = availableColumns.find(col => normalize(col) === normalize(columnName) || normalize(col).includes(normalize(columnName)) || normalize(columnName).includes(normalize(col)));
+                localStorage.setItem('multiVariateScatterYColumn',x);
                 window.dispatchEvent(new Event('multiVariateScatterYColumnChanged'));
-                setVoiceFeedback(`Y column set to: ${columnName}`);
+                setVoiceFeedback(`Y column set to: ${x}`);
             }
             return;
         }
 
-        if(text.includes('set dataset view')){
-            const match = text.match(/set dataset view to (.+)/i);
-            if (match && match[1]) {
-                const viewMode = match[1].trim();
-                localStorage.setItem('multiVariateScatterViewMode', viewMode);
-                window.dispatchEvent(new Event('multiVariateScatterViewModeChanged'));
-                setVoiceFeedback(`Dataset view set to: ${viewMode}`);
-            }
+        if(text.includes('set data set view')){
+            const match = text.match(/set data set view to (.+)/i);
+            document.getElementById(`${match[1].trim().split('.')[0]}`)?.click();
             return;
         }
 
-        if(text.includes('show bootsrap columns')){
+        if(text.includes('show bootstrap columns')){
             document.getElementById('bootstrap-column-select').focus();
             return;
         }
@@ -724,10 +674,9 @@ if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.i
         if(text.includes('set bootstrap view')){
             const match = text.match(/set bootstrap view to (.+)/i);
             if (match && match[1]) {
-                const viewMode = match[1].trim();
-                localStorage.setItem('bootstrapViewMode', viewMode);
-                window.dispatchEvent(new Event('bootstrapViewModeChanged'));
-                setVoiceFeedback(`Bootstrap view mode set to: ${viewMode}`);
+                const viewMode = match[1].trim().split('.')[0];
+                document.getElementById(`${viewMode}`)?.click();
+                setVoiceFeedback(`Bootstrap view set to: ${viewMode}`);
             }
             return;
 
@@ -748,9 +697,10 @@ if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.i
             const match = text.match(/set correlation column (.+)/i);
             if (match && match[1]) {
                 const columnName = match[1].trim();
-                localStorage.setItem('correlationColumn', columnName);
+                const x = availableColumns.find(col => normalize(col) === normalize(columnName) || normalize(col).includes(normalize(columnName)) || normalize(columnName).includes(normalize(col)));
+                localStorage.setItem('correlationColumn', x);
                 window.dispatchEvent(new Event('correlationColumnChanged'));
-                setVoiceFeedback(`Correlation column set to: ${columnName}`);
+                setVoiceFeedback(`Correlation column set to: ${x}`);
             }
             return;
         }

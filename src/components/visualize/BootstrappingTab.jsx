@@ -661,6 +661,7 @@ const BootstrappingTab = ({
             <Grid container spacing={{ xs: 2, sm: 3 }}>
                 <Grid item xs={12} md={6} lg={4}>
                     <Autocomplete
+                        id='bootstrap-column-select'
                         options={availableColumns}
                         value={selectedColumn}
                         onChange={(event, newValue) => {
@@ -761,8 +762,8 @@ const BootstrappingTab = ({
                             size="small"
                             fullWidth
                         >
-                            <ToggleButton value="grid">Grid View</ToggleButton>
-                            <ToggleButton value="list">List View</ToggleButton>
+                            <ToggleButton id="grid"value="grid">Grid View</ToggleButton>
+                            <ToggleButton id="list"value="list">List View</ToggleButton>
                         </ToggleButtonGroup>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>

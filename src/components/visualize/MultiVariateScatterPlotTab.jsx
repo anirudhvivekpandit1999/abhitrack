@@ -1112,8 +1112,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             }}
           >
             <ToggleButton value="both">Both</ToggleButton>
-            <ToggleButton value="withoutProduct">Without Product</ToggleButton>
-            <ToggleButton value="withProduct">With Product</ToggleButton>
+            <ToggleButton id="without product" value="withoutProduct">Without Product</ToggleButton>
+            <ToggleButton id="with product" value="withProduct">With Product</ToggleButton>
           </ToggleButtonGroup>
         </Grid>
       </Grid>
