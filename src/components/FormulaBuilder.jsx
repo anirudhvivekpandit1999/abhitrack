@@ -712,6 +712,7 @@ useEffect(()=> {
           <Grid item xs={12}>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
               <Button
+                id='submit-column-btn'
                 variant="contained"
                 color="primary"
                 endIcon={<Done />}

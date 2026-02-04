@@ -1230,7 +1230,7 @@ const FullExcelFile = () => {
     }
 
     if (text.toLowerCase().includes("set new column name")) {
-      const columnName = localStorage.getItem('newColumnName');
+      
       const newColumnMatch = text.match(/set new column name (is|to)?\s*(.+)/i);
       console.log('🆕 Voice set new column name match:', newColumnMatch);
       if (newColumnMatch) {
@@ -1301,9 +1301,7 @@ const FullExcelFile = () => {
 
     if(text.toLowerCase().includes("submit column")){
       console.log("Submitting new column via voice command");
-      
-      window.dispatchEvent(new Event('submitFormula'));
-      setShowColumnBuilder(false);
+      document.getElementById('submit-column-btn').click();
     }
 
     if(text.toLowerCase().includes("submit excel"))
