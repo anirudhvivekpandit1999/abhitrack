@@ -192,6 +192,20 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
         return Number.isFinite(totalAbsCorrelation) ? totalAbsCorrelation : 0;
     };
     
+useEffect(() => {
+    const handler = (e) => {
+        const vars = e?.detail || [];
+        // if you want to replace:
+        setSelectedBarChartVariables(vars);
+
+        // Or if you prefer merging with existing selection:
+        // setSelectedBarChartVariables(prev => Array.from(new Set([...(prev||[]), ...vars])));
+    };
+    window.addEventListener('selectedBarChartVariablesChanged', handler);
+    return () => window.removeEventListener('selectedBarChartVariablesChanged', handler);
+}, []);
+
+
     const totalImpactWithProduct = useMemo(() => calculateImpact(correlationData.withProduct), [correlationData.withProduct]);
     const totalImpactWithoutProduct = useMemo(() => calculateImpact(correlationData.withoutProduct), [correlationData.withoutProduct]);
     const totalImpactTopWith = useMemo(() => calculateImpact(correlationData.topWithProduct), [correlationData.topWithProduct]);
@@ -1123,6 +1137,7 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                             <MuiTooltip title="Bar Chart Settings">
                                 <Button
+                                    id='bar-chart-settings-btn'
                                     variant="outlined"
                                     color="primary"
                                     onClick={() => setShowBarChartSettings(true)}
