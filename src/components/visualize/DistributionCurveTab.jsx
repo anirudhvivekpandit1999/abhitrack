@@ -49,8 +49,8 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
     const [singleViewType, setSingleViewType] = useState('withProduct');
     
     const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-    const [showInsights, setShowInsights] = useState(false);
-    const [showSummaryCards, setShowSummaryCards] = useState(false);
+    const [showInsights, setShowInsights] = useState(true);
+    const [showSummaryCards, setShowSummaryCards] = useState(true);
     
     const [combinedLegendLabels, setCombinedLegendLabels] = useState({
         withProduct: 'With Product',
@@ -169,6 +169,26 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
     }, [availableColumns]);
 
     useEffect(()=>{
+        const syncDataFilterMax = () => {
+            const saved = localStorage.getItem('dataFilterMax');
+            setFilterMax(saved || '');
+        }
+
+        window.addEventListener('dataFilterMaxChanged', syncDataFilterMax);
+        return () => window.removeEventListener('dataFilterMaxChanged', syncDataFilterMax);
+    },[])
+
+    useEffect(()=>{
+        const syncDataFilterMin = () => {
+            const saved = localStorage.getItem('dataFilterMin');
+            setFilterMin(saved || '');
+        }
+
+        window.addEventListener('dataFilterMinChanged', syncDataFilterMin);
+        return () => window.removeEventListener('dataFilterMinChanged', syncDataFilterMin);
+    },[])
+
+    useEffect(()=>{
         const syncSelectedColumnName = () => {
             const saved = localStorage.getItem('selectedDistributionColumn');
             setSelectedColumn(saved || '');
@@ -178,6 +198,30 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
         
         return () => window.removeEventListener('selectedDistributionColumnChanged', syncSelectedColumnName);
     },[])
+
+    useEffect(()=>{
+        const syncViewMode = () => {
+            const saved = localStorage.getItem('selectedDistributionViewMode');
+            setViewMode(saved || 'combined');
+        }
+
+        window.addEventListener('distributionViewModeChanged', syncViewMode);
+
+        return () => window.removeEventListener('distributionViewModeChanged', syncViewMode);
+    },[])
+
+    useEffect(()=>{
+        const syncDataFilterColumn = () => {
+            const saved = localStorage.getItem('dataFilterColumn');
+            setFilterColumn(saved || '');
+
+        }
+
+        window.addEventListener('dataFilterColumnChanged', syncDataFilterColumn);
+        return () => window.removeEventListener('dataFilterColumnChanged', syncDataFilterColumn);
+    },[])
+
+
 
     const isDateTimeColumn = (allRows, columnName) => {
         if (!allRows || allRows.length === 0 || !columnName) return false;
@@ -1478,7 +1522,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                             flexWrap: "wrap",
                             justifyContent: { xs: "center", sm: "flex-end" }
                         }}>
-                            <FormControlLabel
+                            {/* <FormControlLabel
                                 control={
                                     <Switch
                                         checked={showNumberOfPoints}
@@ -1499,7 +1543,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                 }
                                 label="Show Area Chart"
                                 sx={{ mr: 1 }}
-                            />
+                            /> */}
                             
                             <MuiTooltip title="Chart Settings">
                                 <Button
@@ -2672,6 +2716,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                     <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="center">
                         <Grid item xs={12} sm={6} md={3}>
                             <Autocomplete
+                                id='data-filter-column-select'
                                 options={availableColumns}
                                 value={filterColumn}
                                 onChange={(event, newValue) => setFilterColumn(newValue || '')}
@@ -2714,6 +2759,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         </Grid>
                         <Grid item xs={12} sm={12} md={4}>
                             <Button 
+                            id='clear-data-filter-btn'
                                 onClick={resetLocalFilter} 
                                 variant="outlined" 
                                 size="small" 
@@ -2734,6 +2780,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
                     <MuiTooltip title="Download entire page as PNG">
                         <Button
+                            id='download-visualization-btn'
                             color="primary"
                             onClick={downloadPageAsPNG}
                             variant="outlined"

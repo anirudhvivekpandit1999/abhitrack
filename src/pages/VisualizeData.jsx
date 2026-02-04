@@ -476,6 +476,7 @@ const VisualizeData = () => {
         if(text.includes('show distribution columns'))
         {
             document.getElementById('distribution-column-select').focus();
+            return;
         }
 
         if(text.includes('set distribution column'))
@@ -487,7 +488,7 @@ const VisualizeData = () => {
                 window.dispatchEvent(new Event('distributionColumnChanged'));
                 setVoiceFeedback(`Distribution column set to: ${columnName}`);
             }
-            
+            return;
         }
 
         if(text.includes('set distribution view mode'))
@@ -499,7 +500,58 @@ const VisualizeData = () => {
                 window.dispatchEvent(new Event('distributionViewModeChanged'));
                 setVoiceFeedback(`Distribution view mode set to: ${viewMode}`);
             }
+            return;
         }
+
+        if(text.includes('show data filter columns')){
+            document.getElementById('data-filter-column-select').focus();
+            return;
+        }
+
+        if(text.includes('set data filter column')){
+            const match = text.match(/set data filter column to (.+)/i);
+            if (match && match[1]) {
+                const filterColumn = match[1].trim();
+                localStorage.setItem('dataFilterColumn', filterColumn);
+                window.dispatchEvent(new Event('dataFilterColumnChanged'));
+                setVoiceFeedback(`Data filter column set to: ${filterColumn}`);
+            }
+            return;
+        }
+
+        if(text.includes('set data filter min')){
+            const match = text.match(/set data filter min to (.+)/i);
+            if (match && match[1]) {
+                const filterMin = match[1].trim();
+                localStorage.setItem('dataFilterMin', filterMin);
+                window.dispatchEvent(new Event('dataFilterMinChanged'));
+                setVoiceFeedback(`Data filter min set to: ${filterMin}`);
+            }
+            return;
+        }
+
+        if(text.includes('set data filter max')){
+            const match = text.match(/set data filter max to (.+)/i);
+            if (match && match[1]) {
+                const filterMax = match[1].trim();
+                localStorage.setItem('dataFilterMax', filterMax);
+                window.dispatchEvent(new Event('dataFilterMaxChanged'));
+                setVoiceFeedback(`Data filter max set to: ${filterMax}`);
+            }
+            return;
+        }
+
+        if(text.includes('clear data filter')){
+            document.getElementById('clear-data-filter-btn')?.click();
+            setVoiceFeedback('Data filter cleared');
+            return;
+        }
+
+        if(text.includes('download this page')){
+            document.getElementById(`download-visualization-btn`)?.click();
+        }
+
+        
         
         setTimeout(() => setVoiceFeedback(''), 3000);
 
