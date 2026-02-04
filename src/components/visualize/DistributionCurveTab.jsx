@@ -1547,6 +1547,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                             
                             <MuiTooltip title="Chart Settings">
                                 <Button
+                                id='settings-button'
                                     variant="outlined"
                                     color="primary"
                                     onClick={openSettingsModal}
@@ -1567,7 +1568,8 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                 </Button>
                             </MuiTooltip>
 
-                            <SaveVisualizationButton 
+                            <SaveVisualizationButton
+                                
                                 elementId="visualization-content" 
                                 fileNamePrefix="distribution_curve"
                                 variableNames={selectedColumn}
@@ -1575,6 +1577,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
                             <MuiTooltip title="Download as PNG">
                                 <Button
+                                id='download-visualization-btn'
                                     variant="outlined"
                                     color="primary"
                                     onClick={() => downloadChartAsPNG(combinedChartRef, 'Combined_Distribution')}
@@ -1996,7 +1999,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                             </Typography>
 
                             <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
-                                <FormControlLabel
+                                {/* <FormControlLabel
                                     control={
                                         <Switch
                                             checked={showNumberOfPoints}
@@ -2006,9 +2009,9 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     }
                                     label="Number of Points"
                                     sx={{ mr: 1 }}
-                                />
+                                /> */}
                                 
-                                <MuiTooltip title="Chart Settings">
+                                {/* <MuiTooltip title="Chart Settings">
                                     <Button
                                         variant="outlined"
                                         color="primary"
@@ -2028,9 +2031,9 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     >
                                         Settings
                                     </Button>
-                                </MuiTooltip>
+                                </MuiTooltip> */}
 
-                                <SaveVisualizationButton 
+                                {/* <SaveVisualizationButton 
                                     elementId="visualization-content" 
                                     fileNamePrefix="distribution_curve_individual"
                                     variableNames={selectedColumn}
@@ -2056,7 +2059,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     >
                                         Download PNG
                                     </Button>
-                                </MuiTooltip>
+                                </MuiTooltip> */}
                             </Box>
                         </Box>
 
@@ -2177,7 +2180,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
                     <CardContent sx={{ p: { xs: 2, md: 4 } }}>
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
-                            <Typography
+                            {/* <Typography
                                 variant="h6"
                                 sx={{
                                     fontWeight: 500,
@@ -2250,7 +2253,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                         Download PNG
                                     </Button>
                                 </MuiTooltip>
-                            </Box>
+                            </Box> */}
                         </Box>
 
                         <Box sx={{ mb: 2 }}>

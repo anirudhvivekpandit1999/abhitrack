@@ -551,6 +551,20 @@ const VisualizeData = () => {
             document.getElementById(`download-visualization-btn`)?.click();
         }
 
+        if(text.includes('open settings')){
+            document.getElementById('settings-button')?.click();
+        }
+
+        if(text.includes('save visualization')){
+            document.getElementById(`save-visualization-btn`)?.click();
+        }
+
+        if(text.includes('download this visualization as png')){
+            document.getElementById(`download-visualization-btn`)?.click();
+        }
+
+        
+
         
         
         setTimeout(() => setVoiceFeedback(''), 3000);
