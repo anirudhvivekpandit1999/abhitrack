@@ -1104,39 +1104,119 @@ const FullExcelFile = () => {
 
       console.log('  parsed candidate (post-cleanup):', candidate);
 
-      if (!previewHeaders || previewHeaders.length === 0) {
-        console.log('  No preview headers available to match. Attempting to find a saved sheet that contains the column:', candidate);
-        try {
-          const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
-          for (const sName of Object.keys(saved || {})) {
-            const sData = saved[sName];
-            const headers = Array.isArray(sData) && sData.length > 0 ? Object.keys(sData[0]) : [];
-            const foundInSaved = findHeaderMatch(candidate, headers);
-            if (foundInSaved) {
-              console.log('  Matched header in saved sheet:', sName, foundInSaved);
-              if (!sheetNames.includes(sName)) {
-                setSheetNames(prev => [...prev, sName]);
-                setExcelData(prev => [...prev, { sheetName: sName, sheetData: sData }]);
-              }
-              setSelectedSheet(sName);
-              setXAxis(foundInSaved);
-              setColumnNames(prev => (prev.includes(foundInSaved) ? prev : [...prev, foundInSaved]));
-              setSelectedColumns(prev => (prev.includes(foundInSaved) ? prev : (prev[0] === "" ? [foundInSaved, ...prev.slice(1)] : [...prev, foundInSaved])));
-              setVoiceFeedback(`X axis set to: ${foundInSaved} (loaded from ${sName})`);
-              setTimeout(() => setVoiceFeedback(""), 4000);
-              return;
-            }
-          }
-        } catch (e) { console.error(e); }
+    if (!previewHeaders || previewHeaders.length === 0) {
+     console.log('  No preview headers available to match. Enforcing base-sheet-first-only behavior.');
+     const normalize = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+     const candidateNorm = normalize(candidate);
+     const getHeadersForSheet = (sheetName) => {
+      if (!sheetName) return [];
+        // 1) excelData
+      if (Array.isArray(excelData) && excelData.length) {
+      const found = excelData.find(
+        (e) => (e.sheetName || '').toString().toLowerCase() === sheetName.toString().toLowerCase()
+      );
+      if (found && Array.isArray(found.sheetData) && found.sheetData.length) {
+        return Object.keys(found.sheetData[0]);
+      }
+    }
+    // 2) localStorage fallback (saved_excel_sheets)
+    try {
+      const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
+      const s = saved[sheetName] || saved[sheetName.toString()] || saved[sheetName.toString().toLowerCase()];
+      if (Array.isArray(s) && s.length) return Object.keys(s[0]);
+    } catch (err) {
+      console.error('Error reading saved_excel_sheets from localStorage', err);
+    }
+    return [];
+  };
 
-        // Not found — queue a pending action to apply when previewHeaders becomes available
-        const pending = { axis: 'x', candidate, ts: Date.now() };
-        setPendingVoiceAction(pending);
-        console.log('  Queued pending voice action:', pending);
-        setVoiceFeedback(`Waiting for preview data — will set X axis to "${candidate}" when data is ready.`);
-        setTimeout(() => setPendingVoiceAction((curr) => (curr && curr.ts === pending.ts ? null : curr)), 10000);
+  // If a base sheet was explicitly chosen, ONLY search that base sheet.
+  if (copyFromSheet) {
+    console.log('  base sheet selected:', copyFromSheet, '— searching only there.');
+    const baseHeaders = getHeadersForSheet(copyFromSheet) || [];
+
+    if (!baseHeaders || baseHeaders.length === 0) {
+      // base sheet not loaded yet -> queue pending action for this base sheet only
+      const pending = { axis: 'x', candidate, targetSheet: copyFromSheet, ts: Date.now() };
+      setPendingVoiceAction(pending);
+      setVoiceFeedback(`Base sheet "${copyFromSheet}" not loaded yet — will set X axis to "${candidate}" when it is available.`);
+      setTimeout(() => setPendingVoiceAction((curr) => (curr && curr.ts === pending.ts ? null : curr)), 10000);
+      console.log('  queued pending voice action (waiting for base sheet to load):', pending);
+      return;
+    }
+
+    
+    let foundInBase = baseHeaders.find((h) => normalize(h) === candidateNorm);
+    if (!foundInBase) {
+      foundInBase = baseHeaders.find((h) => normalize(h).includes(candidateNorm) || candidateNorm.includes(normalize(h)));
+    }
+
+    if (foundInBase) {
+      console.log('  Matched header in base sheet:', copyFromSheet, foundInBase);
+      
+      setSelectedSheet(copyFromSheet);
+      setXAxis(foundInBase);
+      setColumnNames((prev) => (prev && prev.includes(foundInBase) ? prev : [...(prev || []), foundInBase]));
+      setSelectedColumns((prev) =>
+        prev && prev.includes(foundInBase) ? prev : [foundInBase, ...(prev?.slice?.(1) || [])]
+      );
+      setVoiceFeedback(`X axis set to: ${foundInBase} (from base sheet ${copyFromSheet})`);
+      setTimeout(() => setVoiceFeedback(''), 4000);
+      return;
+    }
+
+    
+    const pending = { axis: 'x', candidate, targetSheet: copyFromSheet, ts: Date.now() };
+    setPendingVoiceAction(pending);
+    setVoiceFeedback(`"${candidate}" not found in base sheet "${copyFromSheet}". Will try again when data loads.`);
+    setTimeout(() => setPendingVoiceAction((curr) => (curr && curr.ts === pending.ts ? null : curr)), 10000);
+    console.log('  queued pending voice action (candidate not in base):', pending);
+    return;
+  }
+
+  
+  try {
+    const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
+    for (const sName of Object.keys(saved || {})) {
+      const sData = saved[sName];
+      const headers = Array.isArray(sData) && sData.length > 0 ? Object.keys(sData[0]) : [];
+      
+      const match = headers.find((h) => normalize(h) === candidateNorm) ||
+                    headers.find((h) => normalize(h).includes(candidateNorm) || candidateNorm.includes(normalize(h)));
+      if (match) {
+        console.log('  Matched header in saved sheet:', sName, match);
+        
+        setSheetNames((prev) =>
+          prev?.some?.((p) => p?.toLowerCase() === sName.toLowerCase()) ? prev : [...(prev || []), sName]
+        );
+        setExcelData((prev) =>
+          prev?.some?.((e) => e.sheetName?.toLowerCase() === sName.toLowerCase())
+            ? prev
+            : [...(prev || []), { sheetName: sName, sheetData: sData }]
+        );
+        setSelectedSheet(sName);
+        setXAxis(match);
+        setColumnNames((prev) => (prev && prev.includes(match) ? prev : [...(prev || []), match]));
+        setSelectedColumns((prev) =>
+          prev && prev.includes(match) ? prev : [match, ...(prev?.slice?.(1) || [])]
+        );
+        setVoiceFeedback(`X axis set to: ${match} (loaded from ${sName})`);
+        setTimeout(() => setVoiceFeedback(''), 4000);
         return;
       }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
+  
+  const pending = { axis: 'x', candidate, ts: Date.now() };
+  setPendingVoiceAction(pending);
+  setVoiceFeedback(`Could not find "${candidate}" — will set X axis when data is available.`);
+  setTimeout(() => setPendingVoiceAction((curr) => (curr && curr.ts === pending.ts ? null : curr)), 10000);
+  return;
+}
+
 
       const found = findHeaderMatch(candidate);
       console.log('  candidate:', candidate, 'matched header:', found);
