@@ -567,7 +567,13 @@ const VisualizeData = () => {
             document.getElementById(`download-visualization-btn`)?.click();
         }
 
-        
+        if (text.includes('show chart type')){
+            localStorage.setItem('showDistributionChartTypeHelp', 'true');
+            window.dispatchEvent(new Event('showDistributionChartTypeHelpChanged'));
+            setVoiceFeedback('Showing chart type help');
+        }
+
+
 
         
         
@@ -706,7 +712,7 @@ const VisualizeData = () => {
                         <Paper sx={{ width: '100%', mb: 3 }}>
                             <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
                                 <Tab label="Distribution Curve" />
-                                <Tab label="Scatter Plot" />
+                                {/* <Tab label="Scatter Plot" /> */}
                                 <Tab label="Multi-Variate Scatter" />
                                 <Tab label="Bootstrapping" />
                                 <Tab label="Correlation Analysis" />

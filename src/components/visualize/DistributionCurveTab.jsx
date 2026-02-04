@@ -45,6 +45,7 @@ import SaveVisualizationButton from '../SaveVisualizationButton'
 
 const DistributionCurveTab = ({ availableColumns, withProductData, withoutProductData, clientName = '', plantName = '', productName = '' }) => {
     const [selectedColumn, setSelectedColumn] = useState('');
+    const [singleViewSelectOpen, setSingleViewSelectOpen] = useState(false);
     const [viewMode, setViewMode] = useState('combined');
     const [singleViewType, setSingleViewType] = useState('withProduct');
     
@@ -167,6 +168,16 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
             setSelectedColumn(availableColumns[0]);
         }
     }, [availableColumns]);
+
+    useEffect(()=> {
+        const syncOpenChartState = () => {
+            const saved = localStorage.getItem('showDistributionChartTypeHelp');
+            setSettingsModalOpen(saved === 'true');
+        }
+
+        window.addEventListener('showDistributionChartTypeHelpChanged', syncOpenChartState);
+        return () => window.removeEventListener('showDistributionChartTypeHelpChanged', syncOpenChartState);
+    },[])
 
     useEffect(()=>{
         const syncDataFilterMax = () => {
@@ -2180,7 +2191,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
                     <CardContent sx={{ p: { xs: 2, md: 4 } }}>
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
-                            {/* <Typography
+                             <Typography
                                 variant="h6"
                                 sx={{
                                     fontWeight: 500,
@@ -2191,7 +2202,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                 With Product Distribution
                             </Typography>
 
-                            <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+                            {/*<Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
                                 <FormControlLabel
                                     control={
                                         <Switch
@@ -2698,6 +2709,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         <FormControl fullWidth size="small">
                             <InputLabel id="single-view-select-label">Chart Type</InputLabel>
                             <Select
+                            open={singleViewSelectOpen}
                                 labelId="single-view-select-label"
                                 value={singleViewType}
                                 label="Chart Type"
