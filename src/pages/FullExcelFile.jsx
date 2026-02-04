@@ -207,28 +207,25 @@ const FullExcelFile = () => {
   }, [showAddPanel, copyFromSheet, selectedSheet, excelData]);
 
   useEffect(() => {
-    if (xAxis && !selectedColumns.includes(xAxis)) {
-      setSelectedColumns((prev) => {
-        const idx = prev.indexOf("");
-        if (idx !== -1) {
-          const next = [...prev];
-          next[idx] = xAxis;
-          return next;
+    setSelectedColumns((prev = []) => {
+      const next = [...prev];
+      if (xAxis) {
+        if (!next.includes(xAxis)) {
+          const idx = next.indexOf("");
+          if (idx !== -1) next[idx] = xAxis;
+          else next.push(xAxis);
         }
-        return [...prev, xAxis];
-      });
-    }
-    if (yAxis && !selectedColumns.includes(yAxis)) {
-      setSelectedColumns((prev) => {
-        const idx = prev.indexOf("");
-        if (idx !== -1) {
-          const next = [...prev];
-          next[idx] = yAxis;
-          return next;
+      }
+      if (yAxis) {
+        if (!next.includes(yAxis)) {
+          const idx = next.indexOf("");
+          if (idx !== -1) next[idx] = yAxis;
+          else next.push(yAxis);
         }
-        return [...prev, yAxis];
-      });
-    }
+      }
+      // ensure uniqueness and preserve order
+      return Array.from(new Set(next));
+    });
   }, [xAxis, yAxis]);
 
   useEffect(() => {
@@ -672,7 +669,7 @@ const FullExcelFile = () => {
       setShowAddPanel(false);
       setNewSheetName("");
       setCopyFromSheet("");
-      setCols(selectedColumns);
+      setCols(Array.from(new Set(selectedColumns || [])));
       setColumnNames([]);
       setSelectedColumns([""]);
       setRowRanges([{ name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" }]);
@@ -1598,7 +1595,7 @@ const FullExcelFile = () => {
                 const postSheetName = postProduct;
                 navigation("/visualize-data", {
                   state: {
-                    availableCols: cols,
+                    availableCols: Array.from(new Set(cols || [])),
                     preProductData: preSheetData,
                     postProductData: postSheetData,
                     excelData: excelData,
