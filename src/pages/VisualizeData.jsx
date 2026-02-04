@@ -428,22 +428,82 @@ const VisualizeData = () => {
         if (text.includes('distribution')) {
             setActiveTab(0);
             setVoiceFeedback('Switched to Distribution Curve');
-        } else if (text.includes('multi') || text.includes('multivariate') || text.includes('multi-variate')) {
+        } 
+         if (text.includes('multi') || text.includes('multivariate') || text.includes('multi-variate')) {
             setActiveTab(2);
             setVoiceFeedback('Switched to Multi-Variate Scatter');
-        } else if (text.includes('scatter')) {
+        } 
+         if (text.includes('scatter')) {
             setActiveTab(1);
             setVoiceFeedback('Switched to Scatter Plot');
-        } else if (text.includes('boot') || text.includes('bootstrap') || text.includes('bootstrapping')) {
+        } 
+         if (text.includes('boot') || text.includes('bootstrap') || text.includes('bootstrapping')) {
             setActiveTab(3);
             setVoiceFeedback('Switched to Bootstrapping');
-        } else if (text.includes('correlation')) {
+        } 
+         if (text.includes('correlation')) {
             setActiveTab(4);
             setVoiceFeedback('Switched to Correlation Analysis');
-        } else {
-            setVoiceFeedback('Command not recognized');
+        } 
+        
+        if (text.includes('set pre product sheet')) {
+            const match = text.match(/set pre product sheet to (.+)/i);
+            if (match && match[1]) {
+                const sheetMatch = findSheetMatch(match[1]);
+                if (sheetMatch) {
+                    setSelectedPreSheet(sheetMatch);
+                    setVoiceFeedback(`Pre sheet set to: ${sheetMatch}`);
+                    setTimeout(() => setVoiceFeedback(''), 3000);
+                    return;
+                }
+            }
         }
+
+        if (text.includes('set post product sheet'))
+        {
+            const match = text.match(/set post product sheet to (.+)/i);
+            if (match && match[1]) {
+                const sheetMatch = findSheetMatch(match[1]);
+                if (sheetMatch) {
+                    setSelectedPostSheet(sheetMatch);
+                    setVoiceFeedback(`Post sheet set to: ${sheetMatch}`);
+                    setTimeout(() => setVoiceFeedback(''), 3000);
+                    return;
+                }
+            }
+        }
+        
+        if(text.includes('show distribution columns'))
+        {
+            document.getElementById('distribution-column-select').focus();
+        }
+
+        if(text.includes('set distribution column'))
+        {
+            const match = text.match(/set distribution column to (.+)/i);
+            if (match && match[1]) {
+                const columnName = match[1].trim();
+                localStorage.setItem('selectedDistributionColumn',columnName);
+                window.dispatchEvent(new Event('distributionColumnChanged'));
+                setVoiceFeedback(`Distribution column set to: ${columnName}`);
+            }
+            
+        }
+
+        if(text.includes('set distribution view mode'))
+        {
+            const match = text.match(/set distribution view mode to (.+)/i);
+            if (match && match[1]) {
+                const viewMode = match[1].trim();
+                localStorage.setItem('selectedDistributionViewMode', viewMode);
+                window.dispatchEvent(new Event('distributionViewModeChanged'));
+                setVoiceFeedback(`Distribution view mode set to: ${viewMode}`);
+            }
+        }
+        
         setTimeout(() => setVoiceFeedback(''), 3000);
+
+
     };
 
     const renderTabContent = () => {

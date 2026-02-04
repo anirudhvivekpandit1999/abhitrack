@@ -167,6 +167,18 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
             setSelectedColumn(availableColumns[0]);
         }
     }, [availableColumns]);
+
+    useEffect(()=>{
+        const syncSelectedColumnName = () => {
+            const saved = localStorage.getItem('selectedDistributionColumn');
+            setSelectedColumn(saved || '');
+        }
+
+        window.addEventListener('selectedDistributionColumnChanged', syncSelectedColumnName);
+        
+        return () => window.removeEventListener('selectedDistributionColumnChanged', syncSelectedColumnName);
+    },[])
+
     const isDateTimeColumn = (allRows, columnName) => {
         if (!allRows || allRows.length === 0 || !columnName) return false;
         const sampleValues = allRows
@@ -2573,6 +2585,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         }}
                         renderInput={(params) => (
                             <TextField
+                                id='distribution-column-select'
                                 {...params}
                                 label="Select Column"
                                 variant="outlined"
