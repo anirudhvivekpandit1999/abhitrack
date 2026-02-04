@@ -1152,6 +1152,7 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
 
                             <MuiTooltip title="Download Bar Chart as PNG">
                                 <Button
+                                    id='bar-chart-download-btn'
                                     variant="outlined"
                                     color="primary"
                                     onClick={downloadBarChartAsPNG}

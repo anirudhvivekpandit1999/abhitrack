@@ -1992,6 +1992,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 2 }}>
               <MuiTooltip title="Download entire page as PNG">
                 <Button
+                  id='scatter-btn'
                   color="primary"
                   onClick={downloadPageAsPNG}
                   variant="outlined"

@@ -1239,6 +1239,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
           <MuiTooltip title="Download as PNG">
             <Button
+              id="multivariate-btn"
               variant="outlined"
               color="primary" 
               onClick={downloadChartAsPNG}
