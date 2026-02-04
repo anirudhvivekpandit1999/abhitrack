@@ -164,6 +164,48 @@ const VisualizeData = () => {
         return 1 - d / maxL;
     };
 
+    
+const matchBarVariables = (spokenText) => {
+    if (!availableColumns || !availableColumns.length) return [];
+
+    const cleaned = String(spokenText || '')
+        .toLowerCase()
+        .replace(/\b(set|select|the|for|bar|chart|variables|variable|to|and|please|add|remove|choose|pick)\b/gi, ' ')
+        .replace(/[^\w, ]+/g, ' ')
+        .trim();
+
+    const tokens = cleaned.split(/[,]+| +/).map(s => s.trim()).filter(Boolean);
+    const matched = [];
+
+    for (const token of tokens) {
+        const exact = availableColumns.find(v =>
+            normalize(v) === normalize(token) ||
+            normalize(v).includes(normalize(token)) ||
+            normalize(token).includes(normalize(v))
+        );
+        if (exact && !matched.includes(exact)) {
+            matched.push(exact);
+            continue;
+        }
+
+        let best = null;
+        let bestScore = 0;
+        for (const v of availableColumns) {
+            const s = similarity(v, token);
+            if (s > bestScore) {
+                bestScore = s;
+                best = v;
+            }
+        }
+        if (best && bestScore >= 0.5 && !matched.includes(best)) {
+            matched.push(best);
+        }
+    }
+
+    return matched;
+};
+
+
     const findSheetMatch = (candidate) => {
         if (!sheets || !sheets.length) return null;
         const cleaned = normalize(candidate);
@@ -235,6 +277,7 @@ const VisualizeData = () => {
         setIsListening(false);
     };
 
+
     const handleVoiceCommand = (text) => {
         if (!text) return;
 
@@ -284,6 +327,30 @@ const VisualizeData = () => {
                 setTimeout(() => setVoiceFeedback(''), 3000);
                 return;
             }
+
+         
+if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.includes('choose') || t.includes('pick') || t.includes('add') || t.includes('remove'))) {
+    const matches = matchBarVariables(t);
+
+    if (matches.length > 0) {
+        
+        if (typeof setSelectedBarChartVariables === 'function') {
+            setSelectedBarChartVariables(matches);
+        } else {
+            
+            window.dispatchEvent(new CustomEvent('selectedBarChartVariablesChanged', { detail: matches }));
+        }
+
+        setVoiceFeedback(`Bar chart variables set to: ${matches.join(', ')}`);
+    } else {
+        setVoiceFeedback('No matching bar chart variables found. Try saying the exact column names.');
+    }
+
+    setTimeout(() => setVoiceFeedback(''), 3000);
+    return;
+}
+
+
 
             let best = null;
             let bestScore = 0;
@@ -346,6 +413,25 @@ const VisualizeData = () => {
             setTimeout(() => setVoiceFeedback(''), 3000);
             return;
         }
+
+       
+if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.includes('choose') || t.includes('pick') || t.includes('add') || t.includes('remove'))) {
+    const matches = matchBarVariables(t);
+
+    if (matches.length > 0) {
+       
+        window.dispatchEvent(new CustomEvent('selectedBarChartVariablesChanged', { detail: matches }));
+
+        setVoiceFeedback(`Bar chart variables set to: ${matches.join(', ')}`);
+    } else {
+        setVoiceFeedback('No matching bar chart variables found. Try saying the exact column names.');
+    }
+
+    setTimeout(() => setVoiceFeedback(''), 3000);
+    return;
+}
+
+
 
         const isCloseToPre = (w) => {
             const cleaned = normalize(w);
