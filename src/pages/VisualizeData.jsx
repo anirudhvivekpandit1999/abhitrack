@@ -549,6 +549,10 @@ const VisualizeData = () => {
 
         if(text.includes('download this page')){
             document.getElementById(`download-visualization-btn`)?.click();
+            document.getElementById('scatter-btn')?.click();
+            document.getElementById('bootstrap-btn')?.click();
+            document.getElementById('bar-chart-download-btn')?.click();
+            document.getElementById('multivariate-btn')?.click();
         }
 
         if(text.includes('open settings')){

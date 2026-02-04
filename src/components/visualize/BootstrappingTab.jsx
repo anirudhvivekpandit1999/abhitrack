@@ -280,6 +280,7 @@ const BootstrappingTab = ({
                     />
                     <Tooltip title="Download Table as PNG">
                         <Button
+                            id='bootstrap-btn'
                             variant="outlined"
                             size="small"
                             startIcon={<ImageIcon />}
