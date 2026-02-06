@@ -6,6 +6,8 @@
   { "text": "load excel file", "intent": "upload_file" },
   { "text": "browse and upload", "intent": "upload_file" },
   { "text": "add a file", "intent": "upload_file" },
+  { "text": "import data from file", "intent": "upload_file" },
+  { "text": "open this file", "intent": "upload_file" },
 
   { "text": "next", "intent": "enter_preprocess" },
   { "text": "go to next step", "intent": "enter_preprocess" },
@@ -21,6 +23,8 @@
   { "text": "use this sheet as base", "intent": "select_base_sheet" },
   { "text": "pick this sheet", "intent": "select_base_sheet" },
   { "text": "set this as the base sheet", "intent": "select_base_sheet" },
+  { "text": "i want to use this sheet", "intent": "select_base_sheet" },
+  {"text": "this is the sheet i want to use", "intent": "select_base_sheet" },
 
 
   { "text": "name the new sheet", "intent": "name_new_sheet" },

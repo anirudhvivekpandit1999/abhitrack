@@ -173,6 +173,77 @@ const FullExcelFile = () => {
       return prevSel.length ? prevSel : [""];
     });
   }, [copyFromSheet, excelData, xAxis, yAxis]);
+const handleAssistantResult = (data, originalText) => {
+  if (!data) return;
+
+  const intents = data.intents || [];
+  if (!intents.length) {
+    setVoiceFeedback(data.response || "I couldn't detect an intent.");
+    return;
+  }
+
+  for (const item of intents) {
+    const intent = item.intent;
+
+    if (intent === "upload_file") {
+      if (fileInputRef?.current) {
+        fileInputRef.current.click();
+      } else {
+        setShowFileSearchModal(true);
+      }
+      setVoiceFeedback(item.response || "Opening file picker...");
+      continue;
+    }
+
+    if (intent === "select_base_sheet") {
+      const text = (originalText || "").toLowerCase();
+
+      const asMatch = text.match(/\bas\s+(.+?)$/);
+      const namedMatch = text.match(/\bnamed\s+(.+?)$/);
+      const toMatch = text.match(/\bto\s+(.+?)$/);
+
+      const candidate =
+        (asMatch && asMatch[1]) ||
+        (namedMatch && namedMatch[1]) ||
+        (toMatch && toMatch[1]);
+
+      if (candidate) {
+        const cleaned = candidate.replace(/["'\.]/g, "").trim();
+        const found = sheetNames.find(
+          s => s.toLowerCase() === cleaned.toLowerCase()
+        );
+
+        if (found) {
+          setSelectedSheet(found);
+          setVoiceFeedback(item.response || `Selected base sheet ${found}`);
+        } else {
+          const partial = sheetNames.find(s =>
+            s.toLowerCase().includes(cleaned.toLowerCase())
+          );
+
+          if (partial) {
+            setSelectedSheet(partial);
+            setVoiceFeedback(item.response || `Selected base sheet ${partial}`);
+          } else {
+            setShowFileSearchModal(true);
+            setVoiceFeedback(`Couldn't find sheet '${cleaned}'. Opening sheet selector...`);
+          }
+        }
+      } else {
+        setShowFileSearchModal(true);
+        setVoiceFeedback(item.response || "Which sheet should I set as base?");
+      }
+      continue;
+    }
+
+    if (intent === "enter_preprocess") {
+      setVoiceFeedback(item.response || "Opening preprocessing...");
+      continue;
+    }
+
+    setVoiceFeedback(item.response || `Intent: ${intent}`);
+  }
+};
 
   const refreshColumnsFromSession = () => {
     try {
@@ -1990,6 +2061,7 @@ const FullExcelFile = () => {
           handleDirectFileSelection={handleDirectFileSelection}
           handleBrowseMoreFiles={handleBrowseMoreFiles}
           fileInputRef={fileInputRef}
+          onAssistantResult={handleAssistantResult} 
         />
       </div> 
     </>

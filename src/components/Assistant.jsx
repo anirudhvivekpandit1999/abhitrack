@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import MicIcon from '@mui/icons-material/Mic';
 
 const Assistant = ({
@@ -17,6 +17,7 @@ const Assistant = ({
   handleDirectFileSelection,
   handleBrowseMoreFiles,
   fileInputRef,
+  onAssistantResult,
 }) => {
   const [isListening, setIsListening] = useState(propIsListening ?? false);
   const [lastCommand, setLastCommand] = useState(propLastCommand ?? "");
@@ -25,7 +26,10 @@ const Assistant = ({
   const [recentFiles, setRecentFiles] = useState(propRecentFiles ?? []);
   const [showFileSearchModal, setShowFileSearchModal] = useState(propShowFileSearchModal ?? false);
   const [matchedRecentFiles, setMatchedRecentFiles] = useState(propMatchedRecentFiles ?? []);
-
+  const [commandText, setCommandText] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [sending, setSending] = useState(false);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     if (typeof propIsListening !== 'undefined') setIsListening(propIsListening);
@@ -49,6 +53,20 @@ const Assistant = ({
     if (typeof propMatchedRecentFiles !== 'undefined') setMatchedRecentFiles(propMatchedRecentFiles);
   }, [propMatchedRecentFiles]);
 
+  useEffect(() => {
+    if (typeof propLastCommand !== "undefined" && propLastCommand && String(propLastCommand).trim()) {
+      const t = String(propLastCommand).trim();
+      setMessages((m) => [...m, { from: "user", text: t }]);
+      predictIntent(t, true);
+    }
+  }, [propLastCommand]);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: containerRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages]);
+
   const toggleListening = () => {
     if (propStartListening && propStopListening) {
       if (isListening) propStopListening();
@@ -62,7 +80,6 @@ const Assistant = ({
     if (fileInputRef && fileInputRef.current) {
       fileInputRef.current.click();
     } else {
-
       setShowFileSearchModal(true);
     }
   };
@@ -71,6 +88,99 @@ const Assistant = ({
     if (propSetShowFileSearchModal) propSetShowFileSearchModal(false);
     setShowFileSearchModal(false);
   };
+
+  const RESPONSE_MAP = {
+    upload_file: "I'll help you upload a file. Please select your Excel spreadsheet.",
+    select_base_sheet: "Great! I've selected this sheet as the base. What would you like to do next?",
+    enter_preprocess: "Moving to preprocessing step. Let's prepare your data.",
+    name_new_sheet: "Please enter a name for your new sheet.",
+    set_row_range: "Select the row range you want to keep (start row - end row).",
+    select_x_axis: "Which column should be used for the X-axis?",
+    select_y_axis: "Which column should be used for the Y-axis?",
+    open_column_builder: "Opening formula builder. You can create custom calculated columns.",
+    add_formula_column: "Enter your formula. You can reference columns like [ColumnA] + [ColumnB]",
+    submit_sheet: "Saving your sheet configuration...",
+    go_to_results: "Taking you to the results page to review your processed data.",
+    cancel: "Canceling operation. Going back to the previous step."
+  };
+
+  function inferIntentsFromText(text) {
+    const t = (text || "").toLowerCase();
+    const inferred = [];
+    if (/\b(upload|excel|import|browse|add a file|open my spreadsheet|choose a file|load excel)\b/.test(t)) {
+      inferred.push({ intent: "upload_file", confidence: 1.0, matches: 1, response: RESPONSE_MAP.upload_file });
+    }
+    if (/\b(select base|select the base|base sheet|set as base|choose the base)\b/.test(t)) {
+      inferred.push({ intent: "select_base_sheet", confidence: 1.0, matches: 1, response: RESPONSE_MAP.select_base_sheet });
+    }
+    return inferred;
+  }
+
+  async function predictIntent(text, executeActions = false) {
+    if (!text || !text.trim()) return null;
+    try {
+      setSending(true);
+      const resp = await fetch("http://127.0.0.1:8000/predict-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await resp.json();
+      const serverIntents = (data?.intents || []).map(i => ({
+        intent: i.intent,
+        confidence: i.confidence ?? 0,
+        matches: i.matches ?? 0,
+        response: i.response ?? RESPONSE_MAP[i.intent] ?? i.intent
+      }));
+      const inferred = inferIntentsFromText(text);
+      const mergedMap = new Map();
+      inferred.forEach(i => mergedMap.set(i.intent, i));
+      serverIntents.forEach(i => mergedMap.set(i.intent, i));
+      const preferredOrder = ["upload_file", "select_base_sheet"];
+      const merged = [];
+      preferredOrder.forEach(key => { if (mergedMap.has(key)) merged.push(mergedMap.get(key)); });
+      mergedMap.forEach((v, k) => { if (!preferredOrder.includes(k)) merged.push(v); });
+      const intentsToShow = merged;
+      let assistantResp = "Hey, I’m the AbhiStat assistant 👋";
+      if (intentsToShow.length > 0) {
+        const intentNames = intentsToShow.map(i => i.intent.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
+        assistantResp += "\n\nFrom your text, I detected the following intents:\n";
+        intentNames.forEach((name) => { assistantResp += `• ${name}\n`; });
+        const mixed = intentsToShow.map(i => i.response || i.intent).join(" | ");
+        assistantResp += `\n\nMixed response: ${mixed}`;
+      } else if (data?.response) {
+        assistantResp += `\n\n${data.response}`;
+      } else {
+        assistantResp += "\n\nI couldn’t clearly detect an action.";
+      }
+      setMessages((m) => [...m, { from: "assistant", text: assistantResp }]);
+      if (executeActions && typeof onAssistantResult === "function") {
+        try {
+          onAssistantResult(data, text);
+        } catch (err) {
+          console.error("onAssistantResult threw:", err);
+        }
+      }
+      return data;
+    } catch (err) {
+      console.error("Intent API error:", err);
+      setMessages((m) => [
+        ...m,
+        { from: "assistant", text: "Sorry — couldn't reach the intent service." },
+      ]);
+      return null;
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function handleSendClick() {
+    const t = (commandText || "").trim();
+    if (!t) return;
+    setMessages((m) => [...m, { from: "user", text: t }]);
+    predictIntent(t, false);
+    setCommandText("");
+  }
 
   return (
     <>
@@ -103,41 +213,61 @@ const Assistant = ({
             </button>
           </div>
 
-          <div className="flex-1 p-3 overflow-y-auto space-y-3">
+          <div ref={containerRef} className="flex-1 p-3 overflow-y-auto space-y-3">
             {lastCommand ? (
-              <div className="bg-slate-50 rounded-lg p-2 text-sm">
-                <div className="text-xs text-slate-500 mb-1">Last command</div>
-                <div className="text-sm text-slate-800">{lastCommand}</div>
+              <div className="bg-slate-50 rounded-lg p-2 text-xs">
+                <div className="text-[11px] text-slate-500 mb-1">Last command</div>
+                <div className="text-xs text-slate-800">{lastCommand}</div>
               </div>
             ) : (
-              <div className="text-xs text-slate-500">No commands yet. Click the mic and speak.</div>
+              <div className="text-[11px] text-slate-500">No commands yet. Click the mic and speak.</div>
             )}
 
             {voiceFeedback && (
-              <div className="bg-blue-50 rounded-lg p-2 text-sm">
-                <div className="text-xs text-blue-600 font-medium">Feedback</div>
-                <div className="text-sm text-blue-800">{voiceFeedback}</div>
+              <div className="bg-blue-50 rounded-lg p-2 text-xs">
+                <div className="text-[11px] text-blue-600 font-medium">Feedback</div>
+                <div className="text-xs text-blue-800">{voiceFeedback}</div>
               </div>
             )}
 
-            <div>
-              <div className="text-xs text-slate-500 mb-2">Recent files</div>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {recentFiles.length ? recentFiles.map((f, idx) => (
-                  <div key={idx} className="text-xs text-slate-700 truncate">{f}</div>
-                )) : <div className="text-xs text-slate-400">— none —</div>}
-              </div>
+            <div className="pt-2">
+              {messages.length ? messages.map((m, i) => (
+                <div key={i} className={`mb-2 ${m.from === "user" ? "text-right" : "text-left"}`}>
+                  {m.from === "user" ? (
+                    <div style={{ backgroundColor: '#02008a', color: '#ffffff' }} className="inline-block max-w-full break-words px-2 py-1 rounded text-xs">
+                      {m.text}
+                    </div>
+                  ) : (
+                    <div className="inline-block max-w-full break-words px-2 py-1 rounded bg-slate-100 text-slate-800 text-xs border border-slate-300">
+                      {m.text}
+                    </div>
+                  )}
+                </div>
+              )) : null}
             </div>
           </div>
 
           <div className="p-3 border-t bg-gradient-to-r from-white to-slate-50">
             <div className="flex gap-2 items-center">
               <input
-                value=""
+                value={commandText}
                 placeholder="Type a command (optional)"
                 className="flex-1 min-w-0 rounded-md border px-3 py-2 text-sm focus:outline-none"
-                onChange={() => { }}
+                onChange={(e) => setCommandText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSendClick();
+                  }
+                }}
               />
+              <button
+                onClick={handleSendClick}
+                className="ml-2 px-3 py-2 rounded bg-slate-800 text-white text-sm"
+                disabled={sending}
+              >
+                {sending ? "Sending..." : "Send"}
+              </button>
               <button
                 onClick={toggleListening}
                 className={`flex items-center gap-1 shrink-0 rounded-md px-2 py-1 text-sm font-medium ${isListening ? "bg-red-600 text-white" : "bg-blue-600 text-white"}`}

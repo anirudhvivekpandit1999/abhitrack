@@ -7,10 +7,9 @@ export const ASSISTANT_SCHEMA = {
       "Voice + text assistant for uploading, preprocessing, creating sheets, building columns, plotting and submitting Excel-based workflows"
   },
 
-  // NOTE: paramTypes "runtime" means the value comes from React state (columns/sheets),
-  // not trained values. Use <placeholder> in examples.
+
   actions: {
-    // 1. Upload file (you said FullExcelFile.jsx already implements this)
+    
     upload_file: {
       description: "Uploads an Excel file into the app (entry point).",
       requiredParams: ["file"],
@@ -24,7 +23,7 @@ export const ASSISTANT_SCHEMA = {
       ]
     },
 
-    // Activation: wake word + immediate listen
+    
     wake_listen: {
       description:
         "Wake assistant with custom phrase and start listening (wake-word). Example wake-word: 'hey abhistat' or 'hey, abhistat'.",
@@ -39,7 +38,7 @@ export const ASSISTANT_SCHEMA = {
       ]
     },
 
-    // 2. Move to preprocessing / add-new-sheet screen (and 'next' shortcut after upload)
+    
     enter_preprocess: {
       description:
         "Open or move focus to the preprocessing / new-sheet creation area. Triggered automatically after upload or when user says 'next'.",
@@ -54,7 +53,6 @@ export const ASSISTANT_SCHEMA = {
       ]
     },
 
-    // 3. Create / name new sheet (user names the new sheet)
     name_new_sheet: {
       description: "Create or name the new sheet that will be generated.",
       requiredParams: ["sheetName"],
@@ -68,7 +66,6 @@ export const ASSISTANT_SCHEMA = {
       ]
     },
 
-    // 4. Select base sheet (dropdown from uploaded Excel)
     select_base_sheet: {
       description:
         "Select the base/origin sheet from the uploaded workbook that will be used to create new sheets.",
@@ -83,7 +80,7 @@ export const ASSISTANT_SCHEMA = {
       ]
     },
 
-    // 5. Set names for the two target sheets (default two sheets)
+
     name_target_sheets: {
       description: "Name the two target sheets that will be created from the base sheet.",
       requiredParams: ["firstSheetName", "secondSheetName"],
@@ -96,7 +93,7 @@ export const ASSISTANT_SCHEMA = {
       ]
     },
 
-    // 6. Set row range (trim by row range or date range)
+
     set_row_range: {
       description:
         "Trim the base sheet by row indices or by date start/end. Accepts row numbers or date-based ranges.",
@@ -111,7 +108,7 @@ export const ASSISTANT_SCHEMA = {
       ]
     },
 
-    // 7. Select X axis column (for scatter)
+  
     select_x_axis: {
       description:
         "Select a column to use as X axis for scatter plot/preview. Column is dynamic (comes from sheet).",
@@ -126,7 +123,6 @@ export const ASSISTANT_SCHEMA = {
       ]
     },
 
-    // 8. Select Y axis column (for scatter)
     select_y_axis: {
       description: "Select column to use as Y axis for scatter plot/preview.",
       requiredParams: ["yColumn"],
@@ -140,7 +136,7 @@ export const ASSISTANT_SCHEMA = {
       ]
     },
 
-    // 9. Replace target sheet with selected sheet directly (if user says 'select this sheet directly')
+
     replace_sheet_with_selected: {
       description:
         "Replace a target sheet (or x/y axis sheet) with a selected existing sheet immediately.",
@@ -154,7 +150,7 @@ export const ASSISTANT_SCHEMA = {
       ]
     },
 
-    // 10. From scatter choose to include/exclude columns for new sheet
+    
     choose_column_for_new_sheet: {
       description:
         "Select or deselect columns to include in the new sheet (can be used after scatter preview).",
