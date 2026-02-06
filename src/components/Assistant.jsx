@@ -23,7 +23,6 @@ const Assistant = ({
   const [lastCommand, setLastCommand] = useState(propLastCommand ?? "");
   const [voiceFeedback, setVoiceFeedback] = useState(propVoiceFeedback ?? "");
   const [assistantCollapsed, setAssistantCollapsed] = useState(propAssistantCollapsed ?? false);
-  const [recentFiles, setRecentFiles] = useState(propRecentFiles ?? []);
   const [showFileSearchModal, setShowFileSearchModal] = useState(propShowFileSearchModal ?? false);
   const [matchedRecentFiles, setMatchedRecentFiles] = useState(propMatchedRecentFiles ?? []);
   const [commandText, setCommandText] = useState("");
@@ -44,9 +43,6 @@ const Assistant = ({
     if (typeof propAssistantCollapsed !== 'undefined') setAssistantCollapsed(propAssistantCollapsed);
   }, [propAssistantCollapsed]);
   useEffect(() => {
-    if (typeof propRecentFiles !== 'undefined') setRecentFiles(propRecentFiles);
-  }, [propRecentFiles]);
-  useEffect(() => {
     if (typeof propShowFileSearchModal !== 'undefined') setShowFileSearchModal(propShowFileSearchModal);
   }, [propShowFileSearchModal]);
   useEffect(() => {
@@ -63,7 +59,11 @@ const Assistant = ({
 
   useEffect(() => {
     if (containerRef.current) {
-      containerRef.current.scrollTo({ top: containerRef.current.scrollHeight, behavior: 'smooth' });
+      try {
+        containerRef.current.scrollTo({ top: containerRef.current.scrollHeight, behavior: 'smooth' });
+      } catch (e) {
+        containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      }
     }
   }, [messages]);
 
@@ -110,8 +110,17 @@ const Assistant = ({
     if (/\b(upload|excel|import|browse|add a file|open my spreadsheet|choose a file|load excel)\b/.test(t)) {
       inferred.push({ intent: "upload_file", confidence: 1.0, matches: 1, response: RESPONSE_MAP.upload_file });
     }
-    if (/\b(select base|select the base|base sheet|set as base|choose the base)\b/.test(t)) {
+    if (/\b(select base|select the base|base sheet|set as base|choose the base|as\s+)\b/.test(t)) {
       inferred.push({ intent: "select_base_sheet", confidence: 1.0, matches: 1, response: RESPONSE_MAP.select_base_sheet });
+    }
+    if (/\b(name|named|rename|sheet name)\b/.test(t)) {
+      inferred.push({ intent: "name_new_sheet", confidence: 0.9, matches: 1, response: RESPONSE_MAP.name_new_sheet });
+    }
+    if (/\b(preprocess|pre-processing|pre process)\b/.test(t)) {
+      inferred.push({ intent: "enter_preprocess", confidence: 0.9, matches: 1, response: RESPONSE_MAP.enter_preprocess });
+    }
+    if (/\b(formula|add formula|formula column|column builder)\b/.test(t)) {
+      inferred.push({ intent: "add_formula_column", confidence: 0.9, matches: 1, response: RESPONSE_MAP.add_formula_column });
     }
     return inferred;
   }
@@ -134,9 +143,11 @@ const Assistant = ({
       }));
       const inferred = inferIntentsFromText(text);
       const mergedMap = new Map();
-      inferred.forEach(i => mergedMap.set(i.intent, i));
+      inferred.forEach(i => {
+        if (!mergedMap.has(i.intent)) mergedMap.set(i.intent, i);
+      });
       serverIntents.forEach(i => mergedMap.set(i.intent, i));
-      const preferredOrder = ["upload_file", "select_base_sheet"];
+      const preferredOrder = ["upload_file", "select_base_sheet", "name_new_sheet", "enter_preprocess", "add_formula_column"];
       const merged = [];
       preferredOrder.forEach(key => { if (mergedMap.has(key)) merged.push(mergedMap.get(key)); });
       mergedMap.forEach((v, k) => { if (!preferredOrder.includes(k)) merged.push(v); });
@@ -178,7 +189,7 @@ const Assistant = ({
     const t = (commandText || "").trim();
     if (!t) return;
     setMessages((m) => [...m, { from: "user", text: t }]);
-    predictIntent(t, false);
+    predictIntent(t, true);
     setCommandText("");
   }
 
@@ -305,7 +316,7 @@ const Assistant = ({
               </div>
             ) : (
               <div className="p-4 text-center text-slate-500">
-                <div className="text-sm">No matching files found in recent.</div>
+                <div className="text-sm">No matching files found.</div>
               </div>
             )}
 
