@@ -135,6 +135,7 @@ const Assistant = ({
         body: JSON.stringify({ text }),
       });
       const data = await resp.json();
+      console.log("Intent API response:", resp);
       const serverIntents = (data?.intents || []).map(i => ({
         intent: i.intent,
         confidence: i.confidence ?? 0,
