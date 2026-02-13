@@ -125,6 +125,96 @@ const Assistant = ({
     return inferred;
   }
 
+  function extractEntities(text) {
+  const lower = text.toLowerCase();
+  const entities = {};
+
+  const baseSheetMatch =
+    lower.match(/base sheet (as|to|is)?\s*["']?([a-z0-9 _-]+)/i) ||
+    lower.match(/select sheet (as|to)?\s*["']?([a-z0-9 _-]+)/i);
+
+  if (baseSheetMatch) entities.sheet_name = baseSheetMatch[2].trim();
+
+  const newSheetMatch =
+    lower.match(/new sheet name (as|to|is)?\s*["']?([a-z0-9 _-]+)/i) ||
+    lower.match(/name (the )?sheet (as|to)?\s*["']?([a-z0-9 _-]+)/i);
+
+  if (newSheetMatch)
+    entities.new_sheet_name = newSheetMatch[3]?.trim() || newSheetMatch[2]?.trim();
+
+  return entities;
+}
+
+const REQUIRED_PARAMS = {
+  select_base_sheet: ["sheet_name"],
+  name_new_sheet: ["new_sheet_name"],
+};
+
+function askForMissingParams(action) {
+  const questions = {
+    sheet_name: "Which sheet should I select as the base sheet?",
+    new_sheet_name: "What should be the name of the new sheet?"
+  };
+
+  const missing = REQUIRED_PARAMS[action.type].filter(p => !action.params[p]);
+  const msg = missing.map(p => questions[p]).join("\n");
+
+  setMessages(m => [...m, { from: "assistant", text: msg }]);
+}
+async function executeAction(action) {
+  switch (action.type) {
+    case "upload_file":
+      return handleFileUpload();
+
+    case "select_base_sheet":
+      return selectBaseSheet(action.params.sheet_name);
+
+    case "name_new_sheet":
+      return createNewSheet(action.params.new_sheet_name);
+
+    default:
+      console.warn("Unknown action:", action);
+  }
+}
+
+async function processActionQueue(queue) {
+  if (!queue.length) return;
+
+  const current = queue[0];
+  const required = REQUIRED_PARAMS[current.type] || [];
+  const missing = required.filter(p => !current.params[p]);
+
+  if (missing.length > 0) {
+    askForMissingParams(current);
+    return; // WAIT for user reply
+  }
+
+  await executeAction(current);
+  queue.shift(); // remove completed
+  processActionQueue(queue); // continue next
+}
+async function processActionQueue(queue) {
+  if (!queue.length) return;
+
+  const current = queue[0];
+  const required = REQUIRED_PARAMS[current.type] || [];
+  const missing = required.filter(p => !current.params[p]);
+
+  if (missing.length > 0) {
+    askForMissingParams(current);
+    return; // WAIT for user reply
+  }
+
+  await executeAction(current);
+  queue.shift(); // remove completed
+  processActionQueue(queue); // continue next
+}
+
+let actionQueue = [];
+
+
+
+
   async function predictIntent(text, executeActions = false) {
     if (!text || !text.trim()) return null;
     try {

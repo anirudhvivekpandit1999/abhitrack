@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState,forwardRef } from "react";
+import { useEffect, useRef, useState, forwardRef } from "react";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import MicIcon from "@mui/icons-material/Mic";
 import Assistant from "../components/Assistant";
@@ -86,10 +86,10 @@ const FullExcelFile = () => {
     }
   }, []);
 
-  useEffect(()=> {
+  useEffect(() => {
     console.log(error);
-    
-  },[error])
+
+  }, [error])
 
   useEffect(() => {
     if (!focusId || !showAddPanel) return;
@@ -173,77 +173,171 @@ const FullExcelFile = () => {
       return prevSel.length ? prevSel : [""];
     });
   }, [copyFromSheet, excelData, xAxis, yAxis]);
-const handleAssistantResult = (data, originalText) => {
-  if (!data) return;
+  const handleAssistantResult = async (data, originalText) => {
+    if (!data) return;
 
-  const intents = data.intents || [];
-  if (!intents.length) {
-    setVoiceFeedback(data.response || "I couldn't detect an intent.");
-    return;
-  }
-
-  for (const item of intents) {
-    const intent = item.intent;
-
-    if (intent === "upload_file") {
-      if (fileInputRef?.current) {
-        fileInputRef.current.click();
-      } else {
-        setShowFileSearchModal(true);
-      }
-      setVoiceFeedback(item.response || "Opening file picker...");
-      continue;
+    const intents = data.intents || [];
+    if (!intents.length) {
+      setVoiceFeedback(data.response || "I couldn't detect an intent.");
+      return;
     }
 
-    if (intent === "select_base_sheet") {
-      const text = (originalText || "").toLowerCase();
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-      const asMatch = text.match(/\bas\s+(.+?)$/);
-      const namedMatch = text.match(/\bnamed\s+(.+?)$/);
-      const toMatch = text.match(/\bto\s+(.+?)$/);
+    {
+      for (const item of intents) {
+        const intent = item.intent;
 
-      const candidate =
-        (asMatch && asMatch[1]) ||
-        (namedMatch && namedMatch[1]) ||
-        (toMatch && toMatch[1]);
+        await sleep(800); // ⏳ buffer between actions
 
-      if (candidate) {
-        const cleaned = candidate.replace(/["'\.]/g, "").trim();
-        const found = sheetNames.find(
-          s => s.toLowerCase() === cleaned.toLowerCase()
-        );
+        if (intent === "upload_file") {
+  // Helper function to read and save file
+  const handleFile = async (file) => {
+    if (!file) return;
 
-        if (found) {
-          setSelectedSheet(found);
-          setVoiceFeedback(item.response || `Selected base sheet ${found}`);
-        } else {
-          const partial = sheetNames.find(s =>
-            s.toLowerCase().includes(cleaned.toLowerCase())
-          );
+    setVoiceFeedback("Reading file...");
 
-          if (partial) {
-            setSelectedSheet(partial);
-            setVoiceFeedback(item.response || `Selected base sheet ${partial}`);
+    try {
+      const text = await file.text();
+
+      // Parse JSON/CSV depending on your app
+      let parsedData;
+      try {
+        parsedData = JSON.parse(text); // try JSON
+      } catch {
+        parsedData = text; // fallback raw text
+      }
+
+      // Save to localStorage
+      
+      localStorage.setItem("saved_excel_sheets",JSON.stringify({}));
+      localStorage.setItem("saved_excel_sheets", JSON.stringify(parsedData));
+
+      // Now processing is done
+      setVoiceFeedback("File uploaded and saved successfully!");
+      processFile();
+    } catch (err) {
+      console.error(err);
+      setVoiceFeedback("Failed to read file.");
+    }
+  };
+
+  if (fileInputRef?.current) {
+    // Trigger the file picker
+    fileInputRef.current.click();
+
+    // Handle the file once the user selects it
+    fileInputRef.current.onchange = async (e) => {
+      const file = e.target.files[0];
+      await handleFile(file);
+    };
+
+    setVoiceFeedback(item.response || "Opening file picker...");
+  } else {
+    // Fallback: show modal
+    setShowFileSearchModal(true);
+
+    // Attach handler for modal file selection
+    // Assuming your modal component exposes an `onFileSelected` callback
+    const onModalFileSelected = async (file) => {
+      await handleFile(file);
+      setShowFileSearchModal(false); // close modal after upload
+    };
+
+    // You need to pass `onModalFileSelected` to your modal component
+    // <FileUploadModal onFileSelected={onModalFileSelected} />
+  }
+
+  continue;
+}
+
+if (intent === "create_new_excel"){
+  setVoiceFeedback(item.response || "Creating new Excel file...");
+  setShowAddPanel(true);
+  continue;
+}
+
+if (intent === "name_new_sheet"){
+
+  const match = originalText.match(/(?:call|name|rename).*?(?:excel|sheet)?\s*(?:to)?\s*([a-zA-Z0-9_ -]+)/i);
+  
+  if (match && match[1]) {
+    const extractedName = match[1].trim();
+    setNewSheetName(extractedName);
+  }
+
+}
+
+        if (intent === "select_base_sheet") {
+          const candidate = extractBaseSheetName(originalText);
+          console.log('Extracted candidate sheet name from voice command:', candidate);
+
+          if (candidate) {
+            console.log('sheetNames available:', sheetNames);
+
+            const found = sheetNames.find(
+              s => s.toLowerCase() === candidate.toLowerCase()
+            );
+            console.log('Exact match found:', found);
+            setCopyFromSheet(candidate);
+
+            if (found) {
+              
+              setSelectedSheet(found);
+              setVoiceFeedback(item.response || `Selected base sheet ${found}`);
+            } else {
+              const partial = sheetNames.find(s =>
+                s.toLowerCase().includes(candidate.toLowerCase())
+              );
+
+              if (partial) {
+                setSelectedSheet(partial);
+                setVoiceFeedback(item.response || `Selected base sheet ${partial}`);
+              } else {
+                setShowFileSearchModal(true);
+                setVoiceFeedback(`Couldn't find sheet '${candidate}'. Opening sheet selector...`);
+              }
+            }
           } else {
             setShowFileSearchModal(true);
-            setVoiceFeedback(`Couldn't find sheet '${cleaned}'. Opening sheet selector...`);
+            setVoiceFeedback(item.response || "Which sheet should I set as base?");
           }
+
+          continue;
         }
-      } else {
-        setShowFileSearchModal(true);
-        setVoiceFeedback(item.response || "Which sheet should I set as base?");
+
+        if (intent === "enter_preprocess") {
+          setVoiceFeedback(item.response || "Opening preprocessing...");
+          continue;
+        }
+
+        setVoiceFeedback(item.response || `Intent: ${intent}`);
       }
-      continue;
+    }
+  };
+
+  function extractBaseSheetName(text) {
+    if (!text) return null;
+
+    const t = text;
+
+    const patterns = [
+      /base sheet (?:as|to|is|named)?\s*["']?([a-z0-9 _-]+)["']?/i,
+      /select (?:the )?sheet (?:as|to|is|named)?\s*["']?([a-z0-9 _-]+)["']?/i,
+      /use (?:the )?sheet\s*["']?([a-z0-9 _-]+)["']?/i,
+      /sheet called\s*["']?([a-z0-9 _-]+)["']?/i,
+      /sheet named\s*["']?([a-z0-9 _-]+)["']?/i
+    ];
+
+    for (const p of patterns) {
+      const match = t.match(p);
+      if (match && match[1]) {
+        return match[1].replace(/["'.]/g, "").trim();
+      }
     }
 
-    if (intent === "enter_preprocess") {
-      setVoiceFeedback(item.response || "Opening preprocessing...");
-      continue;
-    }
-
-    setVoiceFeedback(item.response || `Intent: ${intent}`);
+    return null;
   }
-};
 
   const refreshColumnsFromSession = () => {
     try {
@@ -639,7 +733,7 @@ const handleAssistantResult = (data, originalText) => {
 
     let trimmed = newSheetName.trim();
     if (!trimmed) {
-      trimmed = localStorage.getItem("newSheetName") ;
+      trimmed = localStorage.getItem("newSheetName");
       if (!trimmed) {
         setError("Please enter a name");
         return;
@@ -1175,118 +1269,118 @@ const handleAssistantResult = (data, originalText) => {
 
       console.log('  parsed candidate (post-cleanup):', candidate);
 
-    if (!previewHeaders || previewHeaders.length === 0) {
-     console.log('  No preview headers available to match. Enforcing base-sheet-first-only behavior.');
-     const normalize = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
-     const candidateNorm = normalize(candidate);
-     const getHeadersForSheet = (sheetName) => {
-      if (!sheetName) return [];
-        // 1) excelData
-      if (Array.isArray(excelData) && excelData.length) {
-      const found = excelData.find(
-        (e) => (e.sheetName || '').toString().toLowerCase() === sheetName.toString().toLowerCase()
-      );
-      if (found && Array.isArray(found.sheetData) && found.sheetData.length) {
-        return Object.keys(found.sheetData[0]);
-      }
-    }
-    // 2) localStorage fallback (saved_excel_sheets)
-    try {
-      const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
-      const s = saved[sheetName] || saved[sheetName.toString()] || saved[sheetName.toString().toLowerCase()];
-      if (Array.isArray(s) && s.length) return Object.keys(s[0]);
-    } catch (err) {
-      console.error('Error reading saved_excel_sheets from localStorage', err);
-    }
-    return [];
-  };
+      if (!previewHeaders || previewHeaders.length === 0) {
+        console.log('  No preview headers available to match. Enforcing base-sheet-first-only behavior.');
+        const normalize = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+        const candidateNorm = normalize(candidate);
+        const getHeadersForSheet = (sheetName) => {
+          if (!sheetName) return [];
+          // 1) excelData
+          if (Array.isArray(excelData) && excelData.length) {
+            const found = excelData.find(
+              (e) => (e.sheetName || '').toString().toLowerCase() === sheetName.toString().toLowerCase()
+            );
+            if (found && Array.isArray(found.sheetData) && found.sheetData.length) {
+              return Object.keys(found.sheetData[0]);
+            }
+          }
+          // 2) localStorage fallback (saved_excel_sheets)
+          try {
+            const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
+            const s = saved[sheetName] || saved[sheetName.toString()] || saved[sheetName.toString().toLowerCase()];
+            if (Array.isArray(s) && s.length) return Object.keys(s[0]);
+          } catch (err) {
+            console.error('Error reading saved_excel_sheets from localStorage', err);
+          }
+          return [];
+        };
 
-  // If a base sheet was explicitly chosen, ONLY search that base sheet.
-  if (copyFromSheet) {
-    console.log('  base sheet selected:', copyFromSheet, '— searching only there.');
-    const baseHeaders = getHeadersForSheet(copyFromSheet) || [];
+        // If a base sheet was explicitly chosen, ONLY search that base sheet.
+        if (copyFromSheet) {
+          console.log('  base sheet selected:', copyFromSheet, '— searching only there.');
+          const baseHeaders = getHeadersForSheet(copyFromSheet) || [];
 
-    if (!baseHeaders || baseHeaders.length === 0) {
-      // base sheet not loaded yet -> queue pending action for this base sheet only
-      const pending = { axis: 'x', candidate, targetSheet: copyFromSheet, ts: Date.now() };
-      setPendingVoiceAction(pending);
-      setVoiceFeedback(`Base sheet "${copyFromSheet}" not loaded yet — will set X axis to "${candidate}" when it is available.`);
-      setTimeout(() => setPendingVoiceAction((curr) => (curr && curr.ts === pending.ts ? null : curr)), 10000);
-      console.log('  queued pending voice action (waiting for base sheet to load):', pending);
-      return;
-    }
+          if (!baseHeaders || baseHeaders.length === 0) {
+            // base sheet not loaded yet -> queue pending action for this base sheet only
+            const pending = { axis: 'x', candidate, targetSheet: copyFromSheet, ts: Date.now() };
+            setPendingVoiceAction(pending);
+            setVoiceFeedback(`Base sheet "${copyFromSheet}" not loaded yet — will set X axis to "${candidate}" when it is available.`);
+            setTimeout(() => setPendingVoiceAction((curr) => (curr && curr.ts === pending.ts ? null : curr)), 10000);
+            console.log('  queued pending voice action (waiting for base sheet to load):', pending);
+            return;
+          }
 
-    
-    let foundInBase = baseHeaders.find((h) => normalize(h) === candidateNorm);
-    if (!foundInBase) {
-      foundInBase = baseHeaders.find((h) => normalize(h).includes(candidateNorm) || candidateNorm.includes(normalize(h)));
-    }
 
-    if (foundInBase) {
-      console.log('  Matched header in base sheet:', copyFromSheet, foundInBase);
-      
-      setSelectedSheet(copyFromSheet);
-      setXAxis(foundInBase);
-      setColumnNames((prev) => (prev && prev.includes(foundInBase) ? prev : [...(prev || []), foundInBase]));
-      setSelectedColumns((prev) =>
-        prev && prev.includes(foundInBase) ? prev : [foundInBase, ...(prev?.slice?.(1) || [])]
-      );
-      setVoiceFeedback(`X axis set to: ${foundInBase} (from base sheet ${copyFromSheet})`);
-      setTimeout(() => setVoiceFeedback(''), 4000);
-      return;
-    }
+          let foundInBase = baseHeaders.find((h) => normalize(h) === candidateNorm);
+          if (!foundInBase) {
+            foundInBase = baseHeaders.find((h) => normalize(h).includes(candidateNorm) || candidateNorm.includes(normalize(h)));
+          }
 
-    
-    const pending = { axis: 'x', candidate, targetSheet: copyFromSheet, ts: Date.now() };
-    setPendingVoiceAction(pending);
-    setVoiceFeedback(`"${candidate}" not found in base sheet "${copyFromSheet}". Will try again when data loads.`);
-    setTimeout(() => setPendingVoiceAction((curr) => (curr && curr.ts === pending.ts ? null : curr)), 10000);
-    console.log('  queued pending voice action (candidate not in base):', pending);
-    return;
-  }
+          if (foundInBase) {
+            console.log('  Matched header in base sheet:', copyFromSheet, foundInBase);
 
-  
-  try {
-    const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
-    for (const sName of Object.keys(saved || {})) {
-      const sData = saved[sName];
-      const headers = Array.isArray(sData) && sData.length > 0 ? Object.keys(sData[0]) : [];
-      
-      const match = headers.find((h) => normalize(h) === candidateNorm) ||
-                    headers.find((h) => normalize(h).includes(candidateNorm) || candidateNorm.includes(normalize(h)));
-      if (match) {
-        console.log('  Matched header in saved sheet:', sName, match);
-        
-        setSheetNames((prev) =>
-          prev?.some?.((p) => p?.toLowerCase() === sName.toLowerCase()) ? prev : [...(prev || []), sName]
-        );
-        setExcelData((prev) =>
-          prev?.some?.((e) => e.sheetName?.toLowerCase() === sName.toLowerCase())
-            ? prev
-            : [...(prev || []), { sheetName: sName, sheetData: sData }]
-        );
-        setSelectedSheet(sName);
-        setXAxis(match);
-        setColumnNames((prev) => (prev && prev.includes(match) ? prev : [...(prev || []), match]));
-        setSelectedColumns((prev) =>
-          prev && prev.includes(match) ? prev : [match, ...(prev?.slice?.(1) || [])]
-        );
-        setVoiceFeedback(`X axis set to: ${match} (loaded from ${sName})`);
-        setTimeout(() => setVoiceFeedback(''), 4000);
+            setSelectedSheet(copyFromSheet);
+            setXAxis(foundInBase);
+            setColumnNames((prev) => (prev && prev.includes(foundInBase) ? prev : [...(prev || []), foundInBase]));
+            setSelectedColumns((prev) =>
+              prev && prev.includes(foundInBase) ? prev : [foundInBase, ...(prev?.slice?.(1) || [])]
+            );
+            setVoiceFeedback(`X axis set to: ${foundInBase} (from base sheet ${copyFromSheet})`);
+            setTimeout(() => setVoiceFeedback(''), 4000);
+            return;
+          }
+
+
+          const pending = { axis: 'x', candidate, targetSheet: copyFromSheet, ts: Date.now() };
+          setPendingVoiceAction(pending);
+          setVoiceFeedback(`"${candidate}" not found in base sheet "${copyFromSheet}". Will try again when data loads.`);
+          setTimeout(() => setPendingVoiceAction((curr) => (curr && curr.ts === pending.ts ? null : curr)), 10000);
+          console.log('  queued pending voice action (candidate not in base):', pending);
+          return;
+        }
+
+
+        try {
+          const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
+          for (const sName of Object.keys(saved || {})) {
+            const sData = saved[sName];
+            const headers = Array.isArray(sData) && sData.length > 0 ? Object.keys(sData[0]) : [];
+
+            const match = headers.find((h) => normalize(h) === candidateNorm) ||
+              headers.find((h) => normalize(h).includes(candidateNorm) || candidateNorm.includes(normalize(h)));
+            if (match) {
+              console.log('  Matched header in saved sheet:', sName, match);
+
+              setSheetNames((prev) =>
+                prev?.some?.((p) => p?.toLowerCase() === sName.toLowerCase()) ? prev : [...(prev || []), sName]
+              );
+              setExcelData((prev) =>
+                prev?.some?.((e) => e.sheetName?.toLowerCase() === sName.toLowerCase())
+                  ? prev
+                  : [...(prev || []), { sheetName: sName, sheetData: sData }]
+              );
+              setSelectedSheet(sName);
+              setXAxis(match);
+              setColumnNames((prev) => (prev && prev.includes(match) ? prev : [...(prev || []), match]));
+              setSelectedColumns((prev) =>
+                prev && prev.includes(match) ? prev : [match, ...(prev?.slice?.(1) || [])]
+              );
+              setVoiceFeedback(`X axis set to: ${match} (loaded from ${sName})`);
+              setTimeout(() => setVoiceFeedback(''), 4000);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+
+
+        const pending = { axis: 'x', candidate, ts: Date.now() };
+        setPendingVoiceAction(pending);
+        setVoiceFeedback(`Could not find "${candidate}" — will set X axis when data is available.`);
+        setTimeout(() => setPendingVoiceAction((curr) => (curr && curr.ts === pending.ts ? null : curr)), 10000);
         return;
       }
-    }
-  } catch (e) {
-    console.error(e);
-  }
-
-  
-  const pending = { axis: 'x', candidate, ts: Date.now() };
-  setPendingVoiceAction(pending);
-  setVoiceFeedback(`Could not find "${candidate}" — will set X axis when data is available.`);
-  setTimeout(() => setPendingVoiceAction((curr) => (curr && curr.ts === pending.ts ? null : curr)), 10000);
-  return;
-}
 
 
       const found = findHeaderMatch(candidate);
@@ -1381,7 +1475,7 @@ const handleAssistantResult = (data, originalText) => {
     }
 
     if (text.toLowerCase().includes("set new column name")) {
-      
+
       const newColumnMatch = text.match(/set new column name (is|to)?\s*(.+)/i);
       console.log('🆕 Voice set new column name match:', newColumnMatch);
       if (newColumnMatch) {
@@ -1399,71 +1493,70 @@ const handleAssistantResult = (data, originalText) => {
         const saved = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
         console.log('  saved_excel_sheets keys:', Object.keys(saved).length);
         const foundHeaders = []
-          for (const sName of Object.keys(saved || {})) {
-            const sData = saved[sName];
-            const headers = Array.isArray(sData) && sData.length > 0 ? Object.keys(sData[0]) : [];
-             foundHeaders.push(...headers.filter(h => h.toLowerCase() === addColumnMatch[1].trim().toLowerCase()));
-            ;
+        for (const sName of Object.keys(saved || {})) {
+          const sData = saved[sName];
+          const headers = Array.isArray(sData) && sData.length > 0 ? Object.keys(sData[0]) : [];
+          foundHeaders.push(...headers.filter(h => h.toLowerCase() === addColumnMatch[1].trim().toLowerCase()));
+          ;
 
-            const foundInSaved = findHeaderMatch(addColumnMatch[1].split('.')[0], headers);
-            console.log('  candidate:', addColumnMatch[1], 'matched header:', foundInSaved);
-            if(foundInSaved){
+          const foundInSaved = findHeaderMatch(addColumnMatch[1].split('.')[0], headers);
+          console.log('  candidate:', addColumnMatch[1], 'matched header:', foundInSaved);
+          if (foundInSaved) {
             localStorage.setItem('selectedColumnName', foundInSaved);
             window.dispatchEvent(new Event('selectedColumnNameChanged'));
             break;
           }
-          }
-          console.log('  foundHeaders matching requested column:', foundHeaders); 
-          const x = foundHeaders.find(h => h.toLowerCase() === addColumnMatch[1].split('.')[0]);
-          console.log(x);
-          
+        }
+        console.log('  foundHeaders matching requested column:', foundHeaders);
+        const x = foundHeaders.find(h => h.toLowerCase() === addColumnMatch[1].split('.')[0]);
+        console.log(x);
+
       }
     }
 
-    if(text.toLowerCase().includes("plus")){
+    if (text.toLowerCase().includes("plus")) {
       localStorage.setItem('selectedOperator', '+');
       window.dispatchEvent(new Event('selectedOperatorChanged'));
     }
 
-    if(text.toLowerCase().includes("minus")){
+    if (text.toLowerCase().includes("minus")) {
       localStorage.setItem('selectedOperator', '-');
       window.dispatchEvent(new Event('selectedOperatorChanged'));
     }
 
-    if(text.toLowerCase().includes("times")){
-      localStorage.setItem("selectedOperator","*");
+    if (text.toLowerCase().includes("times")) {
+      localStorage.setItem("selectedOperator", "*");
       window.dispatchEvent(new Event('selectedOperatorChanged'));
     }
 
-    if(text.toLowerCase().includes("divided")){
-      localStorage.setItem("selectedOperator","/");
+    if (text.toLowerCase().includes("divided")) {
+      localStorage.setItem("selectedOperator", "/");
       window.dispatchEvent(new Event('selectedOperatorChanged'));
     }
 
-    if(text.toLowerCase().includes("left bracket")){
+    if (text.toLowerCase().includes("left bracket")) {
       localStorage.setItem('selectedOperator', '(');
       window.dispatchEvent(new Event('selectedOperatorChanged'));
     }
 
-    if(text.toLowerCase().includes("right bracket")){
+    if (text.toLowerCase().includes("right bracket")) {
       localStorage.setItem('selectedOperator', ')');
       window.dispatchEvent(new Event('selectedOperatorChanged'));
     }
 
-    if(text.toLowerCase().includes("submit column")){
+    if (text.toLowerCase().includes("submit column")) {
       console.log("Submitting new column via voice command");
       document.getElementById('submit-column-btn').click();
     }
 
-    if(text.toLowerCase().includes("submit excel"))
-    {
+    if (text.toLowerCase().includes("submit excel")) {
       document.getElementById('submit-excel-btn').click();
     }
 
-    if(text.toLowerCase().includes('show result')){
+    if (text.toLowerCase().includes('show result')) {
       document.getElementById('show-result-btn').click();
+    }
   }
-}
 
   const handleSelectSheetByVoice = (text) => {
     const cleaned = normalize(text);
@@ -1731,7 +1824,7 @@ const handleAssistantResult = (data, originalText) => {
 
           <div className="mt-6 flex justify-center">
             <button
-            id='show-result-btn'
+              id='show-result-btn'
               onClick={() => {
                 const preSheetData = (excelData.find(s => s.sheetName === preProduct)).sheetData
                 const preSheetName = preProduct;
@@ -1809,7 +1902,7 @@ const handleAssistantResult = (data, originalText) => {
                         </div>
 
                         <div className="mt-3">
-                          <input id='newsheet' value={newSheetName} onChange={(e) => {setNewSheetName(e.target.value);localStorage.setItem("newSheetName", e.target.value)}} placeholder="Enter sheet/file name" className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                          <input id='newsheet' value={newSheetName} onChange={(e) => { setNewSheetName(e.target.value); localStorage.setItem("newSheetName", e.target.value) }} placeholder="Enter sheet/file name" className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                         </div>
 
                         <div className="mt-3">
@@ -2061,9 +2154,9 @@ const handleAssistantResult = (data, originalText) => {
           handleDirectFileSelection={handleDirectFileSelection}
           handleBrowseMoreFiles={handleBrowseMoreFiles}
           fileInputRef={fileInputRef}
-          onAssistantResult={handleAssistantResult} 
+          onAssistantResult={handleAssistantResult}
         />
-      </div> 
+      </div>
     </>
   );
 };
