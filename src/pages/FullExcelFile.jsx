@@ -268,6 +268,48 @@ if (intent === "name_new_sheet"){
 
 }
 
+if (intent === "set_pre_sheet_name") {
+
+  const patterns = [
+    /call (?:the )?(?:new )?sheet (.+)/i,
+    /name (?:the )?sheet (.+)/i,
+    /set (?:the )?sheet name to (.+)/i,
+    /rename (?:it|sheet)? to (.+)/i,
+    /change (?:the )?sheet name to (.+)/i,
+    /use (.+) as sheet name/i,
+    /make (?:the )?sheet name (.+)/i,
+    /sheet name is (.+)/i,
+    /call it (.+)/i,
+    /name it (.+)/i
+  ];
+
+  let sheetName = null;
+
+  for (let pattern of patterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      sheetName = match[1].trim();
+      break;
+    }
+  }
+
+  if (sheetName) {
+    sheetName = sheetName.replace(/[.,!?]$/, "");
+
+    console.log("Extracted Sheet Name:", sheetName);
+
+    return {
+      action: "set_pre_sheet_name",
+      sheetName: sheetName
+    };
+  }
+
+  return {
+    action: "set_pre_sheet_name",
+    error: "Sheet name not found"
+  };
+}
+
         if (intent === "select_base_sheet") {
           const candidate = extractBaseSheetName(originalText);
           console.log('Extracted candidate sheet name from voice command:', candidate);
