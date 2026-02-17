@@ -15,6 +15,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, Grid, TextField, Typography, Button } from "@mui/material";
 import FormulaBuilder from "../components/FormulaBuilder";
+import { ContactPageSharp } from "@mui/icons-material";
 
 const FullExcelFile = () => {
   const [fileName, setFileName] = useState("");
@@ -185,7 +186,9 @@ const FullExcelFile = () => {
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     {
+      console.log("intent",intents)
       for (const item of intents) {
+        console.log(item)
         const intent = item.intent;
 
         await sleep(800); // ⏳ buffer between actions
@@ -251,7 +254,7 @@ const FullExcelFile = () => {
   continue;
 }
 
-if (intent === "create_new_excel"){
+if (intent === "create_new_sheet"){
   setVoiceFeedback(item.response || "Creating new Excel file...");
   setShowAddPanel(true);
   continue;
@@ -269,34 +272,45 @@ if (intent === "name_new_sheet"){
 }
 
 if (intent === "set_pre_sheet_name") {
-
+  console.log("intent ===", intent)
   const patterns = [
-    /call (?:the )?(?:new )?sheet (.+)/i,
-    /name (?:the )?sheet (.+)/i,
-    /set (?:the )?sheet name to (.+)/i,
-    /rename (?:it|sheet)? to (.+)/i,
-    /change (?:the )?sheet name to (.+)/i,
-    /use (.+) as sheet name/i,
-    /make (?:the )?sheet name (.+)/i,
-    /sheet name is (.+)/i,
-    /call it (.+)/i,
-    /name it (.+)/i
+    /set\s+(?:the\s+)?preprocessing\s+sheet\s+(?:name\s+)?(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+    /rename\s+(?:the\s+)?preprocessing\s+sheet\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+    /change\s+(?:the\s+)?preprocessing\s+sheet\s+(?:name\s+)?(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+    /preprocessing\s+sheet\s+name\s+is\s+["']?([^"'.!,\n]+)["']?/i,
+    /call\s+(?:the\s+)?preprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
+    /name\s+(?:the\s+)?preprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
+    /preprocessing\s+sheet\s+(?:as|to)\s+["']?([^"'.!,\n]+)["']?/i
   ];
 
   let sheetName = null;
 
   for (let pattern of patterns) {
-    const match = text.match(pattern);
+    console.log("pattern ===",pattern);
+    const match = originalText.match(pattern);
+    console.log("match ====",match);
     if (match && match[1]) {
+      console.log("match 1 ===",match[1]);
       sheetName = match[1].trim();
-      break;
+      console.log("sheetname  ===" , sheetName);
+      continue;
     }
+    console.log("match",match)
   }
+  console.log("sheet name after loop ===",sheetName);
+  
 
   if (sheetName) {
-    sheetName = sheetName.replace(/[.,!?]$/, "");
 
-    console.log("Extracted Sheet Name:", sheetName);
+    // Remove trailing logical connectors safely
+    sheetName = sheetName
+      .replace(/\b(before|after|then|and)\b.*$/i, "")
+      .trim();
+
+    console.log("Extracted Preprocessing Sheet Name:", sheetName);
+    handleRowRangeChange(0, "name", sheetName, "")
+
+    
 
     return {
       action: "set_pre_sheet_name",
@@ -310,7 +324,8 @@ if (intent === "set_pre_sheet_name") {
   };
 }
 
-        if (intent === "select_base_sheet") {
+
+        if (intent === "set_base_sheet") {
           const candidate = extractBaseSheetName(originalText);
           console.log('Extracted candidate sheet name from voice command:', candidate);
 
