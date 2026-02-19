@@ -186,252 +186,315 @@ const FullExcelFile = () => {
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     {
-      console.log("intent",intents)
-      for (const item of intents) {
+      console.log("intent", intents)
+
+      const intentPriority = {
+  upload_file: 1,
+  create_new_sheet: 2,
+  name_new_sheet: 3,
+  set_base_sheet: 4,
+  set_pre_sheet_name: 5,
+  set_post_sheet_name: 6,
+  set_x_axis: 7,
+  set_y_axis: 8,
+  open_column_builder: 9,
+  enter_preprocess: 10
+};
+
+const sortedIntents = [...intents].sort(
+  (a, b) => (intentPriority[a.intent] || 99) - (intentPriority[b.intent] || 99)
+);
+      for (const item of sortedIntents) {
         console.log(item)
         const intent = item.intent;
 
         await sleep(800); // ⏳ buffer between actions
 
         if (intent === "upload_file") {
-  // Helper function to read and save file
-  const handleFile = async (file) => {
-    if (!file) return;
+          // Helper function to read and save file
+          const handleFile = async (file) => {
+            if (!file) return;
 
-    setVoiceFeedback("Reading file...");
+            setVoiceFeedback("Reading file...");
 
-    try {
-      const text = await file.text();
+            try {
+              const text = await file.text();
 
-      // Parse JSON/CSV depending on your app
-      let parsedData;
-      try {
-        parsedData = JSON.parse(text); // try JSON
-      } catch {
-        parsedData = text; // fallback raw text
-      }
+              // Parse JSON/CSV depending on your app
+              let parsedData;
+              try {
+                parsedData = JSON.parse(text); // try JSON
+              } catch {
+                parsedData = text; // fallback raw text
+              }
 
-      // Save to localStorage
-      
-      localStorage.setItem("saved_excel_sheets",JSON.stringify({}));
-      localStorage.setItem("saved_excel_sheets", JSON.stringify(parsedData));
+              // Save to localStorage
 
-      // Now processing is done
-      setVoiceFeedback("File uploaded and saved successfully!");
-      processFile();
-    } catch (err) {
-      console.error(err);
-      setVoiceFeedback("Failed to read file.");
-    }
-  };
+              localStorage.setItem("saved_excel_sheets", JSON.stringify({}));
+              localStorage.setItem("saved_excel_sheets", JSON.stringify(parsedData));
 
-  if (fileInputRef?.current) {
-    // Trigger the file picker
-    fileInputRef.current.click();
+              // Now processing is done
+              setVoiceFeedback("File uploaded and saved successfully!");
+              processFile();
+            } catch (err) {
+              console.error(err);
+              setVoiceFeedback("Failed to read file.");
+            }
+          };
 
-    // Handle the file once the user selects it
-    fileInputRef.current.onchange = async (e) => {
-      const file = e.target.files[0];
-      await handleFile(file);
-    };
+          if (fileInputRef?.current) {
+            // Trigger the file picker
+            fileInputRef.current.click();
 
-    setVoiceFeedback(item.response || "Opening file picker...");
-  } else {
-    // Fallback: show modal
-    setShowFileSearchModal(true);
+            // Handle the file once the user selects it
+            fileInputRef.current.onchange = async (e) => {
+              const file = e.target.files[0];
+              await handleFile(file);
+            };
 
-    // Attach handler for modal file selection
-    // Assuming your modal component exposes an `onFileSelected` callback
-    const onModalFileSelected = async (file) => {
-      await handleFile(file);
-      setShowFileSearchModal(false); // close modal after upload
-    };
+            setVoiceFeedback(item.response || "Opening file picker...");
+          } else {
+            // Fallback: show modal
+            setShowFileSearchModal(true);
 
-    // You need to pass `onModalFileSelected` to your modal component
-    // <FileUploadModal onFileSelected={onModalFileSelected} />
-  }
+            // Attach handler for modal file selection
+            // Assuming your modal component exposes an `onFileSelected` callback
+            const onModalFileSelected = async (file) => {
+              await handleFile(file);
+              setShowFileSearchModal(false); // close modal after upload
+            };
 
-  continue;
-}
+            // You need to pass `onModalFileSelected` to your modal component
+            // <FileUploadModal onFileSelected={onModalFileSelected} />
+          }
 
-if (intent === "create_new_sheet"){
-  setVoiceFeedback(item.response || "Creating new Excel file...");
-  setShowAddPanel(true);
-  continue;
-}
+          continue;
+        }
 
-if (intent === "name_new_sheet"){
+        if (intent === "create_new_sheet") {
+          setVoiceFeedback(item.response || "Creating new Excel file...");
+          setShowAddPanel(true);
+          continue;
+        }
 
-  const match = originalText.match(/(?:call|name|rename).*?(?:excel|sheet)?\s*(?:to)?\s*([a-zA-Z0-9_ -]+)/i);
-  
-  if (match && match[1]) {
-    const extractedName = match[1].trim();
-    setNewSheetName(extractedName);
-    continue;
-  }
-  
-}
+        if (intent === "name_new_sheet") {
 
-if (intent === "set_pre_sheet_name") {
-  console.log("intent ===", intent)
-  const patterns = [
-    /set\s+(?:the\s+)?preprocessing\s+sheet\s+(?:name\s+)?(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
-    /rename\s+(?:the\s+)?preprocessing\s+sheet\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
-    /change\s+(?:the\s+)?preprocessing\s+sheet\s+(?:name\s+)?(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
-    /preprocessing\s+sheet\s+name\s+is\s+["']?([^"'.!,\n]+)["']?/i,
-    /call\s+(?:the\s+)?preprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
-    /name\s+(?:the\s+)?preprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
-    /preprocessing\s+sheet\s+(?:as|to)\s+["']?([^"'.!,\n]+)["']?/i
-  ];
+          const match = originalText.match(/(?:call|name|rename).*?(?:excel|sheet)?\s*(?:to)?\s*([a-zA-Z0-9_ -]+)/i);
 
-  let sheetName = null;
+          if (match && match[1]) {
+            const extractedName = match[1].trim();
+            setNewSheetName(extractedName);
+            continue;
+          }
 
-  for (let pattern of patterns) {
-    console.log("pattern ===",pattern);
-    const match = originalText.match(pattern);
-    console.log("match ====",match);
-    if (match && match[1]) {
-      console.log("match 1 ===",match[1]);
-      sheetName = match[1].trim();
-      console.log("sheetname  ===" , sheetName);
-      
-    }
-    console.log("match",match)
-  }
-  console.log("sheet name after loop ===",sheetName);
-  
+        }
 
-  if (sheetName) {
+        if (intent === "set_pre_sheet_name") {
+          console.log("intent ===", intent)
+          const patterns = [
+            /set\s+(?:the\s+)?preprocessing\s+sheet\s+(?:name\s+)?(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+            /rename\s+(?:the\s+)?preprocessing\s+sheet\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+            /change\s+(?:the\s+)?preprocessing\s+sheet\s+(?:name\s+)?(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+            /preprocessing\s+sheet\s+name\s+is\s+["']?([^"'.!,\n]+)["']?/i,
+            /call\s+(?:the\s+)?preprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
+            /name\s+(?:the\s+)?preprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
+            /preprocessing\s+sheet\s+(?:as|to)\s+["']?([^"'.!,\n]+)["']?/i
+          ];
 
-    // Remove trailing logical connectors safely
-    sheetName = sheetName
-      .replace(/\b(before|after|then|and)\b.*$/i, "")
-      .trim();
+          let sheetName = null;
 
-    console.log("Extracted Preprocessing Sheet Name:", sheetName);
-    handleRowRangeChange(0, "name", sheetName, "")
-    continue;
-    
+          for (let pattern of patterns) {
+            console.log("pattern ===", pattern);
+            const match = originalText.match(pattern);
+            console.log("match ====", match);
+            if (match && match[1]) {
+              console.log("match 1 ===", match[1]);
+              sheetName = match[1].trim();
+              console.log("sheetname  ===", sheetName);
 
-    
-  }
+            }
+            console.log("match", match)
+          }
+          console.log("sheet name after loop ===", sheetName);
 
- 
-}
 
-if (intent === "set_post_sheet_name") {
-  console.log("intent ===", intent)
-  const patterns = [
-    /set\s+(?:the\s+)?postprocessing\s+sheet\s+(?:name\s+)?(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
-    /rename\s+(?:the\s+)?postprocessing\s+sheet\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
-    /change\s+(?:the\s+)?postprocessing\s+sheet\s+(?:name\s+)?(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
-    /postprocessing\s+sheet\s+name\s+is\s+["']?([^"'.!,\n]+)["']?/i,
-    /call\s+(?:the\s+)?postprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
-    /name\s+(?:the\s+)?postprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
-    /postprocessing\s+sheet\s+(?:as|to)\s+["']?([^"'.!,\n]+)["']?/i
-  ];
+          if (sheetName) {
 
-  let sheetName = null;
+            // Remove trailing logical connectors safely
+            sheetName = sheetName
+              .replace(/\b(before|after|then|and)\b.*$/i, "")
+              .trim();
 
-  for (let pattern of patterns) {
-    console.log("pattern ===",pattern);
-    const match = originalText.match(pattern);
-    console.log("match ====",match);
-    if (match && match[1]) {
-      console.log("match 1 ===",match[1]);
-      sheetName = match[1].trim();
-      console.log("sheetname  ===" , sheetName);
-      
-    }
-    console.log("match",match)
-  }
-  console.log("sheet name after loop ===",sheetName);
-  
+            console.log("Extracted Preprocessing Sheet Name:", sheetName);
+            handleRowRangeChange(0, "name", sheetName, "")
+            continue;
 
-  if (sheetName) {
 
-    // Remove trailing logical connectors safely
-    sheetName = sheetName
-      .replace(/\b(before|after|then|and)\b.*$/i, "")
-      .trim();
 
-    console.log("Extracted Postprocessing Sheet Name:", sheetName);
-    handleRowRangeChange(1, "name", sheetName, "")
+          }
 
-    continue;
 
-    
-  }
+        }
 
-  
-}
+        if (intent === "set_post_sheet_name") {
+          console.log("intent ===", intent)
+          const patterns = [
+            /set\s+(?:the\s+)?postprocessing\s+sheet\s+(?:name\s+)?(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+            /rename\s+(?:the\s+)?postprocessing\s+sheet\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+            /change\s+(?:the\s+)?postprocessing\s+sheet\s+(?:name\s+)?(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+            /postprocessing\s+sheet\s+name\s+is\s+["']?([^"'.!,\n]+)["']?/i,
+            /call\s+(?:the\s+)?postprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
+            /name\s+(?:the\s+)?postprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
+            /postprocessing\s+sheet\s+(?:as|to)\s+["']?([^"'.!,\n]+)["']?/i
+          ];
 
-if (intent === "set_y_axis") {
+          let sheetName = null;
 
-  const patterns = [
-    /set\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
-    /y\s*axis\s+should\s+be\s+["']?([^"'.!,\n]+)["']?/i,
-    /use\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i,
-    /make\s+["']?([^"'.!,\n]+)["']?\s+the\s+y\s*axis/i,
-    /choose\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i
-  ];
+          for (let pattern of patterns) {
+            console.log("pattern ===", pattern);
+            const match = originalText.match(pattern);
+            console.log("match ====", match);
+            if (match && match[1]) {
+              console.log("match 1 ===", match[1]);
+              sheetName = match[1].trim();
+              console.log("sheetname  ===", sheetName);
 
-  let yAxisValue = null;
+            }
+            console.log("match", match)
+          }
+          console.log("sheet name after loop ===", sheetName);
 
-  for (let pattern of patterns) {
-    const match = originalText.match(pattern);
-    if (match && match[1]) {
-      yAxisValue = match[1].trim();
-      break;
-    }
-  }
 
-  if (yAxisValue) {
-    console.log("Extracted Y Axis:", yAxisValue);
-    setYAxis(yAxisValue);
-    setVoiceFeedback(`Y axis set to ${yAxisValue}`);
-    continue;
-  }
+          if (sheetName) {
 
-  setVoiceFeedback("Couldn't detect Y axis value.");
-  continue;
-}
+            // Remove trailing logical connectors safely
+            sheetName = sheetName
+              .replace(/\b(before|after|then|and)\b.*$/i, "")
+              .trim();
 
-if (intent === "set_x_axis") {
+            console.log("Extracted Postprocessing Sheet Name:", sheetName);
+            handleRowRangeChange(1, "name", sheetName, "")
 
-  const patterns = [
-    /set\s+(?:the\s+)?x\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
-    /x\s*axis\s+should\s+be\s+["']?([^"'.!,\n]+)["']?/i,
-    /use\s+["']?([^"'.!,\n]+)["']?\s+as\s+x\s*axis/i,
-    /make\s+["']?([^"'.!,\n]+)["']?\s+the\s+x\s*axis/i,
-    /choose\s+["']?([^"'.!,\n]+)["']?\s+as\s+x\s*axis/i
-  ];
+            continue;
 
-  let xAxisValue = null;
 
-  for (let pattern of patterns) {
-    const match = originalText.match(pattern);
-    if (match && match[1]) {
-      xAxisValue = match[1].trim();
-      continue;
-    }
-  }
+          }
 
-  if (xAxisValue) {
-    console.log("Extracted X Axis:", xAxisValue);
 
-    // Example state update
-    setXAxis(xAxisValue);
+        }
 
-    setVoiceFeedback(`X axis set to ${xAxisValue}`);
+        if (intent === "set_y_axis") {
 
-    continue;
-  }
+          const patterns = [
+            /set\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+            /y\s*axis\s+should\s+be\s+["']?([^"'.!,\n]+)["']?/i,
+            /use\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i,
+            /make\s+["']?([^"'.!,\n]+)["']?\s+the\s+y\s*axis/i,
+            /choose\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i,// assign / define / select
+/assign\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+(/define\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i),
+(/select\s+["']?([^"'.!,\n]+)["']?\s+for\s+y\s*axis/i),
 
-  setVoiceFeedback("Couldn't detect X axis value.");
-  continue;
-}
+// plot / map wording
+/plot\s+["']?([^"'.!,\n]+)["']?\s+on\s+the\s+y\s*axis/i,
+(/map\s+["']?([^"'.!,\n]+)["']?\s+to\s+y\s*axis/i),
 
+// put / place
+/put\s+["']?([^"'.!,\n]+)["']?\s+on\s+the\s+y\s*axis/i,
+(/place\s+["']?([^"'.!,\n]+)["']?\s+on\s+y\s*axis/i),
+
+// colon format
+/y\s*axis\s*[:=]\s*["']?([^"'.!,\n]+)["']?/i,
+
+// column wording
+/use\s+column\s+["']?([^"'.!,\n]+)["']?\s+for\s+y\s*axis/i,
+(/set\s+column\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i),
+
+// without the word axis
+/on\s+the\s+y\s*axis\s+show\s+["']?([^"'.!,\n]+)["']?/i,
+
+          ];
+
+          let yAxisValue = null;
+
+          for (let pattern of patterns) {
+            const match = originalText.match(pattern);
+            if (match && match[1]) {
+              yAxisValue = match[1].trim();
+            }
+          }
+
+          if (yAxisValue) {
+            console.log("Extracted Y Axis:", yAxisValue);
+            setYAxis(yAxisValue);
+            setVoiceFeedback(`Y axis set to ${yAxisValue}`);
+
+          }
+
+          setVoiceFeedback("Couldn't detect Y axis value.");
+          continue;
+        }
+
+        if (intent === "set_x_axis") {
+
+          const patterns = [
+            /set\s+(?:the\s+)?x\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+            /x\s*axis\s+should\s+be\s+["']?([^"'.!,\n]+)["']?/i,
+            /use\s+["']?([^"'.!,\n]+)["']?\s+as\s+x\s*axis/i,
+            /make\s+["']?([^"'.!,\n]+)["']?\s+the\s+x\s*axis/i,
+            /choose\s+["']?([^"'.!,\n]+)["']?\s+as\s+x\s*axis/i,
+            /assign\s+(?:the\s+)?x\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+            (/define\s+(?:the\s+)?x\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i),
+            (/select\s+["']?([^"'.!,\n]+)["']?\s+for\s+x\s*axis/i),
+
+            // plot / map wording
+            /plot\s+["']?([^"'.!,\n]+)["']?\s+on\s+the\s+x\s*axis/i,
+            (/map\s+["']?([^"'.!,\n]+)["']?\s+to\s+x\s*axis/i),
+
+            // put / place
+            /put\s+["']?([^"'.!,\n]+)["']?\s+on\s+the\s+x\s*axis/i,
+            (/place\s+["']?([^"'.!,\n]+)["']?\s+on\s+x\s*axis/i),
+
+            // shorter phrasing
+            /x\s*axis\s*[:=]\s*["']?([^"'.!,\n]+)["']?/i,
+
+            // column wording
+            /use\s+column\s+["']?([^"'.!,\n]+)["']?\s+for\s+x\s*axis/i,
+            (/set\s+column\s+["']?([^"'.!,\n]+)["']?\s+as\s+x\s*axis/i),
+
+            // without the word axis
+            /on\s+the\s+x\s*axis\s+show\s+["']?([^"'.!,\n]+)["']?/i,
+          ];
+
+          let xAxisValue = null;
+
+          for (let pattern of patterns) {
+            const match = originalText.match(pattern);
+            if (match && match[1]) {
+              xAxisValue = match[1].trim();
+
+            }
+          }
+
+          if (xAxisValue) {
+            console.log("Extracted X Axis:", xAxisValue);
+
+            // Example state update
+            setXAxis(xAxisValue);
+
+            setVoiceFeedback(`X axis set to ${xAxisValue}`);
+
+
+          }
+
+          setVoiceFeedback("Couldn't detect X axis value.");
+          continue;
+        }
+
+        if (intent === 'open_column_builder') {
+          openColumnBuilder();
+          continue
+        }
 
 
         if (intent === "set_base_sheet") {
@@ -448,7 +511,7 @@ if (intent === "set_x_axis") {
             setCopyFromSheet(candidate);
 
             if (found) {
-              
+
               setSelectedSheet(found);
               setVoiceFeedback(item.response || `Selected base sheet ${found}`);
             } else {
