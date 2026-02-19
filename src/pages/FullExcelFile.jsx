@@ -290,7 +290,7 @@ const sortedIntents = [...intents].sort(
         }
 
         if (intent === "set_pre_sheet_name") {
-          console.log("intent ===", intent)
+          console.log("intent ===", intent);
           const patterns = [
             /set\s+(?:the\s+)?preprocessing\s+sheet\s+(?:name\s+)?(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
             /rename\s+(?:the\s+)?preprocessing\s+sheet\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
