@@ -69,10 +69,610 @@ const FullExcelFile = () => {
   const navigation = useNavigate();
 
   useEffect(() => {
+<<<<<<< HEAD
     const foundSheet = excelData.find(s => s.sheetName === selectedSheet);
     setSelectedSheetData(foundSheet ? foundSheet.sheetData : []);
   }, [selectedSheet, excelData]);
 
+=======
+    const saved = localStorage.getItem('recentFiles');
+    console.log('📂 Loading recent files from localStorage:', saved);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        console.log('  Parsed:', parsed, 'Array?', Array.isArray(parsed), 'Length:', parsed?.length);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          console.log('  ✓ Setting recentFiles state to:', parsed);
+          setRecentFiles(parsed);
+        }
+      } catch (e) {
+        console.error('Failed to parse recent files:', e);
+      }
+    } else {
+      console.log('ℹ No recent files in localStorage yet');
+    }
+  }, []);
+
+  useEffect(() => {
+    console.log(error);
+
+  }, [error])
+
+  useEffect(() => {
+    if (!focusId || !showAddPanel) return;
+
+    requestAnimationFrame(() => {
+      const el = document.getElementById(focusId);
+      if (el) {
+        el.click()
+        console.log("Focused:", focusId);
+      } else {
+        console.log("Element not found:", focusId);
+      }
+    });
+  }, [focusId, showAddPanel]);
+
+  useEffect(() => {
+    if (recentFiles.length > 0) {
+      try {
+        localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
+        console.log('💾 Recent files synced to localStorage:', recentFiles);
+        window.recentFilesDebug = recentFiles;
+      } catch (e) {
+        console.error('Failed to save recent files to localStorage:', e);
+      }
+    }
+  }, [recentFiles]);
+
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const r = new SpeechRecognition();
+      r.continuous = false;
+      r.lang = "en-US";
+      r.interimResults = false;
+      r.maxAlternatives = 1;
+      r.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.trim();
+        setLastCommand(transcript);
+        handleVoiceCommand(transcript.toLowerCase());
+      };
+      r.onend = () => {
+        setIsListening(false);
+      };
+      r.onerror = () => {
+        setIsListening(false);
+      };
+      recognitionRef.current = r;
+    } else {
+      recognitionRef.current = null;
+    }
+  }, [recentFiles]);
+
+  useEffect(() => {
+    const found = excelData.find((s) => s.sheetName === selectedSheet);
+    setSelectedSheetData(found ? found.sheetData : []);
+  }, [selectedSheet, excelData]);
+
+  useEffect(() => {
+    if (!copyFromSheet) {
+      setColumnNames([]);
+      setSelectedColumns((prev) => {
+        // preserve any existing non-empty selections (e.g., axes) when not copying
+        const kept = (prev || []).filter(Boolean);
+        return kept.length ? kept : [""];
+      });
+      return;
+    }
+    const found = excelData.find((s) => s.sheetName === copyFromSheet);
+    const cols =
+      found && Array.isArray(found.sheetData) && found.sheetData.length > 0
+        ? Object.keys(found.sheetData[0])
+        : [];
+    setColumnNames(cols);
+    setSelectedColumns((prev) => {
+      // keep previously selected columns that still exist in the new set of cols
+      const prevSel = (prev || []).filter(Boolean).filter((c) => cols.includes(c));
+      // ensure axis columns are present if available in the new cols
+      if (xAxis && cols.includes(xAxis) && !prevSel.includes(xAxis)) prevSel.unshift(xAxis);
+      if (yAxis && cols.includes(yAxis) && !prevSel.includes(yAxis)) prevSel.unshift(yAxis);
+      return prevSel.length ? prevSel : [""];
+    });
+  }, [copyFromSheet, excelData, xAxis, yAxis]);
+  const handleAssistantResult = async (data, originalText) => {
+    if (!data) return;
+
+    const intents = data.intents || [];
+    if (!intents.length) {
+      setVoiceFeedback(data.response || "I couldn't detect an intent.");
+      return;
+    }
+
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    {
+      console.log("intent", intents)
+
+      const intentPriority = {
+  upload_file: 1,
+  create_new_sheet: 2,
+  name_new_sheet: 3,
+  set_base_sheet: 4,
+  set_pre_sheet_name: 5,
+  set_post_sheet_name: 6,
+  set_x_axis: 7,
+  set_y_axis: 8,
+  open_column_builder: 9,
+  enter_preprocess: 10
+};
+
+const sortedIntents = [...intents].sort(
+  (a, b) => (intentPriority[a.intent] || 99) - (intentPriority[b.intent] || 99)
+);
+      for (const item of sortedIntents) {
+        console.log(item)
+        const intent = item.intent;
+
+        await sleep(800); // ⏳ buffer between actions
+
+        if (intent === "upload_file") {
+          // Helper function to read and save file
+          const handleFile = async (file) => {
+            if (!file) return;
+
+            setVoiceFeedback("Reading file...");
+
+            try {
+              const text = await file.text();
+
+              // Parse JSON/CSV depending on your app
+              let parsedData;
+              try {
+                parsedData = JSON.parse(text); // try JSON
+              } catch {
+                parsedData = text; // fallback raw text
+              }
+
+              // Save to localStorage
+
+              localStorage.setItem("saved_excel_sheets", JSON.stringify({}));
+              localStorage.setItem("saved_excel_sheets", JSON.stringify(parsedData));
+
+              // Now processing is done
+              setVoiceFeedback("File uploaded and saved successfully!");
+              processFile();
+            } catch (err) {
+              console.error(err);
+              setVoiceFeedback("Failed to read file.");
+            }
+          };
+
+          if (fileInputRef?.current) {
+            // Trigger the file picker
+            fileInputRef.current.click();
+
+            // Handle the file once the user selects it
+            fileInputRef.current.onchange = async (e) => {
+              const file = e.target.files[0];
+              await handleFile(file);
+            };
+
+            setVoiceFeedback(item.response || "Opening file picker...");
+          } else {
+            // Fallback: show modal
+            setShowFileSearchModal(true);
+
+            // Attach handler for modal file selection
+            // Assuming your modal component exposes an `onFileSelected` callback
+            const onModalFileSelected = async (file) => {
+              await handleFile(file);
+              setShowFileSearchModal(false); // close modal after upload
+            };
+
+            // You need to pass `onModalFileSelected` to your modal component
+            // <FileUploadModal onFileSelected={onModalFileSelected} />
+          }
+
+          continue;
+        }
+
+        if (intent === "create_new_sheet") {
+          setVoiceFeedback(item.response || "Creating new Excel file...");
+          setShowAddPanel(true);
+          continue;
+        }
+
+        if (intent === "name_new_sheet") {
+
+          const match = originalText.match(/(?:call|name|rename).*?(?:excel|sheet)?\s*(?:to)?\s*([a-zA-Z0-9_ -]+)/i);
+
+          if (match && match[1]) {
+            const extractedName = match[1].trim();
+            setNewSheetName(extractedName);
+            continue;
+          }
+
+        }
+
+        if (intent === "set_pre_sheet_name") {
+          console.log("intent ===", intent)
+          const patterns = [
+            /set\s+(?:the\s+)?preprocessing\s+sheet\s+(?:name\s+)?(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+            /rename\s+(?:the\s+)?preprocessing\s+sheet\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+            /change\s+(?:the\s+)?preprocessing\s+sheet\s+(?:name\s+)?(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+            /preprocessing\s+sheet\s+name\s+is\s+["']?([^"'.!,\n]+)["']?/i,
+            /call\s+(?:the\s+)?preprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
+            /name\s+(?:the\s+)?preprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
+            /preprocessing\s+sheet\s+(?:as|to)\s+["']?([^"'.!,\n]+)["']?/i
+          ];
+
+          let sheetName = null;
+
+          for (let pattern of patterns) {
+            console.log("pattern ===", pattern);
+            const match = originalText.match(pattern);
+            console.log("match ====", match);
+            if (match && match[1]) {
+              console.log("match 1 ===", match[1]);
+              sheetName = match[1].trim();
+              console.log("sheetname  ===", sheetName);
+
+            }
+            console.log("match", match)
+          }
+          console.log("sheet name after loop ===", sheetName);
+
+
+          if (sheetName) {
+
+            // Remove trailing logical connectors safely
+            sheetName = sheetName
+              .replace(/\b(before|after|then|and)\b.*$/i, "")
+              .trim();
+
+            console.log("Extracted Preprocessing Sheet Name:", sheetName);
+            handleRowRangeChange(0, "name", sheetName, "")
+            continue;
+
+
+
+          }
+
+
+        }
+
+        if (intent === "set_post_sheet_name") {
+          console.log("intent ===", intent)
+          const patterns = [
+            /set\s+(?:the\s+)?postprocessing\s+sheet\s+(?:name\s+)?(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+            /rename\s+(?:the\s+)?postprocessing\s+sheet\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+            /change\s+(?:the\s+)?postprocessing\s+sheet\s+(?:name\s+)?(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+            /postprocessing\s+sheet\s+name\s+is\s+["']?([^"'.!,\n]+)["']?/i,
+            /call\s+(?:the\s+)?postprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
+            /name\s+(?:the\s+)?postprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
+            /postprocessing\s+sheet\s+(?:as|to)\s+["']?([^"'.!,\n]+)["']?/i
+          ];
+
+          let sheetName = null;
+
+          for (let pattern of patterns) {
+            console.log("pattern ===", pattern);
+            const match = originalText.match(pattern);
+            console.log("match ====", match);
+            if (match && match[1]) {
+              console.log("match 1 ===", match[1]);
+              sheetName = match[1].trim();
+              console.log("sheetname  ===", sheetName);
+
+            }
+            console.log("match", match)
+          }
+          console.log("sheet name after loop ===", sheetName);
+
+
+          if (sheetName) {
+
+            // Remove trailing logical connectors safely
+            sheetName = sheetName
+              .replace(/\b(before|after|then|and)\b.*$/i, "")
+              .trim();
+
+            console.log("Extracted Postprocessing Sheet Name:", sheetName);
+            handleRowRangeChange(1, "name", sheetName, "")
+
+            continue;
+
+
+          }
+
+
+        }
+
+        if (intent === "set_y_axis") {
+
+          const patterns = [
+            /set\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+            /y\s*axis\s+should\s+be\s+["']?([^"'.!,\n]+)["']?/i,
+            /use\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i,
+            /make\s+["']?([^"'.!,\n]+)["']?\s+the\s+y\s*axis/i,
+            /choose\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i,// assign / define / select
+/assign\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+(/define\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i),
+(/select\s+["']?([^"'.!,\n]+)["']?\s+for\s+y\s*axis/i),
+
+// plot / map wording
+/plot\s+["']?([^"'.!,\n]+)["']?\s+on\s+the\s+y\s*axis/i,
+(/map\s+["']?([^"'.!,\n]+)["']?\s+to\s+y\s*axis/i),
+
+// put / place
+/put\s+["']?([^"'.!,\n]+)["']?\s+on\s+the\s+y\s*axis/i,
+(/place\s+["']?([^"'.!,\n]+)["']?\s+on\s+y\s*axis/i),
+
+// colon format
+/y\s*axis\s*[:=]\s*["']?([^"'.!,\n]+)["']?/i,
+
+// column wording
+/use\s+column\s+["']?([^"'.!,\n]+)["']?\s+for\s+y\s*axis/i,
+(/set\s+column\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i),
+
+// without the word axis
+/on\s+the\s+y\s*axis\s+show\s+["']?([^"'.!,\n]+)["']?/i,
+
+          ];
+
+          let yAxisValue = null;
+
+          for (let pattern of patterns) {
+            const match = originalText.match(pattern);
+            if (match && match[1]) {
+              yAxisValue = match[1].trim();
+            }
+          }
+
+          if (yAxisValue) {
+            console.log("Extracted Y Axis:", yAxisValue);
+            setYAxis(yAxisValue);
+            setVoiceFeedback(`Y axis set to ${yAxisValue}`);
+
+          }
+
+          setVoiceFeedback("Couldn't detect Y axis value.");
+          continue;
+        }
+
+        if (intent === "set_x_axis") {
+
+          const patterns = [
+            /set\s+(?:the\s+)?x\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+            /x\s*axis\s+should\s+be\s+["']?([^"'.!,\n]+)["']?/i,
+            /use\s+["']?([^"'.!,\n]+)["']?\s+as\s+x\s*axis/i,
+            /make\s+["']?([^"'.!,\n]+)["']?\s+the\s+x\s*axis/i,
+            /choose\s+["']?([^"'.!,\n]+)["']?\s+as\s+x\s*axis/i,
+            /assign\s+(?:the\s+)?x\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+            (/define\s+(?:the\s+)?x\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i),
+            (/select\s+["']?([^"'.!,\n]+)["']?\s+for\s+x\s*axis/i),
+
+            // plot / map wording
+            /plot\s+["']?([^"'.!,\n]+)["']?\s+on\s+the\s+x\s*axis/i,
+            (/map\s+["']?([^"'.!,\n]+)["']?\s+to\s+x\s*axis/i),
+
+            // put / place
+            /put\s+["']?([^"'.!,\n]+)["']?\s+on\s+the\s+x\s*axis/i,
+            (/place\s+["']?([^"'.!,\n]+)["']?\s+on\s+x\s*axis/i),
+
+            // shorter phrasing
+            /x\s*axis\s*[:=]\s*["']?([^"'.!,\n]+)["']?/i,
+
+            // column wording
+            /use\s+column\s+["']?([^"'.!,\n]+)["']?\s+for\s+x\s*axis/i,
+            (/set\s+column\s+["']?([^"'.!,\n]+)["']?\s+as\s+x\s*axis/i),
+
+            // without the word axis
+            /on\s+the\s+x\s*axis\s+show\s+["']?([^"'.!,\n]+)["']?/i,
+          ];
+
+          let xAxisValue = null;
+
+          for (let pattern of patterns) {
+            const match = originalText.match(pattern);
+            if (match && match[1]) {
+              xAxisValue = match[1].trim();
+
+            }
+          }
+
+          if (xAxisValue) {
+            console.log("Extracted X Axis:", xAxisValue);
+
+            // Example state update
+            setXAxis(xAxisValue);
+
+            setVoiceFeedback(`X axis set to ${xAxisValue}`);
+
+
+          }
+
+          setVoiceFeedback("Couldn't detect X axis value.");
+          continue;
+        }
+
+        if (intent === 'open_column_builder') {
+          openColumnBuilder();
+          continue
+        }
+
+
+        if (intent === "set_base_sheet") {
+          const candidate = extractBaseSheetName(originalText);
+          console.log('Extracted candidate sheet name from voice command:', candidate);
+
+          if (candidate) {
+            console.log('sheetNames available:', sheetNames);
+
+            const found = sheetNames.find(
+              s => s.toLowerCase() === candidate.toLowerCase()
+            );
+            console.log('Exact match found:', found);
+            setCopyFromSheet(candidate);
+
+            if (found) {
+
+              setSelectedSheet(found);
+              setVoiceFeedback(item.response || `Selected base sheet ${found}`);
+            } else {
+              const partial = sheetNames.find(s =>
+                s.toLowerCase().includes(candidate.toLowerCase())
+              );
+
+              if (partial) {
+                setSelectedSheet(partial);
+                setVoiceFeedback(item.response || `Selected base sheet ${partial}`);
+              } else {
+                setShowFileSearchModal(true);
+                setVoiceFeedback(`Couldn't find sheet '${candidate}'. Opening sheet selector...`);
+              }
+            }
+          } else {
+            setShowFileSearchModal(true);
+            setVoiceFeedback(item.response || "Which sheet should I set as base?");
+          }
+
+          continue;
+        }
+
+        if (intent === "enter_preprocess") {
+          setVoiceFeedback(item.response || "Opening preprocessing...");
+          continue;
+        }
+
+        setVoiceFeedback(item.response || `Intent: ${intent}`);
+      }
+    }
+  };
+
+  function extractBaseSheetName(text) {
+    if (!text) return null;
+
+    const t = text;
+
+    const patterns = [
+      /base sheet (?:as|to|is|named)?\s*["']?([a-z0-9 _-]+)["']?/i,
+      /select (?:the )?sheet (?:as|to|is|named)?\s*["']?([a-z0-9 _-]+)["']?/i,
+      /use (?:the )?sheet\s*["']?([a-z0-9 _-]+)["']?/i,
+      /sheet called\s*["']?([a-z0-9 _-]+)["']?/i,
+      /sheet named\s*["']?([a-z0-9 _-]+)["']?/i
+    ];
+
+    for (const p of patterns) {
+      const match = t.match(p);
+      if (match && match[1]) {
+        return match[1].replace(/["'.]/g, "").trim();
+      }
+    }
+
+    return null;
+  }
+
+  const refreshColumnsFromSession = () => {
+    try {
+      const stored = sessionStorage.getItem('availableColumns');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length) {
+          setColumnNames(prev => Array.from(new Set([...(prev || []), ...parsed])));
+        }
+      }
+    } catch (e) {
+    }
+    try {
+      const pending = sessionStorage.getItem('pendingColumnsToAdd');
+      if (pending) {
+        const parsed = JSON.parse(pending);
+        if (Array.isArray(parsed) && parsed.length) {
+          const names = parsed.map(p => p.name).filter(Boolean);
+          if (names.length) {
+            setColumnNames(prev => Array.from(new Set([...(prev || []), ...names])));
+          }
+        }
+      }
+    } catch (e) {
+    }
+  };
+
+  useEffect(() => {
+    if (showAddPanel) {
+      refreshColumnsFromSession();
+    }
+  }, [showAddPanel, copyFromSheet, selectedSheet, excelData]);
+
+  useEffect(() => {
+    setSelectedColumns((prev = []) => {
+      const next = [...prev];
+      if (xAxis) {
+        if (!next.includes(xAxis)) {
+          const idx = next.indexOf("");
+          if (idx !== -1) next[idx] = xAxis;
+          else next.push(xAxis);
+        }
+      }
+      if (yAxis) {
+        if (!next.includes(yAxis)) {
+          const idx = next.indexOf("");
+          if (idx !== -1) next[idx] = yAxis;
+          else next.push(yAxis);
+        }
+      }
+      // ensure uniqueness and preserve order
+      return Array.from(new Set(next));
+    });
+  }, [xAxis, yAxis]);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      const calc = Math.round(window.innerHeight * 0.60);
+      const h = Math.max(520, Math.min(880, calc));
+      setAddGridHeight(h);
+    };
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    return () => {
+      window.removeEventListener("resize", updateHeight);
+    };
+  }, [showAddPanel, selectedColumns, xAxis, yAxis, columnNames, newSheetName, copyFromSheet, rowRanges]);
+
+  const excelSerialToDate = (n) =>
+    new Date(Math.round((n - 25569) * 86400 * 1000));
+  const formatDate = (v) => {
+    let d = null;
+    if (v instanceof Date && !isNaN(v.getTime())) {
+      d = v;
+    } else if (typeof v === "number") {
+      d = excelSerialToDate(v);
+    } else if (typeof v === "string") {
+      const cleaned = v.replace(/^[A-Za-z]+,\s*/, "");
+      const parsed = new Date(cleaned);
+      if (!isNaN(parsed.getTime())) d = parsed;
+    }
+    if (!d) return v;
+    return `${d.getFullYear()}-${(d.getMonth() + 1)}-${(d.getDate())}`;
+  };
+
+  const renderCellValue = (v) => {
+    if (v instanceof Date && !isNaN(v.getTime())) {
+      return formatDate(v);
+    }
+    if (v && typeof v === "object") {
+      try {
+        return JSON.stringify(v);
+      } catch (e) {
+        return String(v);
+      }
+    }
+    return v;
+  };
+
+>>>>>>> 0f6f524cfb8704d4225b32d5f09eef9fa6125bce
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
