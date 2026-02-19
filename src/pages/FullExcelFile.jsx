@@ -267,8 +267,9 @@ if (intent === "name_new_sheet"){
   if (match && match[1]) {
     const extractedName = match[1].trim();
     setNewSheetName(extractedName);
+    continue;
   }
-
+  
 }
 
 if (intent === "set_pre_sheet_name") {
@@ -293,7 +294,7 @@ if (intent === "set_pre_sheet_name") {
       console.log("match 1 ===",match[1]);
       sheetName = match[1].trim();
       console.log("sheetname  ===" , sheetName);
-      continue;
+      
     }
     console.log("match",match)
   }
@@ -309,20 +310,128 @@ if (intent === "set_pre_sheet_name") {
 
     console.log("Extracted Preprocessing Sheet Name:", sheetName);
     handleRowRangeChange(0, "name", sheetName, "")
-
+    continue;
     
 
-    return {
-      action: "set_pre_sheet_name",
-      sheetName: sheetName
-    };
+    
   }
 
-  return {
-    action: "set_pre_sheet_name",
-    error: "Sheet name not found"
-  };
+ 
 }
+
+if (intent === "set_post_sheet_name") {
+  console.log("intent ===", intent)
+  const patterns = [
+    /set\s+(?:the\s+)?postprocessing\s+sheet\s+(?:name\s+)?(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+    /rename\s+(?:the\s+)?postprocessing\s+sheet\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+    /change\s+(?:the\s+)?postprocessing\s+sheet\s+(?:name\s+)?(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+    /postprocessing\s+sheet\s+name\s+is\s+["']?([^"'.!,\n]+)["']?/i,
+    /call\s+(?:the\s+)?postprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
+    /name\s+(?:the\s+)?postprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,
+    /postprocessing\s+sheet\s+(?:as|to)\s+["']?([^"'.!,\n]+)["']?/i
+  ];
+
+  let sheetName = null;
+
+  for (let pattern of patterns) {
+    console.log("pattern ===",pattern);
+    const match = originalText.match(pattern);
+    console.log("match ====",match);
+    if (match && match[1]) {
+      console.log("match 1 ===",match[1]);
+      sheetName = match[1].trim();
+      console.log("sheetname  ===" , sheetName);
+      
+    }
+    console.log("match",match)
+  }
+  console.log("sheet name after loop ===",sheetName);
+  
+
+  if (sheetName) {
+
+    // Remove trailing logical connectors safely
+    sheetName = sheetName
+      .replace(/\b(before|after|then|and)\b.*$/i, "")
+      .trim();
+
+    console.log("Extracted Postprocessing Sheet Name:", sheetName);
+    handleRowRangeChange(1, "name", sheetName, "")
+
+    continue;
+
+    
+  }
+
+  
+}
+
+if (intent === "set_y_axis") {
+
+  const patterns = [
+    /set\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+    /y\s*axis\s+should\s+be\s+["']?([^"'.!,\n]+)["']?/i,
+    /use\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i,
+    /make\s+["']?([^"'.!,\n]+)["']?\s+the\s+y\s*axis/i,
+    /choose\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i
+  ];
+
+  let yAxisValue = null;
+
+  for (let pattern of patterns) {
+    const match = originalText.match(pattern);
+    if (match && match[1]) {
+      yAxisValue = match[1].trim();
+      break;
+    }
+  }
+
+  if (yAxisValue) {
+    console.log("Extracted Y Axis:", yAxisValue);
+    setYAxis(yAxisValue);
+    setVoiceFeedback(`Y axis set to ${yAxisValue}`);
+    continue;
+  }
+
+  setVoiceFeedback("Couldn't detect Y axis value.");
+  continue;
+}
+
+if (intent === "set_x_axis") {
+
+  const patterns = [
+    /set\s+(?:the\s+)?x\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+    /x\s*axis\s+should\s+be\s+["']?([^"'.!,\n]+)["']?/i,
+    /use\s+["']?([^"'.!,\n]+)["']?\s+as\s+x\s*axis/i,
+    /make\s+["']?([^"'.!,\n]+)["']?\s+the\s+x\s*axis/i,
+    /choose\s+["']?([^"'.!,\n]+)["']?\s+as\s+x\s*axis/i
+  ];
+
+  let xAxisValue = null;
+
+  for (let pattern of patterns) {
+    const match = originalText.match(pattern);
+    if (match && match[1]) {
+      xAxisValue = match[1].trim();
+      continue;
+    }
+  }
+
+  if (xAxisValue) {
+    console.log("Extracted X Axis:", xAxisValue);
+
+    // Example state update
+    setXAxis(xAxisValue);
+
+    setVoiceFeedback(`X axis set to ${xAxisValue}`);
+
+    continue;
+  }
+
+  setVoiceFeedback("Couldn't detect X axis value.");
+  continue;
+}
+
 
 
         if (intent === "set_base_sheet") {
