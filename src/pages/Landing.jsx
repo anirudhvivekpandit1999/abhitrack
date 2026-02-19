@@ -647,7 +647,7 @@ function Landing() {
                                     variant="contained"
                                     size="large"
                                     endIcon={<ArrowForward />}
-                                    onClick={() => navigate('/non-abhitech-login')}
+                                    onClick={() => navigate('/full-excel-file')}
                                     sx={{
                                         background: 'white',
                                         color: '#0B3C5D',
