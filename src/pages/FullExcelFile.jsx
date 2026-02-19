@@ -77,7 +77,7 @@ const FullExcelFile = () => {
         console.log('  Parsed:', parsed, 'Array?', Array.isArray(parsed), 'Length:', parsed?.length);
         if (Array.isArray(parsed) && parsed.length > 0) {
           console.log('  ✓ Setting recentFiles state to:', parsed);
-          setRecentFiles(parsed)
+          setRecentFiles(parsed);
         }
       } catch (e) {
         console.error('Failed to parse recent files:', e);
@@ -290,7 +290,7 @@ const sortedIntents = [...intents].sort(
         }
 
         if (intent === "set_pre_sheet_name") {
-          console.log("intent ===", intent);
+          console.log("intent ===", intent)
           const patterns = [
             /set\s+(?:the\s+)?preprocessing\s+sheet\s+(?:name\s+)?(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
             /rename\s+(?:the\s+)?preprocessing\s+sheet\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,

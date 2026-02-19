@@ -8,7 +8,11 @@ import {
     ThemeProvider,
     Tabs,
     Tab,
-    Divider
+    Divider,
+    InputLabel,
+    Select,
+    MenuItem,
+    FormControl
 } from '@mui/material';
 import customTheme from '../theme/customTheme';
 import NavigationButtons from '../components/NavigationButtons';
@@ -17,6 +21,7 @@ import ScatterPlotTab from '../components/visualize/ScatterPlotTab';
 import BootstrappingTab from '../components/visualize/BootstrappingTab';
 import MultiVariateScatterPlotTab from '../components/visualize/MultiVariateScatterPlotTab';
 import CorrelationAnalysisTab from '../components/visualize/CorrelationAnalysisTab';
+import Assistant from '../components/Assistant';
 
 const VisualizeData = () => {
     const location = useLocation();
@@ -32,12 +37,46 @@ const VisualizeData = () => {
         sessionId,
         clientName = '',
         plantName = '',
-        productName = ''
+        productName = '',
+        availableCols,
+        preProductData,
+        postProductData,
+        excelData,
+        preProductName,
+        postProductName,
+        sheetNames
     } = location.state || {};
 
-    const availableColumns = data_info?.available_columns || [];
-    const withProductData = data_info?.with_product?.data || [];
-    const withoutProductData = data_info?.without_product?.data || [];
+    const [selectedPreSheet, setSelectedPreSheet] = useState(preProductName || '');
+    const [selectedPostSheet, setSelectedPostSheet] = useState(postProductName || '');
+
+    const excel_Data = excelData;
+    const sheets = sheetNames;
+
+    const getSheetData = (sheetName) =>
+        excel_Data?.find(s => s.sheetName === sheetName)?.sheetData || [];
+
+    const getSheetColumns = (sheetName) => {
+        const data = getSheetData(sheetName);
+        return data.length ? Object.keys(data[0]) : [];
+    };
+
+    const withProductData = selectedPreSheet
+        ? getSheetData(selectedPreSheet)
+        : preProductData;
+
+    const withoutProductData = selectedPostSheet
+        ? getSheetData(selectedPostSheet)
+        : postProductData;
+
+    const availableColumns =
+        selectedPreSheet || selectedPostSheet
+            ? Array.from(new Set([
+                ...getSheetColumns(selectedPreSheet),
+                ...getSheetColumns(selectedPostSheet)
+            ]))
+            : availableCols;
+
     const bootstrapAnalysis = bootstrap_analysis || {};
 
     const handleTabChange = (event, newValue) => {
@@ -59,11 +98,624 @@ const VisualizeData = () => {
         window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     }, []);
 
+   
+    const recognitionRef = React.useRef(null);
+    const [isListening, setIsListening] = useState(false);
+    const [lastCommand, setLastCommand] = useState('');
+    const [voiceFeedback, setVoiceFeedback] = useState('');
+    const [assistantCollapsed, setAssistantCollapsed] = useState(false);
+    const [forceAcceptNextMatch, setForceAcceptNextMatch] = useState(false);
+
+    const ensureRecognition = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            recognitionRef.current = null;
+            return;
+        }
+        const r = new SpeechRecognition();
+        r.continuous = false;
+        r.lang = 'en-US';
+        r.interimResults = false;
+        r.maxAlternatives = 1;
+        r.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.trim().toLowerCase();
+            setLastCommand(transcript);
+            handleVoiceCommand(transcript);
+        };
+        r.onend = () => {
+            setIsListening(false);
+        };
+        r.onerror = () => {
+            setIsListening(false);
+        };
+        recognitionRef.current = r;
+    };
+
+
+    const [awaitingSheetFor, setAwaitingSheetFor] = useState(null);
+    const [preSelectOpen, setPreSelectOpen] = useState(false);
+    const [postSelectOpen, setPostSelectOpen] = useState(false);
+    const [awaitingConfirmation, setAwaitingConfirmation] = useState(null);
+
+    const normalize = (s) => String(s || '').toLowerCase().replace(/[_\-]/g, ' ').replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+    const levenshtein = (a = '', b = '') => {
+        const an = a ? a.length : 0;
+        const bn = b ? b.length : 0;
+        if (an === 0) return bn;
+        if (bn === 0) return an;
+        const matrix = Array.from({ length: bn + 1 }, (_, i) => [i]);
+        for (let j = 0; j <= an; j++) matrix[0][j] = j;
+        for (let i = 1; i <= bn; i++) {
+            for (let j = 1; j <= an; j++) {
+                if (b.charAt(i - 1) === a.charAt(j - 1)) matrix[i][j] = matrix[i - 1][j - 1];
+                else matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + 1);
+            }
+        }
+        return matrix[bn][an];
+    };
+
+    const similarity = (x, y) => {
+        const a = normalize(x);
+        const b = normalize(y);
+        if (!a || !b) return 0;
+        const d = levenshtein(a, b);
+        const maxL = Math.max(a.length, b.length);
+        return 1 - d / maxL;
+    };
+
+    
+const matchBarVariables = (spokenText) => {
+    if (!availableColumns || !availableColumns.length) return [];
+
+    const cleaned = String(spokenText || '')
+        .toLowerCase()
+        .replace(/\b(set|select|the|for|bar|chart|variables|variable|to|and|please|add|remove|choose|pick)\b/gi, ' ')
+        .replace(/[^\w, ]+/g, ' ')
+        .trim();
+
+    const tokens = cleaned.split(/[,]+| +/).map(s => s.trim()).filter(Boolean);
+    const matched = [];
+
+    for (const token of tokens) {
+        const exact = availableColumns.find(v =>
+            normalize(v) === normalize(token) ||
+            normalize(v).includes(normalize(token)) ||
+            normalize(token).includes(normalize(v))
+        );
+        if (exact && !matched.includes(exact)) {
+            matched.push(exact);
+            continue;
+        }
+
+        let best = null;
+        let bestScore = 0;
+        for (const v of availableColumns) {
+            const s = similarity(v, token);
+            if (s > bestScore) {
+                bestScore = s;
+                best = v;
+            }
+        }
+        if (best && bestScore >= 0.5 && !matched.includes(best)) {
+            matched.push(best);
+        }
+    }
+
+    return matched;
+};
+
+
+    const findSheetMatch = (candidate) => {
+        if (!sheets || !sheets.length) return null;
+        const cleaned = normalize(candidate);
+        for (const sh of sheets) {
+            if (normalize(sh) === cleaned) return sh;
+        }
+        for (const sh of sheets) {
+            const n = normalize(sh);
+            if (n.includes(cleaned) || cleaned.includes(n)) return sh;
+        }
+        const tokens = cleaned.split(/\s+/).filter(Boolean);
+        for (const t of tokens) {
+            for (const sh of sheets) {
+                if (normalize(sh).includes(t)) return sh;
+            }
+        }
+        let best = null;
+        let bestScore = 0;
+        for (const sh of sheets) {
+            const s = similarity(sh, candidate);
+            if (s > bestScore) {
+                bestScore = s;
+                best = sh;
+            }
+        }
+        if (bestScore >= 0.6) return best;
+        return null;
+    }; 
+
+    useEffect(() => {
+        ensureRecognition();
+        return () => {
+            if (recognitionRef.current) {
+                try { recognitionRef.current.onresult = null; recognitionRef.current.onend = null; recognitionRef.current.onerror = null; } catch (e) {}
+            }
+        };
+    }, []);
+
+    const startListening = () => {
+        ensureRecognition();
+        if (!recognitionRef.current) {
+            setVoiceFeedback('Voice recognition not supported');
+            setTimeout(() => setVoiceFeedback(''), 3000);
+            return;
+        }
+        try {
+            setLastCommand('');
+            if (awaitingSheetFor === 'pre') setPreSelectOpen(true);
+            if (awaitingSheetFor === 'post') setPostSelectOpen(true);
+            if (awaitingSheetFor) setForceAcceptNextMatch(true);
+            recognitionRef.current.start();
+            setIsListening(true);
+        } catch (e) {
+            setIsListening(false);
+            setTimeout(() => {
+                try {
+                    recognitionRef.current.start();
+                    setIsListening(true);
+                } catch (err) {
+                    setIsListening(false);
+                }
+            }, 250);
+        }
+    };
+
+    const stopListening = () => {
+        if (!recognitionRef.current) return;
+        try { recognitionRef.current.stop(); } catch (e) {}
+        setIsListening(false);
+    };
+
+
+    const handleVoiceCommand = (text) => {
+        if (!text) return;
+
+        const t = text.trim().toLowerCase();
+
+        if (awaitingConfirmation) {
+            if (/^(yes|yep|yeah|sure|confirm|correct|right)\b/.test(t)) {
+                const { for: forWhich, sheet } = awaitingConfirmation;
+                if (forWhich === 'pre') {
+                    setSelectedPreSheet(sheet);
+                    setPreSelectOpen(false);
+                } else {
+                    setSelectedPostSheet(sheet);
+                    setPostSelectOpen(false);
+                }
+                setVoiceFeedback(`${forWhich === 'pre' ? 'Pre' : 'Post'} sheet set to: ${sheet}`);
+                setAwaitingConfirmation(null);
+                setAwaitingSheetFor(null);
+                setTimeout(() => setVoiceFeedback(''), 3000);
+                return;
+            }
+
+            if (/^(no|nope|nah)\b/.test(t)) {
+                setVoiceFeedback('Okay — please say the sheet name again.');
+                setAwaitingConfirmation(null);
+                setTimeout(() => setVoiceFeedback(''), 3000);
+                return;
+            }
+        }
+
+        if (awaitingSheetFor) {
+            let candidate = text.replace(/\b(sheet|sheet name|the sheet|named|called|is|its|it's)\b/gi, '').trim();
+            if (!candidate) candidate = text;
+            const match = findSheetMatch(candidate);
+            if (match) {
+                if (awaitingSheetFor === 'pre') {
+                    setSelectedPreSheet(match);
+                    setPreSelectOpen(false);
+                    setVoiceFeedback(`Pre sheet set to: ${match}`);
+                } else {
+                    setSelectedPostSheet(match);
+                    setPostSelectOpen(false);
+                    setVoiceFeedback(`Post sheet set to: ${match}`);
+                }
+                setAwaitingSheetFor(null);
+                stopListening();
+                setTimeout(() => setVoiceFeedback(''), 3000);
+                return;
+            }
+
+         
+if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.includes('choose') || t.includes('pick') || t.includes('add') || t.includes('remove'))) {
+    const matches = matchBarVariables(t);
+
+    if (matches.length > 0) {
+        
+        if (typeof setSelectedBarChartVariables === 'function') {
+            setSelectedBarChartVariables(matches);
+        } else {
+            
+            window.dispatchEvent(new CustomEvent('selectedBarChartVariablesChanged', { detail: matches }));
+        }
+
+        setVoiceFeedback(`Bar chart variables set to: ${matches.join(', ')}`);
+    } else {
+        setVoiceFeedback('No matching bar chart variables found. Try saying the exact column names.');
+    }
+
+    setTimeout(() => setVoiceFeedback(''), 3000);
+    return;
+}
+
+
+
+            let best = null;
+            let bestScore = 0;
+            for (const sh of sheets || []) {
+                const s = similarity(sh, text);
+                if (s > bestScore) {
+                    bestScore = s;
+                    best = sh;
+                }
+            }
+
+            if (best) {
+                if (forceAcceptNextMatch && bestScore >= 0.35) {
+                    if (awaitingSheetFor === 'pre') {
+                        setSelectedPreSheet(best);
+                        setPreSelectOpen(false);
+                        setVoiceFeedback(`Pre sheet set to: ${best}`);
+                    } else {
+                        setSelectedPostSheet(best);
+                        setPostSelectOpen(false);
+                        setVoiceFeedback(`Post sheet set to: ${best}`);
+                    }
+                    setAwaitingSheetFor(null);
+                    setForceAcceptNextMatch(false);
+                    stopListening();
+                    setTimeout(() => setVoiceFeedback(''), 3000);
+                    return;
+                }
+
+                if (bestScore >= 0.5) {
+                    if (awaitingSheetFor === 'pre') {
+                        setSelectedPreSheet(best);
+                        setPreSelectOpen(false);
+                        setVoiceFeedback(`Pre sheet set to: ${best}`);
+                    } else {
+                        setSelectedPostSheet(best);
+                        setPostSelectOpen(false);
+                        setVoiceFeedback(`Post sheet set to: ${best}`);
+                    }
+                    setAwaitingSheetFor(null);
+                    stopListening();
+                    setTimeout(() => setVoiceFeedback(''), 3000);
+                    return;
+                }
+
+                if (bestScore >= 0.35) {
+                    setAwaitingConfirmation({ type: 'sheet', for: awaitingSheetFor, sheet: best });
+                    setVoiceFeedback(`Did you mean: ${best}? Say 'yes' to confirm or 'no' to try again.`);
+                    setForceAcceptNextMatch(false);
+                    setIsListening(true);
+                    setTimeout(() => startListening(), 250);
+                    return;
+                }
+            }
+
+            setVoiceFeedback('No matching sheet found. Please say the sheet name again.');
+            setForceAcceptNextMatch(false);
+            setIsListening(true);
+            setTimeout(() => startListening(), 250);
+            setTimeout(() => setVoiceFeedback(''), 3000);
+            return;
+        }
+
+       
+if (t.includes('bar chart') && (t.includes('select') || t.includes('set') || t.includes('choose') || t.includes('pick') || t.includes('add') || t.includes('remove'))) {
+    const matches = matchBarVariables(t);
+
+    if (matches.length > 0) {
+       
+        window.dispatchEvent(new CustomEvent('selectedBarChartVariablesChanged', { detail: matches }));
+
+        setVoiceFeedback(`Bar chart variables set to: ${matches.join(', ')}`);
+    } else {
+        setVoiceFeedback('No matching bar chart variables found. Try saying the exact column names.');
+    }
+
+    setTimeout(() => setVoiceFeedback(''), 3000);
+    return;
+}
+
+
+
+        const isCloseToPre = (w) => {
+            const cleaned = normalize(w);
+            if (!cleaned) return false;
+            if (cleaned === 'pre') return true;
+            if (cleaned.includes('pre')) return true;
+            return similarity(cleaned, 'pre') >= 0.6;
+        };
+        const isCloseToPost = (w) => {
+            const cleaned = normalize(w);
+            if (!cleaned) return false;
+            if (cleaned === 'post') return true;
+            if (cleaned.includes('post')) return true;
+            return similarity(cleaned, 'post') >= 0.6;
+        };
+
+        if (/\b(free|tree)\b/.test(t)) {
+            setAwaitingSheetFor('pre');
+            setPreSelectOpen(true);
+            setVoiceFeedback(`Did you mean pre? Listening for pre sheet name...`);
+            setIsListening(true);
+            setTimeout(() => startListening(), 250);
+            setTimeout(() => {
+                setAwaitingSheetFor((curr) => (curr === 'pre' ? null : curr));
+                setPreSelectOpen(false);
+                setVoiceFeedback('');
+            }, 10000);
+            return;
+        }
+
+        
+
+        
+        
+
+        if (text.includes('switch to distribution')) {
+            setActiveTab(0);
+            setVoiceFeedback('Switched to Distribution Curve');
+        } 
+         if (text.includes('switch to multi') ) {
+            setActiveTab(2);
+            setVoiceFeedback('Switched to Multi-Variate Scatter');
+        } 
+         if (text.includes('scatter')) {
+            setActiveTab(1);
+            setVoiceFeedback('Switched to Scatter Plot');
+        } 
+         if (text.includes('switch to bootstrapping') ) {
+            setActiveTab(3);
+            setVoiceFeedback('Switched to Bootstrapping');
+        } 
+         if (text.includes('switch to correlation')) {
+            setActiveTab(4);
+            setVoiceFeedback('Switched to Correlation Analysis');
+        } 
+        
+        if (text.includes('set pre product sheet')) {
+            const match = text.match(/set pre product sheet to (.+)/i);
+            if (match && match[1]) {
+                const sheetMatch = findSheetMatch(match[1]);
+                if (sheetMatch) {
+                    setSelectedPreSheet(sheetMatch);
+                    setVoiceFeedback(`Pre sheet set to: ${sheetMatch}`);
+                    setTimeout(() => setVoiceFeedback(''), 3000);
+                    return;
+                }
+            }
+        }
+
+        if (text.includes('set post product sheet'))
+        {
+            const match = text.match(/set post product sheet to (.+)/i);
+            if (match && match[1]) {
+                const sheetMatch = findSheetMatch(match[1]);
+                if (sheetMatch) {
+                    setSelectedPostSheet(sheetMatch);
+                    setVoiceFeedback(`Post sheet set to: ${sheetMatch}`);
+                    setTimeout(() => setVoiceFeedback(''), 3000);
+                    return;
+                }
+            }
+        }
+        
+        if(text.includes('show distribution columns'))
+        {
+            document.getElementById('distribution-column-select').focus();
+            return;
+        }
+
+        if(text.includes('set distribution column'))
+        {
+            const match = text.match(/set distribution column to (.+)/i);
+            if (match && match[1]) {
+                const columnName = match[1].trim();
+                const column = availableColumns.find(col => normalize(col) === normalize(columnName) || normalize(col).includes(normalize(columnName)) || normalize(columnName).includes(normalize(col)));
+                localStorage.setItem('selectedDistributionColumn',column);
+                window.dispatchEvent(new Event('distributionColumnChanged'));
+                setVoiceFeedback(`Distribution column set to: ${column}`);
+            }
+            return;
+        }
+
+        if(text.includes('set distribution view mode'))
+        {
+                const match = text.match(/set distribution view mode to (.+)/i);
+            document.getElementById(`view-mode-${match[1].trim().split('.')[0]}`)?.click();
+            return;
+        }
+
+        if(text.includes('show data filter columns')){
+            document.getElementById('data-filter-column-select').focus();
+            return;
+        }
+
+        if(text.includes('set data filter column')){
+            const match = text.match(/set data filter column to (.+)/i);
+            if (match && match[1]) {
+                const filterColumn = match[1].trim();
+                const x = availableColumns.find(col => normalize(col) === normalize(filterColumn) || normalize(col).includes(normalize(filterColumn)) || normalize(filterColumn).includes(normalize(col)));
+                localStorage.setItem('dataFilterColumn', x);
+                window.dispatchEvent(new Event('dataFilterColumnChanged'));
+                setVoiceFeedback(`Data filter column set to: ${x}`);
+            }
+            return;
+        }
+
+        if(text.includes('set data filter min')){
+            const match = text.match(/set data filter min to (.+)/i);
+            if (match && match[1]) {
+                const filterMin = parseInt(match[1].trim());
+                localStorage.setItem('dataFilterMin', filterMin);
+                window.dispatchEvent(new Event('dataFilterMinChanged'));
+                setVoiceFeedback(`Data filter min set to: ${filterMin}`);
+            }
+            return;
+        }
+
+        if(text.includes('set data filter max')){
+            const match = text.match(/set data filter max to (.+)/i);
+            if (match && match[1]) {
+                const filterMax = parseInt(match[1].trim());
+                localStorage.setItem('dataFilterMax', filterMax);
+                window.dispatchEvent(new Event('dataFilterMaxChanged'));
+                setVoiceFeedback(`Data filter max set to: ${filterMax}`);
+            }
+            return;
+        }
+
+        if(text.includes('clear data filter')){
+            document.getElementById('clear-data-filter-btn')?.click();
+            setVoiceFeedback('Data filter cleared');
+            return;
+        }
+
+        if(text.includes('download this page')){
+            document.getElementById(`download-visualization-btn`)?.click();
+            document.getElementById('scatter-btn')?.click();
+            document.getElementById('bootstrap-btn')?.click();
+            document.getElementById('bar-chart-download-btn')?.click();
+            document.getElementById('multivariate-btn')?.click();
+            return;
+        }
+
+        if(text.includes('open settings')){
+            document.getElementById('settings-button')?.click();
+            return;
+        }
+
+        if(text.includes('save visualization')){
+            document.getElementById(`save-visualization-btn`)?.click();
+            setVoiceFeedback('Saving visualization');
+            return;
+        }
+
+        if(text.includes('download this visualization as png')){
+            document.getElementById(`download-visualization-btn`)?.click();
+            setVoiceFeedback('Downloading visualization as PNG');
+            return;
+        }
+
+        if (text.includes('show chart type')){
+            localStorage.setItem('showDistributionChartTypeHelp', true);    
+            window.dispatchEvent(new Event('showDistributionChartTypeHelpChanged'));
+            setVoiceFeedback('Showing chart type help');
+            return;
+        }
+
+        if(text.includes('open multiple x axis')){
+            document.getElementById('open-multiple-x-axis-btn')?.focus();
+            return;
+        }
+
+        if(text.includes('select x column')){
+            const match = text.match(/select x column (.+)/i);
+            if (match && match[1]) {
+                const columnName = match[1].trim();
+                const x = availableColumns.find(col => normalize(col) === normalize(columnName) || normalize(col).includes(normalize(columnName)) || normalize(columnName).includes(normalize(col)));
+                localStorage.setItem('multiVariateScatterXColumn', x);
+                window.dispatchEvent(new Event('multiVariateScatterXColumnChanged'));
+                setVoiceFeedback(`X column set to: ${x}`);
+            }
+            return;
+        }
+
+        if(text.includes('show y column')){
+            document.getElementById('open-multiple-y-axis-btn')?.focus();
+            return;
+        }
+
+        if(text.includes('select y column')){
+            const match = text.match(/select y column (.+)/i);
+            if (match && match[1]) {
+                const columnName = match[1].trim();
+                const x = availableColumns.find(col => normalize(col) === normalize(columnName) || normalize(col).includes(normalize(columnName)) || normalize(columnName).includes(normalize(col)));
+                localStorage.setItem('multiVariateScatterYColumn',x);
+                window.dispatchEvent(new Event('multiVariateScatterYColumnChanged'));
+                setVoiceFeedback(`Y column set to: ${x}`);
+            }
+            return;
+        }
+
+        if(text.includes('set data set view')){
+            const match = text.match(/set data set view to (.+)/i);
+            document.getElementById(`${match[1].trim().split('.')[0]}`)?.click();
+            return;
+        }
+
+        if(text.includes('show bootstrap columns')){
+            document.getElementById('bootstrap-column-select').focus();
+            return;
+        }
+
+        if(text.includes('open bootstrap item select')){
+            localStorage.setItem('bootstrapItemSelectOpen', 'true');
+            window.dispatchEvent(new Event('bootstrapItemSelectOpenChanged'));
+            setVoiceFeedback('Opened bootstrap item select');
+            return;
+        }
+
+        if(text.includes('set bootstrap view')){
+            const match = text.match(/set bootstrap view to (.+)/i);
+            if (match && match[1]) {
+                const viewMode = match[1].trim().split('.')[0];
+                document.getElementById(`${viewMode}`)?.click();
+                setVoiceFeedback(`Bootstrap view set to: ${viewMode}`);
+            }
+            return;
+
+        }
+
+        if(text.includes('export bootstrap excel')){
+            document.getElementById('export-bootstrap-excel-btn')?.click();
+            setVoiceFeedback('Exporting bootstrap results to Excel');
+            return;
+        }
+
+        if(text.includes('show correlation columns')){
+            document.getElementById('correlation-column-select').focus();
+            return;
+        }
+
+        if(text.includes('set correlation column')){
+            const match = text.match(/set correlation column (.+)/i);
+            if (match && match[1]) {
+                const columnName = match[1].trim();
+                const x = availableColumns.find(col => normalize(col) === normalize(columnName) || normalize(col).includes(normalize(columnName)) || normalize(columnName).includes(normalize(col)));
+                localStorage.setItem('correlationColumn', x);
+                window.dispatchEvent(new Event('correlationColumnChanged'));
+                setVoiceFeedback(`Correlation column set to: ${x}`);
+            }
+            return;
+        }
+        
+        
+        setTimeout(() => setVoiceFeedback(''), 3000);
+
+
+    };
+
     const renderTabContent = () => {
         switch (activeTab) {
             case 0:
                 return (
-                    <DistributionCurveTab 
+                    <DistributionCurveTab
                         availableColumns={availableColumns}
                         withProductData={withProductData}
                         withoutProductData={withoutProductData}
@@ -72,17 +724,8 @@ const VisualizeData = () => {
                         productName={productName}
                     />
                 );
+            
             case 1:
-                return (
-                    <ScatterPlotTab 
-                        withProductData={withProductData}
-                        withoutProductData={withoutProductData}
-                        clientName={clientName}
-                        plantName={plantName}
-                        productName={productName}
-                    />
-                );
-            case 2:
                 return (
                     <MultiVariateScatterPlotTab
                         availableColumns={availableColumns}
@@ -93,9 +736,9 @@ const VisualizeData = () => {
                         productName={productName}
                     />
                 );
-            case 3:
+            case 2:
                 return (
-                    <BootstrappingTab 
+                    <BootstrappingTab
                         availableColumns={availableColumns}
                         bootstrapAnalysis={bootstrapAnalysis}
                         clientName={clientName}
@@ -103,9 +746,9 @@ const VisualizeData = () => {
                         productName={productName}
                     />
                 );
-            case 4:
+            case 3:
                 return (
-                    <CorrelationAnalysisTab 
+                    <CorrelationAnalysisTab
                         availableColumns={availableColumns}
                         withProductData={withProductData}
                         withoutProductData={withoutProductData}
@@ -121,112 +764,104 @@ const VisualizeData = () => {
 
     return (
         <ThemeProvider theme={customTheme}>
-            <Box sx={{ 
-                minHeight: '100vh', 
+            <Box sx={{
+                minHeight: '100vh',
                 bgcolor: 'background.default',
                 px: { xs: 1, sm: 2 },
                 py: { xs: 2, sm: 3, md: 4 }
             }}>
-                <Container 
-                    maxWidth="xl" 
-                    sx={{ 
-                        py: { xs: 2, sm: 4, md: 6 },
-                        px: { xs: 1, sm: 2, md: 3 }
-                    }}
-                >
-                    <Paper
-                        elevation={2}
-                        sx={{
-                            borderRadius: { xs: 1, sm: 2 },
-                            p: { xs: 1.5, sm: 2, md: 3 },
-                            backgroundColor: 'background.paper',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                            width: '100%',
-                            overflow: 'hidden'
-                        }}
-                    >
-                        <Typography 
-                            variant="h5" 
-                            component="h2" 
-                            color="primary.main" 
-                            sx={{ 
-                                mb: { xs: 1.5, sm: 2 },
-                                fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' },
-                                fontWeight: { xs: 600, sm: 500 }
-                            }}
-                        >
+                <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 4, md: 6 } }}>
+                    <Paper elevation={2} sx={{ p: { xs: 2, md: 3 } }}>
+                        <Typography variant="h5" color="primary.main" sx={{ mb: 2 }}>
                             Step 4: Visualize Data
                         </Typography>
 
-                        <Typography 
-                            variant="body2" 
-                            sx={{ 
-                                mb: { xs: 2, sm: 3 },
-                                fontSize: { xs: '0.875rem', sm: '1rem' },
-                                lineHeight: { xs: 1.4, sm: 1.5 }
-                            }}
-                        >
+                        <Typography variant="body2" sx={{ mb: 3 }}>
                             Explore visualizations of your data to identify patterns and relationships.
                         </Typography>
 
-                        <Paper sx={{ 
-                            width: '100%', 
-                            mb: { xs: 2, sm: 3, md: 4 },
-                            overflow: 'hidden'
-                        }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: 1, borderColor: 'divider' }}>
-                                <Tabs
-                                    value={activeTab}
-                                    onChange={handleTabChange}
-                                    variant="scrollable"
-                                    scrollButtons="auto"
-                                    allowScrollButtonsMobile
-                                    indicatorColor="primary"
-                                    textColor="primary"
-                                    sx={{ 
-                                        minHeight: { xs: 40, sm: 48 },
-                                        '& .MuiTab-root': {
-                                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                            minHeight: { xs: 40, sm: 48 },
-                                            padding: { xs: '6px 12px', sm: '12px 16px' },
-                                            minWidth: { xs: 80, sm: 120 }
-                                        }
-                                    }}
+                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+                            <FormControl size="small" sx={{ minWidth: 220 }}>
+                                <InputLabel>Pre Product Sheet</InputLabel>
+                                <Select
+                                    open={preSelectOpen}
+                                    onOpen={() => setPreSelectOpen(true)}
+                                    onClose={() => setPreSelectOpen(false)}
+                                    value={selectedPreSheet}
+                                    label="Pre Product Sheet"
+                                    onChange={(e) => { setSelectedPreSheet(e.target.value); setPreSelectOpen(false); setAwaitingSheetFor(null); setVoiceFeedback(`Pre sheet set to: ${e.target.value}`); setTimeout(() => setVoiceFeedback(''), 2000); }}
                                 >
-                                    <Tab label="Distribution Curve" />
-                                    <Tab label="Scatter Plot" />
-                                    <Tab label="Multi-Variate Scatter" />
-                                    <Tab label="Bootstrapping" />
-                                    <Tab label="Correlation Analysis" />
-                                </Tabs>
-                            </Box>
-                            
-                            <Box id="visualization-content" sx={{ 
-                                p: { xs: 1.5, sm: 2, md: 3 },
-                                minHeight: { xs: '300px', sm: '400px', md: '500px' },
-                                bgcolor: '#ffffff'
-                            }}>
+                                    {sheets?.map((name) => (
+                                        <MenuItem
+                                            key={name}
+                                            value={name}
+                                            onClick={() => { setForceAcceptNextMatch(false); setSelectedPreSheet(name); setPreSelectOpen(false); setAwaitingSheetFor(null); setVoiceFeedback(`Pre sheet set to: ${name}`); setTimeout(() => setVoiceFeedback(''), 2000); }}
+                                        >{name}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+
+                            <FormControl size="small" sx={{ minWidth: 220 }}>
+                                <InputLabel>Post Product Sheet</InputLabel>
+                                <Select
+                                    open={postSelectOpen}
+                                    onOpen={() => setPostSelectOpen(true)}
+                                    onClose={() => setPostSelectOpen(false)}
+                                    value={selectedPostSheet}
+                                    label="Post Product Sheet"
+                                    onChange={(e) => { setSelectedPostSheet(e.target.value); setPostSelectOpen(false); setAwaitingSheetFor(null); setVoiceFeedback(`Post sheet set to: ${e.target.value}`); setTimeout(() => setVoiceFeedback(''), 2000); }}
+                                >
+                                    {sheets?.map((name) => (
+                                        <MenuItem
+                                            key={name}
+                                            value={name}
+                                            onClick={() => { setForceAcceptNextMatch(false); setSelectedPostSheet(name); setPostSelectOpen(false); setAwaitingSheetFor(null); setVoiceFeedback(`Post sheet set to: ${name}`); setTimeout(() => setVoiceFeedback(''), 2000); }}
+                                        >{name}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+
+                            {awaitingSheetFor === 'pre' && (
+                                <div className="text-xs text-blue-600 mt-1">Listening for pre sheet name...</div>
+                            )}
+                            {awaitingSheetFor === 'post' && (
+                                <div className="text-xs text-blue-600 mt-1">Listening for post sheet name...</div>
+                            )}
+                        </Box>
+
+                        <Paper sx={{ width: '100%', mb: 3 }}>
+                            <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+                                <Tab label="Distribution Curve" />
+                                
+                                
+                                <Tab label="Multi-Variate Scatter" />
+                                <Tab label="Bootstrapping" />
+                                <Tab label="Correlation Analysis" />
+                            </Tabs>
+
+                            <Box sx={{ p: 3, minHeight: 400 }}>
                                 {renderTabContent()}
                             </Box>
                         </Paper>
 
-                        <Divider sx={{ 
-                            my: { xs: 2, sm: 3 }, 
-                            borderColor: 'primary.light' 
-                        }} />
-                        
-                        <Box sx={{
-                            mt: { xs: 2, sm: 3 },
-                            display: 'flex',
-                            justifyContent: { xs: 'center', sm: 'flex-start' }
-                        }}>
-                            <NavigationButtons
-                                onPrevious={handlePreviousStep}
-                                isLoading={isLoading}
-                                previousLabel="Back to Dependency Model"
-                                hideNext={true}
-                            />
-                        </Box>
+                        <Divider sx={{ my: 2 }} />
+
+                        <Assistant
+                            isListening={isListening}
+                            lastCommand={lastCommand}
+                            voiceFeedback={voiceFeedback}
+                            assistantCollapsed={assistantCollapsed}
+                            setAssistantCollapsed={setAssistantCollapsed}
+                            startListening={startListening}
+                            stopListening={stopListening}
+                        />
+
+                        <NavigationButtons
+                            onPrevious={handlePreviousStep}
+                            isLoading={isLoading}
+                            previousLabel="Back to Dependency Model"
+                            hideNext={true}
+                        />
                     </Paper>
                 </Container>
             </Box>
