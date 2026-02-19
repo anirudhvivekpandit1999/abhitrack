@@ -69,12 +69,6 @@ const FullExcelFile = () => {
   const navigation = useNavigate();
 
   useEffect(() => {
-<<<<<<< HEAD
-    const foundSheet = excelData.find(s => s.sheetName === selectedSheet);
-    setSelectedSheetData(foundSheet ? foundSheet.sheetData : []);
-  }, [selectedSheet, excelData]);
-
-=======
     const saved = localStorage.getItem('recentFiles');
     console.log('📂 Loading recent files from localStorage:', saved);
     if (saved) {
@@ -672,7 +666,6 @@ const sortedIntents = [...intents].sort(
     return v;
   };
 
->>>>>>> 0f6f524cfb8704d4225b32d5f09eef9fa6125bce
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
