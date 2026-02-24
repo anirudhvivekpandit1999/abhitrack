@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, forwardRef } from "react";
+import { useEffect, useRef, useState, forwardRef, useCallback } from "react";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import MicIcon from "@mui/icons-material/Mic";
 import Assistant from "../components/Assistant";
 import * as XLSX from "xlsx";
+import * as d3 from "d3";
 import {
   ScatterChart,
   Scatter,
@@ -16,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, Grid, TextField, Typography, Button } from "@mui/material";
 import FormulaBuilder from "../components/FormulaBuilder";
 import { ContactPageSharp } from "@mui/icons-material";
+
 
 const FullExcelFile = () => {
   const [fileName, setFileName] = useState("");
@@ -189,21 +191,21 @@ const FullExcelFile = () => {
       console.log("intent", intents)
 
       const intentPriority = {
-  upload_file: 1,
-  create_new_sheet: 2,
-  name_new_sheet: 3,
-  set_base_sheet: 4,
-  set_pre_sheet_name: 5,
-  set_post_sheet_name: 6,
-  set_x_axis: 7,
-  set_y_axis: 8,
-  open_column_builder: 9,
-  enter_preprocess: 10
-};
+        upload_file: 1,
+        create_new_sheet: 2,
+        name_new_sheet: 3,
+        set_base_sheet: 4,
+        set_pre_sheet_name: 5,
+        set_post_sheet_name: 6,
+        set_x_axis: 7,
+        set_y_axis: 8,
+        open_column_builder: 9,
+        enter_preprocess: 10
+      };
 
-const sortedIntents = [...intents].sort(
-  (a, b) => (intentPriority[a.intent] || 99) - (intentPriority[b.intent] || 99)
-);
+      const sortedIntents = [...intents].sort(
+        (a, b) => (intentPriority[a.intent] || 99) - (intentPriority[b.intent] || 99)
+      );
       for (const item of sortedIntents) {
         console.log(item)
         const intent = item.intent;
@@ -391,27 +393,27 @@ const sortedIntents = [...intents].sort(
             /use\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i,
             /make\s+["']?([^"'.!,\n]+)["']?\s+the\s+y\s*axis/i,
             /choose\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i,// assign / define / select
-/assign\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
-(/define\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i),
-(/select\s+["']?([^"'.!,\n]+)["']?\s+for\s+y\s*axis/i),
+            /assign\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+            (/define\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i),
+            (/select\s+["']?([^"'.!,\n]+)["']?\s+for\s+y\s*axis/i),
 
-// plot / map wording
-/plot\s+["']?([^"'.!,\n]+)["']?\s+on\s+the\s+y\s*axis/i,
-(/map\s+["']?([^"'.!,\n]+)["']?\s+to\s+y\s*axis/i),
+            // plot / map wording
+            /plot\s+["']?([^"'.!,\n]+)["']?\s+on\s+the\s+y\s*axis/i,
+            (/map\s+["']?([^"'.!,\n]+)["']?\s+to\s+y\s*axis/i),
 
-// put / place
-/put\s+["']?([^"'.!,\n]+)["']?\s+on\s+the\s+y\s*axis/i,
-(/place\s+["']?([^"'.!,\n]+)["']?\s+on\s+y\s*axis/i),
+            // put / place
+            /put\s+["']?([^"'.!,\n]+)["']?\s+on\s+the\s+y\s*axis/i,
+            (/place\s+["']?([^"'.!,\n]+)["']?\s+on\s+y\s*axis/i),
 
-// colon format
-/y\s*axis\s*[:=]\s*["']?([^"'.!,\n]+)["']?/i,
+            // colon format
+            /y\s*axis\s*[:=]\s*["']?([^"'.!,\n]+)["']?/i,
 
-// column wording
-/use\s+column\s+["']?([^"'.!,\n]+)["']?\s+for\s+y\s*axis/i,
-(/set\s+column\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i),
+            // column wording
+            /use\s+column\s+["']?([^"'.!,\n]+)["']?\s+for\s+y\s*axis/i,
+            (/set\s+column\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i),
 
-// without the word axis
-/on\s+the\s+y\s*axis\s+show\s+["']?([^"'.!,\n]+)["']?/i,
+            // without the word axis
+            /on\s+the\s+y\s*axis\s+show\s+["']?([^"'.!,\n]+)["']?/i,
 
           ];
 
@@ -1924,6 +1926,198 @@ const sortedIntents = [...intents].sort(
 
   const displayedSelectedSheetData = applyPendingColumnsToRows(selectedSheetData || []);
 
+
+
+  const D3ScatterPlot = ({ scatterSlicesData = [], xAxis, yAxis }) => {
+    const svgRef = useRef(null);
+    const containerRef = useRef(null);
+    const [tooltip, setTooltip] = useState(null);
+
+    const drawScatterPlot = useCallback(() => {
+      if (!scatterSlicesData?.length) return;
+
+      const container = containerRef.current;
+      const svg = d3.select(svgRef.current);
+
+      svg.selectAll("*").remove();
+
+      const width = container.clientWidth;
+      const height = 250;
+
+      svg.attr("width", width).attr("height", height);
+
+      const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+
+      const g = svg
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      const allData = scatterSlicesData.flatMap((s) => s.data || []);
+
+      if (!allData.length) return;
+
+      const x = d3
+        .scaleLinear()
+        .domain(d3.extent(allData, (d) => d.x))
+        .nice()
+        .range([0, innerWidth]);
+
+      const y = d3
+        .scaleLinear()
+        .domain(d3.extent(allData, (d) => d.y))
+        .nice()
+        .range([innerHeight, 0]);
+
+      // Grid
+      g.append("g")
+        .attr("class", "grid")
+        .attr("transform", `translate(0,${innerHeight})`)
+        .call(d3.axisBottom(x).tickSize(-innerHeight).tickFormat(""));
+
+      g.append("g")
+        .attr("class", "grid")
+        .call(d3.axisLeft(y).tickSize(-innerWidth).tickFormat(""));
+
+      // Axes
+      g.append("g")
+        .attr("transform", `translate(0,${innerHeight})`)
+        .call(d3.axisBottom(x));
+
+      g.append("g").call(d3.axisLeft(y));
+
+      // Axis labels
+      g.append("text")
+        .attr("x", innerWidth / 2)
+        .attr("y", innerHeight + 35)
+        .attr("text-anchor", "middle")
+        .style("font-size", "12px")
+        .text(xAxis || "X Axis");
+
+      g.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -innerHeight / 2)
+        .attr("y", -35)
+        .attr("text-anchor", "middle")
+        .style("font-size", "12px")
+        .text(yAxis || "Y Axis");
+
+      // Plot points
+      scatterSlicesData.forEach((slice, i) => {
+        g.selectAll(`.dot-${i}`)
+          .data(slice.data || [])
+          .enter()
+          .append("circle")
+          .attr("cx", (d) => x(d.x))
+          .attr("cy", (d) => y(d.y))
+          .attr("r", 4)
+          .attr("fill", slice.color || "steelblue")
+          .on("mousemove", (event, d) => {
+            const [mouseX, mouseY] = d3.pointer(event, container);
+            setTooltip({
+              visible: true,
+              x: mouseX,
+              y: mouseY,
+              data: { ...d, dataset: slice.name },
+            });
+          })
+          .on("mouseout", () => setTooltip(null));
+      });
+
+      // Linear Regression Trendline
+      const regression = (data) => {
+        const n = data.length;
+        const sumX = d3.sum(data, (d) => d.x);
+        const sumY = d3.sum(data, (d) => d.y);
+        const sumXY = d3.sum(data, (d) => d.x * d.y);
+        const sumXX = d3.sum(data, (d) => d.x * d.x);
+
+        const slope =
+          (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+
+        return { slope, intercept };
+      };
+
+      if (allData.length > 1) {
+        const { slope, intercept } = regression(allData);
+
+        const xMin = d3.min(allData, (d) => d.x);
+        const xMax = d3.max(allData, (d) => d.x);
+
+        const lineData = [
+          { x: xMin, y: slope * xMin + intercept },
+          { x: xMax, y: slope * xMax + intercept },
+        ];
+
+        g.append("line")
+          .attr("x1", x(lineData[0].x))
+          .attr("y1", y(lineData[0].y))
+          .attr("x2", x(lineData[1].x))
+          .attr("y2", y(lineData[1].y))
+          .attr("stroke", "red")
+          .attr("stroke-width", 2)
+          .attr("stroke-dasharray", "5,5");
+
+        // Correlation
+        const correlation =
+          d3.correlation?.(allData.map((d) => d.x), allData.map((d) => d.y)) ??
+          d3.mean(allData.map((d) => d.x * d.y));
+
+        g.append("text")
+          .attr("x", innerWidth - 80)
+          .attr("y", 10)
+          .style("font-size", "12px")
+          .style("fill", "red")
+          .text(`Trendline`);
+      }
+
+      // Zoom
+      const zoom = d3
+        .zoom()
+        .scaleExtent([0.5, 10])
+        .extent([[0, 0], [innerWidth, innerHeight]])
+        .on("zoom", (event) => {
+          g.attr("transform", event.transform);
+        });
+
+      svg.call(zoom);
+
+    }, [scatterSlicesData, xAxis, yAxis]);
+
+    useEffect(() => {
+      drawScatterPlot();
+    }, [drawScatterPlot]);
+
+    return (
+      <div
+        ref={containerRef}
+        className="relative w-full"
+        style={{ height: 250 }}
+      >
+        <svg ref={svgRef} className="w-full h-full" />
+
+        {tooltip?.visible && (
+          <div
+            className="absolute bg-white border shadow-md text-xs px-2 py-1 rounded pointer-events-none"
+            style={{
+              left: tooltip.x,
+              top: tooltip.y,
+              transform: "translate(10px, -10px)",
+            }}
+          >
+            <div><strong>X:</strong> {tooltip.data?.x}</div>
+            <div><strong>Y:</strong> {tooltip.data?.y}</div>
+            <div>{tooltip.data?.dataset}</div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+
+
   return (
     <>
       {showFileSearchModal && (
@@ -2052,35 +2246,14 @@ const sortedIntents = [...intents].sort(
           </div>
 
           <div className="mt-6 flex justify-center">
-            <button
+            <div
               id='show-result-btn'
-              onClick={() => {
-                const preSheetData = (excelData.find(s => s.sheetName === preProduct)).sheetData
-                const preSheetName = preProduct;
-                console.log("[DEBUG] cols =", cols);
-                console.log("[DEBUG] preProductData", preSheetData);
-                const sheet = sheetNames;
-                console.log("[DEBUG] sheetNames =", sheet);
-                const postSheetData = (excelData.find(s => s.sheetName === postProduct)).sheetData
-                console.log("[DEBUG] postProductData", postSheetData);
-                const postSheetName = postProduct;
-                navigation("/visualize-data", {
-                  state: {
-                    availableCols: Array.from(new Set(cols || [])),
-                    preProductData: preSheetData,
-                    postProductData: postSheetData,
-                    excelData: excelData,
-                    sheetNames: sheet,
-                    preSheetName: preSheetName,
-                    postSheetName: postSheetName
-                  }
-                })
-              }}
-              disabled={!fileName}
+
+
               className="relative inline-flex items-center justify-center rounded-xl bg-blue-600 px-10 py-3 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:bg-blue-700 hover:shadow-xl active:scale-95 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
             >
-              Continue to Data Checks →
-            </button>
+              Continue with Data Cleaning
+            </div>
           </div>
 
           {sheetNames.length > 0 && (
@@ -2112,222 +2285,339 @@ const sortedIntents = [...intents].sort(
                 </div>
 
                 {showAddPanel && (
-                  <div className="mt-3">
-                    <div ref={addGridRef} className="grid grid-cols-2 grid-rows-2 gap-4" style={{ height: addGridHeight }}>
-                      <div className="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-100 p-5 overflow-auto h-full shadow-sm transform transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl hover:scale-[1.02] hover:ring-2 hover:ring-indigo-100 focus:outline-none">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="text-sm font-medium text-indigo-800">Create new Excel</div>
-                          <button onClick={() => {
-                            setShowAddPanel(false);
-                            setNewSheetName("");
-                            setCopyFromSheet("");
-                            setError(null);
-                            setColumnNames([]);
-                            setSelectedColumns([""]);
-                            setRowRanges([{ name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" }]);
-                            setBifurcateSlices([]);
-                            setActiveTarget(null);
-                          }} className="text-slate-500 hover:text-slate-700">✕</button>
-                        </div>
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                    onClick={() => setShowAddPanel(false)}
+                  >
+                    <div
+                      className="relative w-[95vw] max-w-7xl h-[90vh] bg-white rounded-3xl shadow-2xl p-6 overflow-hidden"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Close Button */}
+                      <button
+                        onClick={() => setShowAddPanel(false)}
+                        className="absolute top-4 right-4 text-slate-500 hover:text-slate-800 text-xl"
+                      >
+                        ✕
+                      </button>
 
-                        <div className="mt-3">
-                          <input id='newsheet' value={newSheetName} onChange={(e) => { setNewSheetName(e.target.value); localStorage.setItem("newSheetName", e.target.value) }} placeholder="Enter sheet/file name" className="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-                        </div>
-
-                        <div className="mt-3">
-                          <label className="block text-xs text-slate-600">Copy from existing sheet (optional)</label>
-                          <select id="basesheet" value={copyFromSheet} onChange={(e) => setCopyFromSheet(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
-                            <option value="">-- Do not copy (create blank sheet) --</option>
-                            {sheetNames.map((s) => (
-                              <option key={s} value={s}>{s}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="mt-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-xs font-medium text-slate-600">Add sheet name & row range</div>
-                            <button onClick={addRowRange} className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700">+</button>
-                          </div>
-                          <div className="space-y-2">
-                            {rowRanges.map((rr, idx) => (
-                              <div key={idx} className="flex gap-2">
-                                <input value={rr.name} onChange={(e) => handleRowRangeChange(idx, "name", e.target.value, newSheetName)} placeholder="Pre/Post" className="w-1/3 rounded-md border px-3 py-2 text-sm" />
-                                <input value={rr.startDisplay || rr.startRange} onChange={(e) => handleRowRangeChange(idx, "startRange", e.target.value, newSheetName)} placeholder="start e.g. 1" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "startRange" })} />
-                                <input value={rr.endDisplay || rr.endRange} onChange={(e) => {
-                                  const value = e.target.value;
-                                  handleRowRangeChange(idx, "endRange", value, newSheetName);
-                                  if (debounceRef.current) {
-                                    clearTimeout(debounceRef.current);
-                                  }
-                                  debounceRef.current = setTimeout(() => {
-                                    buildTempSlices();
-                                  }, 300);
-                                }} placeholder="end e.g. 10" className="w-1/3 rounded-md border px-3 py-2 text-sm" onMouseDown={() => setActiveTarget({ idx, field: "endRange" })} />
-                                {rowRanges.length > 1 && (
-                                  <button onClick={() => removeRowRange(idx)} className="ml-1 rounded-md bg-red-600 px-2 py-1 text-xs text-white">✕</button>
-                                )}
+                      <div className="h-full overflow-hidden">
+                        <div
+                          ref={addGridRef}
+                          className="grid grid-cols-2 grid-rows-2 gap-4 h-full"
+                        >
+                          {/* ---------------- CARD 1 ---------------- */}
+                          <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-100 p-5 overflow-auto shadow-sm hover:shadow-2xl transition-all duration-300">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="text-sm font-medium text-indigo-800">
+                                Create new Excel
                               </div>
-                            ))}
-                          </div>
+                            </div>
 
-                          {bifurcateSlices.length > 0 && (
-                            <div className="mt-3 text-xs">
-                              <div className="font-medium mb-1">Trimmed slices preview</div>
-                              <div className="flex flex-col gap-1">
-                                {bifurcateSlices.map((s) => (
-                                  <div key={s.fullName} className="flex items-center gap-2 text-xs">
-                                    <div style={{ width: 12, height: 12, borderRadius: 4, background: s.colorHex }} />
-                                    <div className="font-medium">{s.fullName}</div>
-                                    <div className="text-slate-500">({s.start + 1} to {s.end + 1}, {s.rows.length} rows)</div>
+                            <div className="mt-3">
+                              <input
+                                value={newSheetName}
+                                onChange={(e) => {
+                                  setNewSheetName(e.target.value);
+                                  localStorage.setItem("newSheetName", e.target.value);
+                                }}
+                                placeholder="Enter sheet/file name"
+                                className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300"
+                              />
+                            </div>
+
+                            <div className="mt-3">
+                              <label className="block text-xs text-slate-600">
+                                Copy from existing sheet (optional)
+                              </label>
+                              <select
+                                value={copyFromSheet}
+                                onChange={(e) => setCopyFromSheet(e.target.value)}
+                                className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300"
+                              >
+                                <option value="">
+                                  -- Do not copy (create blank sheet) --
+                                </option>
+                                {sheetNames.map((s) => (
+                                  <option key={s} value={s}>
+                                    {s}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="mt-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="text-xs font-medium text-slate-600">
+                                  Add sheet name & row range
+                                </div>
+                                <button
+                                  onClick={addRowRange}
+                                  className="bg-green-600 text-white px-2 py-1 text-xs rounded-md"
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              <div className="space-y-2">
+                                {rowRanges.map((rr, idx) => (
+                                  <div key={idx} className="flex gap-2">
+                                    <input
+                                      value={rr.name}
+                                      onChange={(e) =>
+                                        handleRowRangeChange(
+                                          idx,
+                                          "name",
+                                          e.target.value,
+                                          newSheetName
+                                        )
+                                      }
+                                      placeholder="Pre/Post"
+                                      className="w-1/3 rounded-md border px-2 py-2 text-sm"
+                                    />
+                                    <input
+                                      value={rr.startDisplay || rr.startRange}
+                                      onChange={(e) =>
+                                        handleRowRangeChange(
+                                          idx,
+                                          "startRange",
+                                          e.target.value,
+                                          newSheetName
+                                        )
+                                      }
+                                      placeholder="start"
+                                      className="w-1/3 rounded-md border px-2 py-2 text-sm"
+                                      onMouseDown={() =>
+                                        setActiveTarget({ idx, field: "startRange" })
+                                      }
+                                    />
+                                    <input
+                                      value={rr.endDisplay || rr.endRange}
+                                      onChange={(e) =>
+                                        handleRowRangeChange(
+                                          idx,
+                                          "endRange",
+                                          e.target.value,
+                                          newSheetName
+                                        )
+                                      }
+                                      placeholder="end"
+                                      className="w-1/3 rounded-md border px-2 py-2 text-sm"
+                                      onMouseDown={() =>
+                                        setActiveTarget({ idx, field: "endRange" })
+                                      }
+                                    />
+                                    {rowRanges.length > 1 && (
+                                      <button
+                                        onClick={() => removeRowRange(idx)}
+                                        className="bg-red-600 text-white px-2 py-1 text-xs rounded-md"
+                                      >
+                                        ✕
+                                      </button>
+                                    )}
                                   </div>
                                 ))}
                               </div>
                             </div>
-                          )}
-
-                        </div>
-
-                      </div>
-
-                      <div className="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-100 p-0 overflow-auto h-full transform transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:scale-[1.01]">
-                        <div className="h-full w-full p-3">
-                          <div className="px-2 py-1 bg-gradient-to-r from-sky-50 to-white flex items-center justify-between border-b">
-                            <div className="text-xs font-medium text-indigo-700">Preview: {copyFromSheet || selectedSheet || "No sheet"}</div>
-                            <div className="text-xs text-slate-500">Click header to set Y-axis / toggle selection | Click a row to fill focused range input</div>
                           </div>
-                          <div className="mt-2" style={{ height: `calc(100% - 34px)` }}>
-                            {previewSheetWithPending.sheetData && previewSheetWithPending.sheetData.length > 0 ? (
-                              <div className="w-full h-full overflow-auto">
-                                <div className="w-full overflow-x-auto h-full">
-                                  <table className="min-w-full divide-y divide-slate-200">
-                                    <thead className="bg-blue-600">
-                                      <tr>
-                                        {previewHeaders.map((key, idx) => (
-                                          <th
-                                            key={key}
-                                            onClick={() => { setYAxis(key); toggleColumnSelection(key); }}
-                                            className={`cursor-pointer px-2 py-1 text-left text-xs font-semibold text-white border-r border-slate-200 ${isColumnSelected(key) ? "bg-green-600 text-white" : ""} ${xAxis === key ? "bg-blue-500 text-white" : ""} ${yAxis === key ? "bg-blue-700 text-white" : ""} ${idx === previewHeaders.length - 1 ? "last:border-r-0" : ""}`}>
-                                            {key}{(yAxis === key || xAxis === key) && <span className="ml-1 inline-block text-[10px] font-normal">{yAxis === key ? 'Y' : 'X'}</span>}
-                                          </th>
+
+                          {/* ---------------- CARD 2 (Preview Table) ---------------- */}
+                          <div className="rounded-2xl border border-indigo-200 bg-white overflow-auto">
+                            <div className="px-3 py-2 border-b text-xs font-medium text-indigo-700">
+                              Preview: {copyFromSheet || selectedSheet || "No sheet"}
+                            </div>
+
+                            <div className="overflow-auto h-full">
+                              {previewSheetWithPending.sheetData?.length > 0 ? (
+                                <table className="min-w-full text-xs">
+                                  <thead className="bg-blue-600 text-white">
+                                    <tr>
+                                      {previewHeaders.map((key) => (
+                                        <th
+                                          key={key}
+                                          onClick={() => {
+                                            setYAxis(key);
+                                            toggleColumnSelection(key);
+                                          }}
+                                          className="px-2 py-1 cursor-pointer"
+                                        >
+                                          {key}
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {previewSheetWithPending.sheetData.map((row, i) => (
+                                      <tr
+                                        key={i}
+                                        onClick={() => handlePreviewRowClick(i)}
+                                        className="hover:bg-slate-50 cursor-pointer"
+                                      >
+                                        {previewHeaders.map((k, j) => (
+                                          <td key={j} className="px-2 py-1 border">
+                                            {renderCellValue(row[k])}
+                                          </td>
                                         ))}
                                       </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-slate-100">
-                                      {previewSheetWithPending.sheetData.map((row, i) => (
-                                        <tr key={i} onClick={() => handlePreviewRowClick(i)} className={`${activeTarget ? "cursor-pointer" : ""} hover:bg-slate-50`}>
-                                          {previewHeaders.map((k, j) => (
-                                            <td key={j} className={`px-2 py-1 text-xs ${isColumnSelected(k) ? "bg-green-50 text-green-700" : ""} ${xAxis === k ? "bg-blue-50 text-blue-700" : ""} ${yAxis === k ? "bg-blue-100 text-blue-800" : ""}`}>{renderCellValue(row[k])}</td>
-                                          ))}
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              ) : (
+                                <div className="p-4 text-xs text-slate-500 text-center">
+                                  No data to preview
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* ---------------- CARD 3 ---------------- */}
+                          <div className="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-100 p-5 overflow-auto h-full shadow-sm">
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-medium text-indigo-800 mb-1">
+                                  X-Axis
+                                </label>
+                                <select
+                                  value={xAxis}
+                                  onChange={(e) => setXAxis(e.target.value)}
+                                  className="w-full rounded-md border px-2 py-2 text-sm"
+                                >
+                                  <option value="">Select column</option>
+                                  {columnNames.map((col) => (
+                                    <option key={col} value={col}>{col}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-indigo-800 mb-1">
+                                  Y-Axis
+                                </label>
+                                <select
+                                  value={yAxis}
+                                  onChange={(e) => setYAxis(e.target.value)}
+                                  className="w-full rounded-md border px-2 py-2 text-sm"
+                                >
+                                  <option value="">Select column</option>
+                                  {columnNames.map((col) => (
+                                    <option key={col} value={col}>{col}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            {/* Column Selection */}
+                            <div className="mt-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="text-xs font-medium text-slate-600">
+                                  Select columns to keep
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={handleAddColumnSelector}
+                                    disabled={
+                                      columnNames.length === 0 ||
+                                      selectedColumns.length >= columnNames.length
+                                    }
+                                    className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                                  >
+                                    +
+                                  </button>
+
+                                  <button
+                                    onClick={openColumnBuilder}
+                                    className="inline-flex items-center rounded-md bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700"
+                                  >
+                                    Column Builder
+                                  </button>
                                 </div>
                               </div>
+
+                              <div className="space-y-2">
+                                {selectedColumns.map((sel, idx) => {
+                                  const available = columnNames.filter(
+                                    (c) => c === sel || !selectedColumns.includes(c)
+                                  );
+                                  return (
+                                    <div key={idx}>
+                                      <select
+                                        value={sel}
+                                        onChange={(e) =>
+                                          handleColumnChange(idx, e.target.value)
+                                        }
+                                        className="w-full rounded-md border px-3 py-2 text-sm"
+                                      >
+                                        <option value="">-- select column --</option>
+                                        {available.map((col) => (
+                                          <option key={col} value={col}>{col}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {error && (
+                              <div className="mt-3 text-xs text-red-600">{error}</div>
+                            )}
+
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                id="submit-excel-btn"
+                                onClick={handleAddSheetSubmit}
+                                className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm"
+                                disabled={addLoading}
+                              >
+                                {addLoading ? "Creating..." : "Submit"}
+                              </button>
+                              <button
+                                onClick={() => setShowAddPanel(false)}
+                                className="bg-white border px-3 py-1.5 rounded-md text-sm"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+
+                            {/* ✅ COLUMN BUILDER RESTORED */}
+                            {showColumnBuilder && (
+                              <div className="mt-4 p-3 rounded-md border bg-gray-50">
+                                <div className="flex justify-between items-center mb-2">
+                                  <div className="text-sm font-medium">Column Builder</div>
+                                  <Button size="small" onClick={() => setShowColumnBuilder(false)}>
+                                    Close
+                                  </Button>
+                                </div>
+
+                                <FormulaBuilder
+                                  availableColumns={columnNames}
+                                  updatedColumns={[]}
+                                  onAddColumn={handleAddColumn}
+                                  withProductData={builderRows}
+                                  withoutProductData={builderRows}
+                                />
+                              </div>
+                            )}
+
+                          </div>
+
+                          {/* ---------------- CARD 4 (Scatter) ---------------- */}
+                          <div className="rounded-2xl border border-indigo-200 bg-white p-3 overflow-auto">
+                            {scatterSlicesData.some((s) => s.data?.length > 0) ? (
+                              <D3ScatterPlot
+                                scatterSlicesData={scatterSlicesData}
+                                xAxis={xAxis}
+                                yAxis={yAxis}
+                              />
                             ) : (
-                              <div className="p-4 text-xs text-slate-500 h-full flex items-center justify-center">No data to preview</div>
+                              <div className="text-xs text-slate-500 text-center">
+                                No scatter data
+                              </div>
                             )}
                           </div>
                         </div>
                       </div>
-
-                      <div className="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-100 p-5 overflow-auto h-full shadow-sm transform transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl hover:scale-[1.02] hover:ring-2 hover:ring-indigo-100 focus:outline-none">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-medium text-indigo-800 mb-1">X-Axis</label>
-                            <select value={xAxis} onChange={(e) => setXAxis(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm">
-                              <option value="">Select column</option>
-                              {columnNames.map((col) => (
-                                <option key={col} value={col}>{col}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-medium text-indigo-800 mb-1">Y-Axis</label>
-                            <select value={yAxis} onChange={(e) => setYAxis(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm">
-                              <option value="">Select column</option>
-                              {columnNames.map((col) => (
-                                <option key={col} value={col}>{col}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="mt-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-xs font-medium text-slate-600">Select columns to keep</div>
-                            <div className="flex gap-2">
-                              <button onClick={handleAddColumnSelector} disabled={columnNames.length === 0 || selectedColumns.length >= columnNames.length} className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50">+</button>
-                              <button onClick={openColumnBuilder} className="inline-flex items-center rounded-md bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700">Column Builder</button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            {selectedColumns.map((sel, idx) => {
-                              const available = columnNames.filter((c) => c === sel || !selectedColumns.includes(c));
-                              return (
-                                <div key={idx}>
-                                  <select value={sel} onChange={(e) => handleColumnChange(idx, e.target.value)} className="w-full rounded-md border px-3 py-2 text-sm">
-                                    <option value="">-- select column --</option>
-                                    {available.map((col) => (
-                                      <option key={col} value={col}>{col}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {error && <div className="mt-3 text-xs text-red-600">{error}</div>}
-
-                        <div className="mt-3 flex gap-2">
-                          <button id="submit-excel-btn" onClick={handleAddSheetSubmit} className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-60" disabled={addLoading}>{addLoading ? "Creating..." : "Submit"}</button>
-                          <button onClick={() => { setShowAddPanel(false); setNewSheetName(""); setCopyFromSheet(""); setError(null); setActiveTarget(null); }} className="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-700 border hover:bg-slate-50">Cancel</button>
-                        </div>
-
-                        {showColumnBuilder && (
-                          <div className="mt-4 p-3 rounded-md border bg-gray-50">
-                            <div className="flex justify-between items-center mb-2">
-                              <div className="text-sm font-medium">Column Builder</div>
-                              <Button size="small" onClick={() => setShowColumnBuilder(false)}>Close</Button>
-                            </div>
-                            <FormulaBuilder
-                              availableColumns={columnNames}
-                              updatedColumns={[]}
-                              onAddColumn={handleAddColumn}
-                              withProductData={builderRows}
-                              withoutProductData={builderRows}
-                            />
-                          </div>
-                        )}
-
-                      </div>
-
-                      <div className="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-100 p-5 overflow-auto h-full shadow-sm transform transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl hover:scale-[1.02] hover:ring-2 hover:ring-indigo-100 focus:outline-none">
-                        <div className="h-full w-full" style={{ minHeight: 0 }}>
-                          {scatterSlicesData.some((s) => s.data && s.data.length > 0) ? (
-                            <div style={{ height: "100%", minHeight: 120 }}>
-                              <ResponsiveContainer width="100%" height="100%">
-                                <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
-                                  <CartesianGrid />
-                                  <XAxis type="number" dataKey="x" name={xAxis} />
-                                  <YAxis type="number" dataKey="y" name={yAxis} />
-                                  <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-                                  {scatterSlicesData.map((s, i) => (
-                                    <Scatter key={i} data={s.data} fill={s.color} name={s.name} />
-                                  ))}
-                                </ScatterChart>
-                              </ResponsiveContainer>
-                            </div>
-                          ) : (
-                            <div className="h-full flex items-center justify-center text-xs text-slate-500 p-4">No scatter data</div>
-                          )}
-                        </div>
-                      </div>
-
                     </div>
                   </div>
                 )}
@@ -2366,7 +2656,37 @@ const sortedIntents = [...intents].sort(
             </div>
           )}
         </div>
-
+        <div className="mt-6 flex justify-center">
+          <button
+            id='show-result-btn'
+            onClick={() => {
+              const preSheetData = (excelData.find(s => s.sheetName === preProduct)).sheetData
+              const preSheetName = preProduct;
+              console.log("[DEBUG] cols =", cols);
+              console.log("[DEBUG] preProductData", preSheetData);
+              const sheet = sheetNames;
+              console.log("[DEBUG] sheetNames =", sheet);
+              const postSheetData = (excelData.find(s => s.sheetName === postProduct)).sheetData
+              console.log("[DEBUG] postProductData", postSheetData);
+              const postSheetName = postProduct;
+              navigation("/visualize-data", {
+                state: {
+                  availableCols: Array.from(new Set(cols || [])),
+                  preProductData: preSheetData,
+                  postProductData: postSheetData,
+                  excelData: excelData,
+                  sheetNames: sheet,
+                  preSheetName: preSheetName,
+                  postSheetName: postSheetName
+                }
+              })
+            }}
+            disabled={!fileName}
+            className="relative inline-flex items-center justify-center rounded-xl bg-blue-600 px-10 py-3 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:bg-blue-700 hover:shadow-xl active:scale-95 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
+          >
+            Continue to Data Checks →
+          </button>
+        </div>
         <Assistant
           isListening={isListening}
           lastCommand={lastCommand}
