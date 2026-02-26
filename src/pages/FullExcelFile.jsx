@@ -2684,7 +2684,7 @@ const FullExcelFile = () => {
             disabled={!fileName}
             className="relative inline-flex items-center justify-center rounded-xl bg-blue-600 px-10 py-3 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:bg-blue-700 hover:shadow-xl active:scale-95 disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
           >
-            Continue to Data Checks →
+            Continue to Analysis →
           </button>
         </div>
         <Assistant
