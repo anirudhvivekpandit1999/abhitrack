@@ -50,8 +50,8 @@ const functionList = [
   { value: 'LINEAR_COMBO', label: 'LINEAR COMBO' },
 ];
 
-function FormulaBuilder({ availableColumns, updatedColumns, onAddColumn, withoutProductData, withProductData }) {
-  const [columnName, setColumnName] = useState('');
+function FormulaBuilder({ availableColumns, updatedColumns, onAddColumn, withoutProductData, withProductData , newColumnName }) {
+  const [columnName, setColumnName] = useState(newColumnName);
   const [formulaElements, setFormulaElements] = useState([]);
   const [customValue, setCustomValue] = useState('');
   const [isFormulaValid, setIsFormulaValid] = useState(false);

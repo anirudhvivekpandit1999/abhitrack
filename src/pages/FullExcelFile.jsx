@@ -21,6 +21,7 @@ import { ContactPageSharp } from "@mui/icons-material";
 
 const FullExcelFile = () => {
   const [fileName, setFileName] = useState("");
+  const [newColumnName,setNewColumnName] = useState('')
   const [sheetNames, setSheetNames] = useState([]);
   const [selectedSheet, setSelectedSheet] = useState("");
   const [selectedSheetData, setSelectedSheetData] = useState([]);
@@ -71,6 +72,7 @@ const FullExcelFile = () => {
   const navigation = useNavigate();
 
   useEffect(() => {
+    localStorage.clear();
     const saved = localStorage.getItem('recentFiles');
     console.log('📂 Loading recent files from localStorage:', saved);
     if (saved) {
@@ -200,7 +202,14 @@ const FullExcelFile = () => {
         set_x_axis: 7,
         set_y_axis: 8,
         open_column_builder: 9,
-        enter_preprocess: 10
+        set_new_column_name:10,
+        add_formula_column:11,
+         plus: 12,
+         minus:13,
+         multiply:14,
+         divide:15,
+         left_bracket:16,
+         right_bracket:17
       };
 
       const sortedIntents = [...intents].sort(
@@ -211,6 +220,145 @@ const FullExcelFile = () => {
         const intent = item.intent;
 
         await sleep(800); // ⏳ buffer between actions
+
+      if (intent === "set_new_column_name") {
+
+  console.log("🔥 set_new_column_name intent triggered");
+
+  const patterns = [
+    /set\s+(?:new\s+)?column\s+name\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,
+    /rename\s+(?:this\s+)?column\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+    /change\s+(?:the\s+)?column\s+name\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,
+    /call\s+(?:this\s+)?column\s+["']?([^"'.!,\n]+)["']?/i,
+    /name\s+(?:the\s+)?column\s+["']?([^"'.!,\n]+)["']?/i,
+    /update\s+(?:the\s+)?column\s+name\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i
+  ];
+
+  let columnName = null;
+
+  for (let pattern of patterns) {
+    const match = originalText.match(pattern);
+    if (match && match[1]) {
+      columnName = match[1].trim();
+      break;
+    }
+  }
+
+  if (!columnName) {
+    setVoiceFeedback("Couldn't detect column name.");
+    continue;
+  }
+
+  columnName = columnName
+    .replace(/\b(before|after|then|and)\b.*$/i, "")
+    .trim();
+
+  console.log("✅ Extracted Column Name:", columnName);
+
+  // 🚀 THIS IS WHAT YOU WERE MISSING
+  setNewColumnName(columnName)
+  localStorage.setItem('newColumnName',columnName)
+  window.dispatchEvent(new Event("columnNameChanged"));
+  setVoiceFeedback(`Column ${columnName} added successfully`);
+
+  continue;
+}
+
+if(intent === "plus"){
+    localStorage.setItem('selectedOperator',"+");
+  
+
+  window.dispatchEvent(new Event("selectedOperatorChanged"));
+  continue;
+}
+if(intent === "minus"){
+  localStorage.removeItem('selectedOperator')
+    localStorage.setItem('selectedOperator',"-");
+  
+
+  window.dispatchEvent(new Event("selectedOperatorChanged"));
+  continue
+}
+if(intent === "multiply"){
+  localStorage.removeItem('selectedOperator')
+    localStorage.setItem('selectedOperator',"*");
+  
+
+  window.dispatchEvent(new Event("selectedOperatorChanged"));
+  continue
+}
+
+if(intent === "divide"){
+  localStorage.removeItem('selectedOperator')
+    localStorage.setItem('selectedOperator',"/");
+  
+
+  window.dispatchEvent(new Event("selectedOperatorChanged"));
+  continue
+}
+
+if(intent === "left_bracket"){
+  localStorage.removeItem('selectedOperator')
+    localStorage.setItem('selectedOperator',"(");
+  
+
+  window.dispatchEvent(new Event("selectedOperatorChanged"));
+  continue
+}
+
+if(intent === "right_bracket"){
+  localStorage.removeItem('selectedOperator')
+    localStorage.setItem('selectedOperator',")");
+  
+
+  window.dispatchEvent(new Event("selectedOperatorChanged"));
+  continue
+}
+
+
+if (intent === "add_formula_column") {
+
+  console.log("🔥 add_formula_column intent triggered");
+
+  const clauseMatch = originalText.match(
+    /(add|create|make).*?formula column.*?(?=\.|,| then | and |$)/i
+  );
+
+  let formulaColumnName = null;
+
+  if (clauseMatch) {
+    const clause = clauseMatch[0];
+
+    const nameMatch = clause.match(
+      /(called|named|as)\s+["']?([^"'.!,\n]+)["']?/i
+    );
+
+    if (nameMatch && nameMatch[2]) {
+      formulaColumnName = nameMatch[2].trim();
+    }
+  }
+
+  if (!formulaColumnName) {
+    setShowColumnBuilder(true);
+    setVoiceFeedback("Opening formula builder. What should I name it?");
+    continue;
+  }
+
+  formulaColumnName = formulaColumnName
+    .replace(/\b(before|after|then|and)\b.*$/i, "")
+    .trim();
+
+  console.log("✅ Extracted Formula Column Name:", formulaColumnName);
+
+  localStorage.setItem("selectedColumnName", formulaColumnName);
+  window.dispatchEvent(new Event("selectedColumnNameChanged"));
+
+  setShowColumnBuilder(true);
+  setVoiceFeedback(`Formula column ${formulaColumnName} ready.`);
+
+  continue;
+}
+
 
         if (intent === "upload_file") {
           // Helper function to read and save file
@@ -2591,6 +2739,7 @@ const FullExcelFile = () => {
                                 </div>
 
                                 <FormulaBuilder
+                                newColumnName={newColumnName}
                                   availableColumns={columnNames}
                                   updatedColumns={[]}
                                   onAddColumn={handleAddColumn}
