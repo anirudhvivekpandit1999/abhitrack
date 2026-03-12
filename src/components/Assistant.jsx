@@ -219,7 +219,7 @@ let actionQueue = [];
     if (!text || !text.trim()) return null;
     try {
       setSending(true);
-      const resp = await fetch("http://127.0.0.1:8000/predict-intent", {
+      const resp = await fetch("https://abhistatchatbot.onrender.com/predict-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),

@@ -103,6 +103,26 @@ useEffect(() => {
 }, []);
 
 useEffect(()=> {
+  const syncClearColumnFormula = () => {
+    setFormulaElements([]);
+    setShowPreview(false);
+  }
+
+  window.addEventListener('selectedOperatorChanged', syncClearColumnFormula);
+  return () => window.removeEventListener('selectedOperatorChanged', syncClearColumnFormula);
+},[])
+
+useEffect(()=> {
+  const syncRemoveLast = () => {
+    setFormulaElements(prev => prev.slice(0, -1));
+    setShowPreview(false);
+  }
+
+  window.addEventListener('selectedOperatorChanged', syncRemoveLast);
+  return () => window.removeEventListener('selectedOperatorChanged', syncRemoveLast);
+},[])
+
+useEffect(()=> {
   const syncSelectedOperator = () => {
     const saved = localStorage.getItem('selectedOperator');
     setFormulaElements(prev => [...prev, { type: 'operator', value: saved, display: saved }]);

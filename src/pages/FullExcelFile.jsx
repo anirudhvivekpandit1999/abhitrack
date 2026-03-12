@@ -209,7 +209,12 @@ const FullExcelFile = () => {
          multiply:14,
          divide:15,
          left_bracket:16,
-         right_bracket:17
+         right_bracket:17,
+         clear_column_formula:19,
+         remove_last_variable:20,
+         submit_column:21,
+         submit_sheet:22,
+         go_to_results:23
       };
 
       const sortedIntents = [...intents].sort(
@@ -315,6 +320,60 @@ if(intent === "right_bracket"){
   continue
 }
 
+if(intent === "clear_column_formula"){
+  
+  
+
+  window.dispatchEvent(new Event("syncClearColumnFormula"));
+  continue
+}
+
+if(intent === "remove_last_variable"){
+  
+  
+
+  window.dispatchEvent(new Event("syncRemoveLast"));
+  
+  continue
+}
+
+if (intent === "submit_column"){
+    window.dispatchEvent(new Event("syncSubmission"));
+    setShowColumnBuilder(false)
+    continue;
+
+}
+
+if(intent === "submit_sheet"){
+  handleAddSheetSubmit()
+  setShowAddPanel(false)
+  continue
+}
+
+if(intent === "go_to_results"){
+  const preSheetData = (excelData?.find(s => s?.sheetName === preProduct))?.sheetData ?? {}
+              const preSheetName = preProduct ?? "";
+              console.log("[DEBUG] cols =", cols ?? {});
+              console.log("[DEBUG] preProductData", preSheetData ?? {});
+              const sheet = sheetNames ?? {};
+              console.log("[DEBUG] sheetNames =", sheet ?? {});
+              const postSheetData = (excelData?.find(s => s?.sheetName === postProduct))?.sheetData
+              console.log("[DEBUG] postProductData", postSheetData ?? {});
+              const postSheetName = postProduct ?? "";
+              navigation("/visualize-data", {
+                state: {
+                  availableCols: Array.from(new Set(cols || [])),
+                  preProductData: preSheetData ?? {},
+                  postProductData: postSheetData ?? {},
+                  excelData: excelData ?? {},
+                  sheetNames: sheet ?? "",
+                  preSheetName: preSheetName ?? "",
+                  postSheetName: postSheetName ?? ''
+                }
+              })
+            
+  continue
+}
 
 if (intent === "add_formula_column") {
 
