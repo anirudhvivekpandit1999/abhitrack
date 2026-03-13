@@ -33,15 +33,18 @@ function App() {
       <Suspense fallback={<GlobalLoadingIndicator />}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          {
+            //put protected routes there
+          }   
           <Route path="/non-abhitech-login" element={<NonAbhitechLogin />} />
           <Route path="/non-abhitech-signup" element={<NonAbhitechSignup />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/" element={<Landing />} />
           <Route path="/full-excel-file" element={<FullExcelFile />} />
-          <Route path="/data-file-checks" element={<ProtectedRoute><DataFileChecks /></ProtectedRoute>} />
-          <Route path="/calculated-columns-builder" element={<ProtectedRoute><CalculatedColumnsBuilder /></ProtectedRoute>} />
-          <Route path="/dependency-model" element={<ProtectedRoute><DependencyModel /></ProtectedRoute>} />
-          <Route path="/visualize-data" element={<ProtectedRoute><VisualizeData /></ProtectedRoute>} />
+          <Route path="/data-file-checks" element={<DataFileChecks/>} />
+          <Route path="/calculated-columns-builder" element={<CalculatedColumnsBuilder />}/>
+          <Route path="/dependency-model" element={<DependencyModel />}/>
+          <Route path="/visualize-data" element={<VisualizeData />} />
           <Route path="/manual" element={<UserManual />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

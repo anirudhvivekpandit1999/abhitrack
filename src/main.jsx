@@ -6,7 +6,7 @@ import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 
 const queryClient = new QueryClient();
 
-console.info('%cPowered by Ekalon Solutions', 'color:#90caf9;font-size:12px;');
+// console.info('%cPowered by Ekalon Solutions', 'color:#90caf9;font-size:12px;');
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

@@ -138,6 +138,7 @@ const SaveVisualizationButton = ({ elementId, fileNamePrefix = 'visualization', 
     <>
       <Tooltip title="Save Visualization">
         <Button
+        id='save-visualization-btn'
           variant="outlined"
           startIcon={isSaving ? <CircularProgress size={20} /> : <SaveIcon />}
           onClick={handleSave}

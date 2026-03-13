@@ -93,6 +93,17 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
             setSelectedVariable(availableColumns[0]);
         }
     }, [availableColumns]);
+
+    useEffect(() => {
+        const syncBaseColumnName = () => {
+            const saved = localStorage.getItem('correlationColumn');
+            if (saved && availableColumns.includes(saved)) {
+                setSelectedVariable(saved);
+            }
+        }
+        window.addEventListener('correlationColumnChanged', syncBaseColumnName);
+        return () => window.removeEventListener('correlationColumnChanged', syncBaseColumnName);
+    },[])
     
     const calculateCorrelation = (xValues, yValues) => {
         if (!xValues || !yValues || xValues.length !== yValues.length || xValues.length < 2) return 0;
@@ -192,6 +203,20 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
         return Number.isFinite(totalAbsCorrelation) ? totalAbsCorrelation : 0;
     };
     
+useEffect(() => {
+    const handler = (e) => {
+        const vars = e?.detail || [];
+        // if you want to replace:
+        setSelectedBarChartVariables(vars);
+
+        // Or if you prefer merging with existing selection:
+        // setSelectedBarChartVariables(prev => Array.from(new Set([...(prev||[]), ...vars])));
+    };
+    window.addEventListener('selectedBarChartVariablesChanged', handler);
+    return () => window.removeEventListener('selectedBarChartVariablesChanged', handler);
+}, []);
+
+
     const totalImpactWithProduct = useMemo(() => calculateImpact(correlationData.withProduct), [correlationData.withProduct]);
     const totalImpactWithoutProduct = useMemo(() => calculateImpact(correlationData.withoutProduct), [correlationData.withoutProduct]);
     const totalImpactTopWith = useMemo(() => calculateImpact(correlationData.topWithProduct), [correlationData.topWithProduct]);
@@ -978,6 +1003,7 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                                 Select Base Variable
                             </Typography>
                             <Autocomplete
+                                id='correlation-column-select'
                                 options={availableColumns}
                                 value={selectedVariable}
                                 onChange={(event, newValue) => {
@@ -1123,6 +1149,7 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                             <MuiTooltip title="Bar Chart Settings">
                                 <Button
+                                    id='bar-chart-settings-btn'
                                     variant="outlined"
                                     color="primary"
                                     onClick={() => setShowBarChartSettings(true)}
@@ -1152,6 +1179,7 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
 
                             <MuiTooltip title="Download Bar Chart as PNG">
                                 <Button
+                                    id='bar-chart-download-btn'
                                     variant="outlined"
                                     color="primary"
                                     onClick={downloadBarChartAsPNG}
