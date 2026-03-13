@@ -31,7 +31,7 @@ function FileUploader({ id, label, onFileUpload, error, isLoading }) {
         if (file) {
             setFileName(file.name);
             const fileExtension = file.name.split('.').pop().toLowerCase();
-            if (["xlsx", "xls"].includes(fileExtension)) {
+            if (["xlsx", "xls", "xlsm"].includes(fileExtension)) {
                 const reader = new FileReader();
                 reader.onload = (evt) => {
                     const data = evt.target.result;
@@ -66,9 +66,9 @@ function FileUploader({ id, label, onFileUpload, error, isLoading }) {
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             const file = e.dataTransfer.files[0];
             const fileExtension = file.name.split('.').pop().toLowerCase();
-            if (["csv", "xlsx", "xls", "parquet"].includes(fileExtension)) {
+            if (["csv", "xlsx", "xls", "xlsm", "parquet"].includes(fileExtension)) {
                 setFileName(file.name);
-                if (["xlsx", "xls"].includes(fileExtension)) {
+                if (["xlsx", "xls", "xlsm"].includes(fileExtension)) {
                     const reader = new FileReader();
                     reader.onload = (evt) => {
                         const data = evt.target.result;
@@ -126,7 +126,7 @@ function FileUploader({ id, label, onFileUpload, error, isLoading }) {
                                 name={id}
                                 type="file"
                                 ref={fileInputRef}
-                                accept=".csv,.xlsx,.xls,.parquet"
+                                accept=".csv,.xlsx,.xls,.xlsm,.parquet"
                                 className="sr-only"
                                 onChange={handleFileChange}
                                 disabled={isLoading}

@@ -662,7 +662,6 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
     const plotHeight = Math.max(200, containerHeight - margin.top - margin.bottom)
 
     if (plotWidth < 200 || plotHeight < 200) {
-      console.warn("Container too small for plot")
       return
     }
 
@@ -1992,7 +1991,6 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 2 }}>
               <MuiTooltip title="Download entire page as PNG">
                 <Button
-                  id='scatter-btn'
                   color="primary"
                   onClick={downloadPageAsPNG}
                   variant="outlined"

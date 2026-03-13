@@ -19,16 +19,58 @@ export const AuthProvider = ({ children }) => {
   const [toastSeverity, setToastSeverity] = useState("success");
 
   useEffect(() => {
-    const authData = getAuthData();
-    if (authData) {
-      if (!user || JSON.stringify(user) !== JSON.stringify(authData.user)) {
-        setUser(authData.user);
+    const initializeAuth = async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const authData = getAuthData();
+      if (authData) {
+        if (!user || JSON.stringify(user) !== JSON.stringify(authData.user)) {
+          setUser(authData.user);
+        }
+        if (token !== authData.token) {
+          setToken(authData.token);
+        }
       }
-      if (token !== authData.token) {
-        setToken(authData.token);
-      }
-    }
+    };
+    
+    initializeAuth();
   }, []);
+
+  useEffect(() => {
+    const handleStorageChange = async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      const authData = getAuthData();
+      if (authData && authData.user && authData.token) {
+        const userChanged = !user || JSON.stringify(user) !== JSON.stringify(authData.user);
+        const tokenChanged = token !== authData.token;
+        
+        if (userChanged) {
+          setUser(authData.user);
+        }
+        if (tokenChanged) {
+          setToken(authData.token);
+        }
+      } else if ((user || token) && !authData) {
+        const hasLocalStorage = localStorage.getItem('user') || localStorage.getItem('token');
+        if (!hasLocalStorage) {
+          setUser(null);
+          setToken("");
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('auth-storage-change', handleStorageChange);
+    
+    const interval = setInterval(() => {
+      handleStorageChange();
+    }, 2000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth-storage-change', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [user, token, setUser, setToken]);
 
   const clearLocalStorage = () => {
     clearUserStorage();
@@ -38,7 +80,7 @@ export const AuthProvider = ({ children }) => {
 
   const loginUser = useMutation({
     mutationFn: verifyUser,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (data.user) {
         setToastSeverity("success");
         setToastMessage(typeof data.message === "string" ? data.message : "Login successful");
@@ -47,12 +89,20 @@ export const AuthProvider = ({ children }) => {
         const { token, ...userData } = data.user;
         const userType = data.user.access === 'External' ? USER_TYPES.EXTERNAL : USER_TYPES.ADMIN;
         
-        storeAuthData(userData, token, userType);
+        const success = storeAuthData(userData, token, userType);
+        if (!success) {
+          setToastSeverity("error");
+          setToastMessage("Failed to store authentication data");
+          setToastOpen(true);
+          return;
+        }
         
+        await new Promise(resolve => setTimeout(resolve, 150));
         setToken(token);
         setUser(userData);
         
         queryClient.invalidateQueries({ queryKey: ["todos"] });
+        await new Promise(resolve => setTimeout(resolve, 200));
         navigate("/data-file-checks", { replace: true });
       } else {
         setToastSeverity("error");

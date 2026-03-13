@@ -51,7 +51,6 @@ const BootstrappingTab = ({
     productName = ''
 }) => {
     const [selectedColumn, setSelectedColumn] = useState('');
-    const [itemSelectOpen,   setItemSelectOpen] = useState(false);
     const [significantPage, setSignificantPage] = useState(1);
     const [nonSignificantPage, setNonSignificantPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -89,29 +88,6 @@ const BootstrappingTab = ({
             setSelectedColumn(availableColumns[0]);
         }
     }, [availableColumns]);
-
-    useEffect(()=>{
-        const syncViewMode = () => {
-            const viewMode = localStorage.getItem('bootstrapViewMode') || 'grid';
-            setViewMode(viewMode);
-        };
-        syncViewMode();
-        window.addEventListener('bootstrapViewModeChanged', syncViewMode);
-        return () => {
-            window.removeEventListener('bootstrapViewModeChanged', syncViewMode);
-        };
-    },[])
-
-    useEffect(()=>{
-        const syncItemSelectOpen = () => {
-            const isOpen = localStorage.getItem('bootstrapItemSelectOpen') === 'true';
-            setItemSelectOpen(isOpen);
-        };
-        window.addEventListener('bootstrapItemSelectOpenChanged', syncItemSelectOpen);
-        return () => {
-            window.removeEventListener('bootstrapItemSelectOpenChanged', syncItemSelectOpen);
-        };
-    },[])
 
     const getColumnStatistics = (columnName) => {
         const significantResults = bootstrapAnalysis.significant_impact || [];
@@ -250,7 +226,6 @@ const BootstrappingTab = ({
             watermarkImg.src = logo;
             
         } catch (error) {
-            console.error('Error generating PNG:', error);
             alert('Failed to generate PNG. Please try again.');
         }
     };
@@ -304,7 +279,6 @@ const BootstrappingTab = ({
                     />
                     <Tooltip title="Download Table as PNG">
                         <Button
-                            id='bootstrap-btn'
                             variant="outlined"
                             size="small"
                             startIcon={<ImageIcon />}
@@ -661,7 +635,6 @@ const BootstrappingTab = ({
             <Grid container spacing={{ xs: 2, sm: 3 }}>
                 <Grid item xs={12} md={6} lg={4}>
                     <Autocomplete
-                        id='bootstrap-column-select'
                         options={availableColumns}
                         value={selectedColumn}
                         onChange={(event, newValue) => {
@@ -670,8 +643,7 @@ const BootstrappingTab = ({
                             }
                         }}
                         renderInput={(params) => (
-                            <TextField 
-                                id='bootstrap-column-select'
+                            <TextField
                                 {...params}
                                 label="Select Column for Analysis"
                                 variant="outlined"
@@ -728,7 +700,6 @@ const BootstrappingTab = ({
                                 value={itemsPerPage}
                                 label="Items per page"
                                 onChange={(e) => {
-                                    setItemSelectOpen(true);
                                     setItemsPerPage(e.target.value);
                                     setSignificantPage(1);
                                     setNonSignificantPage(1);
@@ -762,14 +733,13 @@ const BootstrappingTab = ({
                             size="small"
                             fullWidth
                         >
-                            <ToggleButton id="grid"value="grid">Grid View</ToggleButton>
-                            <ToggleButton id="list"value="list">List View</ToggleButton>
+                            <ToggleButton value="grid">Grid View</ToggleButton>
+                            <ToggleButton value="list">List View</ToggleButton>
                         </ToggleButtonGroup>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
                         <Tooltip title="Download Excel Report">
                             <Button
-                                id='export-bootstrap-excel-btn'
                                 variant="outlined"
                                 size="small"
                                 startIcon={<DownloadIcon />}

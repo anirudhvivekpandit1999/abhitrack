@@ -86,6 +86,9 @@ const Signup = () => {
       if (!success) {
         throw new Error('Failed to store authentication data');
       }
+      
+      window.dispatchEvent(new Event('auth-storage-change'));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       navigate('/data-file-checks', {
         replace: true,
@@ -93,7 +96,6 @@ const Signup = () => {
       });
 
     } catch (err) {
-      console.error('Signup error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -112,7 +114,6 @@ const Signup = () => {
       });
 
       const data = await res.json();
-      console.log('Google signup response:', data);
 
       if (!res.ok) {
         if (res.status === 400 && (data.detail && data.detail.toLowerCase().includes('already registered'))) {
@@ -132,15 +133,16 @@ const Signup = () => {
       if (!success) {
         throw new Error('Failed to store authentication data');
       }
+      
+      window.dispatchEvent(new Event('auth-storage-change'));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
-      console.log('Google signup successful, navigating to data file checks with welcome modal');
       navigate('/data-file-checks', {
         replace: true,
         state: { showWelcome: true }
       });
 
     } catch (err) {
-      console.error('Google OAuth error:', err);
       setError(err.message);
       clearAuthData();
     } finally {

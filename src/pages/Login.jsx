@@ -32,7 +32,7 @@ const Login = () => {
 
   useEffect(() => {
     if (auth?.user || isAuthenticated()) {
-      navigate("/full-excel-file", { replace: true });
+      navigate("/data-file-checks", { replace: true });
     }
   }, [auth?.user, navigate]);
 
@@ -43,11 +43,8 @@ const Login = () => {
     try {
       if (auth?.loginUser?.mutate) {
         auth.loginUser.mutate({ email, password });
-      } else {
-        console.error('Auth context not available');
       }
     } catch (error) {
-      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }

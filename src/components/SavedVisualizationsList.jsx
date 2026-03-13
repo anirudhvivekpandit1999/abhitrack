@@ -28,6 +28,8 @@ import {
 import { ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client, BUCKET_NAME, PUBLIC_URL } from '../utils/s3Client';
 import { useAuth } from '../hooks/useAuth';
+import { getAuthData } from '../utils/authUtils';
+import JSZip from 'jszip';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DownloadIcon from '@mui/icons-material/Download';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -57,39 +59,29 @@ const SavedVisualizationsList = ({ open, onClose }) => {
   const [dateFilter, setDateFilter] = useState('');
 
   const currentUser = useMemo(() => {
-    // Use the same logic as SaveVisualizationButton to get the username
-    // SaveVisualizationButton uses: const user = JSON.parse(localStorage.getItem('user') || '{}');
-    // const employeeName = user.name || 'anonymous';
     try {
-      // First try useAuth hook
       if (user?.name) {
-        console.log('Got user from useAuth:', user.name);
         return user.name;
       }
-      // Fallback to localStorage (same as SaveVisualizationButton)
-      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-      const userName = storedUser.name || null;
-      console.log('Got user from localStorage:', userName, 'Full user object:', storedUser);
-      return userName;
+      const authData = getAuthData();
+      if (authData?.user?.name) {
+        return authData.user.name;
+      }
+      return null;
     } catch (error) {
-      console.error('Error getting current user:', error);
       return null;
     }
   }, [user]);
 
   const fetchVisualizations = useCallback(async () => {
-    // Don't fetch if no user is logged in
     if (!currentUser) {
-      console.log('No current user found, skipping fetch');
       setVisualizations([]);
       return;
     }
 
     setLoading(true);
     try {
-      // Only fetch from the current user's folder
       const userPrefix = `AbhiStat/${currentUser}/`;
-      console.log('Fetching visualizations for user:', currentUser, 'with prefix:', userPrefix);
       
       const command = new ListObjectsV2Command({
         Bucket: BUCKET_NAME,
@@ -98,38 +90,29 @@ const SavedVisualizationsList = ({ open, onClose }) => {
 
       const response = await s3Client.send(command);
       const files = response.Contents || [];
-      console.log(`Found ${files.length} files for user ${currentUser}`);
       
-      // If no files found in user folder, try checking if there are any files in AbhiStat/ 
-      // that might belong to this user (for backward compatibility)
       let allFiles = files;
       if (files.length === 0) {
-        console.log('No files in user folder, checking for files in old format...');
         const allCommand = new ListObjectsV2Command({
           Bucket: BUCKET_NAME,
           Prefix: 'AbhiStat/',
         });
         const allResponse = await s3Client.send(allCommand);
         const allFilesList = allResponse.Contents || [];
-        console.log(`Found ${allFilesList.length} total files in AbhiStat/ folder`);
         
-        // Filter files that might belong to this user
-        // Check if the path structure matches: AbhiStat/{username}/... or if username is in the path
         const userNameLower = currentUser.toLowerCase().trim();
         const userNameVariations = [
           userNameLower,
           userNameLower.replace(/\s+/g, '-'),
           userNameLower.replace(/\s+/g, '_'),
-          currentUser.trim() // original case
+          currentUser.trim()
         ];
         
         const userFiles = allFilesList.filter(file => {
           const key = file.Key;
-          // Check if file is in user's folder (exact match)
           if (key.startsWith(`AbhiStat/${currentUser}/`) || key.startsWith(`AbhiStat/${currentUser.trim()}/`)) {
             return true;
           }
-          // Check if any variation of username appears as a folder name
           const pathAfterAbhiStat = key.replace('AbhiStat/', '').split('/')[0];
           return userNameVariations.some(variation => 
             pathAfterAbhiStat.toLowerCase() === variation.toLowerCase()
@@ -137,11 +120,7 @@ const SavedVisualizationsList = ({ open, onClose }) => {
         });
         
         if (userFiles.length > 0) {
-          console.log(`Found ${userFiles.length} files in old format for user ${currentUser}`);
           allFiles = userFiles;
-        } else {
-          console.log('No files found for user in any format. Sample files found:', 
-            allFilesList.slice(0, 5).map(f => f.Key));
         }
       }
       
@@ -149,18 +128,14 @@ const SavedVisualizationsList = ({ open, onClose }) => {
         .filter(file => file.Key.endsWith('.png'))
         .sort((a, b) => b.LastModified - a.LastModified)
         .map(file => {
-          // Extract display name from the file path
-          // Format: AbhiStat/{username}/{displayName}.png or AbhiStat/{displayName}.png (old format)
           let displayName = '';
           let username = currentUser;
           
           if (file.Key.startsWith(userPrefix)) {
-            // New format: AbhiStat/{username}/{displayName}.png
             const pathParts = file.Key.replace(userPrefix, '').split('/');
             const fileName = pathParts[pathParts.length - 1];
             displayName = fileName.replace('.png', '');
           } else {
-            // Old format: AbhiStat/{displayName}.png or other formats
             const pathParts = file.Key.replace('AbhiStat/', '').split('/');
             if (pathParts.length > 1) {
               username = pathParts[0];
@@ -198,10 +173,8 @@ const SavedVisualizationsList = ({ open, onClose }) => {
           };
         });
 
-      console.log(`Mapped ${mappedFiles.length} visualizations`);
       setVisualizations(mappedFiles);
     } catch (error) {
-      console.error('Error fetching visualizations:', error);
       setVisualizations([]);
     } finally {
       setLoading(false);
@@ -216,11 +189,8 @@ const SavedVisualizationsList = ({ open, onClose }) => {
     }
   }, [open, currentUser, fetchVisualizations]);
 
-  // Filter visualizations: Apply type and date filters
-  // Note: All visualizations are already filtered by user folder in fetchVisualizations
   const filteredVisualizations = useMemo(() => {
     return visualizations.filter(viz => {
-      // Apply additional filters
       const matchesType = typeFilter === 'All' || viz.type === typeFilter;
       const matchesDate = !dateFilter || viz.dateIso === dateFilter;
       
@@ -249,46 +219,29 @@ const SavedVisualizationsList = ({ open, onClose }) => {
   const allSelected = filteredVisualizations.length > 0 && selectedItems.size === filteredVisualizations.length;
   const someSelected = selectedItems.size > 0 && selectedItems.size < filteredVisualizations.length;
 
-  // Extract S3 key from URL
   const extractS3KeyFromUrl = (url) => {
     try {
-      // Support both E2E Networks URL format and legacy AWS format
       const publicUrl = PUBLIC_URL;
       const e2eBaseUrl = `${publicUrl}/`;
       if (url.startsWith(e2eBaseUrl)) {
         return url.replace(e2eBaseUrl, '');
       }
-      // Legacy AWS format support for backward compatibility
       const awsPattern = /https:\/\/[^/]+\.s3\.[^/]+\.amazonaws\.com\//;
       if (awsPattern.test(url)) {
         return url.replace(awsPattern, '');
       }
-      // If URL doesn't match expected patterns, try to extract path after domain
+
       const urlObj = new URL(url);
-      return urlObj.pathname.substring(1); // Remove leading slash
+      return urlObj.pathname.substring(1);
     } catch (error) {
-      console.error('Error extracting key from URL:', error);
       throw new Error('Invalid storage URL format');
     }
   };
 
-  const handleBulkDownload = async () => {
-    const selectedVizs = filteredVisualizations.filter(viz => selectedItems.has(viz.key));
-    for (let i = 0; i < selectedVizs.length; i++) {
-      await handleDownload(selectedVizs[i].url, selectedVizs[i].name, selectedVizs[i].key);
-      // Small delay between downloads to avoid overwhelming the browser
-      if (i < selectedVizs.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-    }
-  };
-
-  const handleDownload = async (url, name, s3Key = null) => {
+  const downloadImageAsBlob = async (url, s3Key = null) => {
     try {
-      // Use S3 key if provided, otherwise extract from URL
       const key = s3Key || extractS3KeyFromUrl(url);
       
-      // Download from S3 using GetObjectCommand (works for all users)
       const command = new GetObjectCommand({
         Bucket: BUCKET_NAME,
         Key: key,
@@ -296,16 +249,12 @@ const SavedVisualizationsList = ({ open, onClose }) => {
 
       const response = await s3Client.send(command);
       
-      // Convert the response body stream to a blob
-      // AWS SDK v3 returns Body as a ReadableStream in browser environments
       let blob;
       
       if (response.Body && typeof response.Body.transformToByteArray === 'function') {
-        // Preferred method for AWS SDK v3
         const byteArray = await response.Body.transformToByteArray();
         blob = new Blob([byteArray], { type: 'image/png' });
       } else if (response.Body && typeof response.Body.getReader === 'function') {
-        // If it's a ReadableStream (browser environment)
         const chunks = [];
         const reader = response.Body.getReader();
         
@@ -315,7 +264,6 @@ const SavedVisualizationsList = ({ open, onClose }) => {
           chunks.push(value);
         }
         
-        // Combine chunks into a single Uint8Array
         const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
         const combined = new Uint8Array(totalLength);
         let offset = 0;
@@ -325,11 +273,9 @@ const SavedVisualizationsList = ({ open, onClose }) => {
         }
         blob = new Blob([combined], { type: 'image/png' });
       } else if (response.Body && typeof response.Body.arrayBuffer === 'function') {
-        // If it has arrayBuffer method
         const arrayBuffer = await response.Body.arrayBuffer();
         blob = new Blob([arrayBuffer], { type: 'image/png' });
       } else {
-        // Fallback: try to read as async iterable stream
         const chunks = [];
         for await (const chunk of response.Body) {
           chunks.push(chunk);
@@ -337,22 +283,124 @@ const SavedVisualizationsList = ({ open, onClose }) => {
         blob = new Blob(chunks, { type: 'image/png' });
       }
       
-      // Create a blob URL
+      return blob;
+    } catch (error) {
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          return await response.blob();
+        }
+        throw new Error('Fetch also failed');
+      } catch (fetchError) {
+        throw new Error('Failed to download image');
+      }
+    }
+  };
+
+  const handleBulkDownload = async () => {
+    const selectedVizs = filteredVisualizations.filter(viz => selectedItems.has(viz.key));
+    
+    if (selectedVizs.length > 1) {
+      try {
+        const zip = new JSZip();
+        
+        for (const viz of selectedVizs) {
+          try {
+            const blob = await downloadImageAsBlob(viz.url, viz.key);
+            const sanitizedName = viz.name.replace(/[<>:"/\\|?*]/g, '_') + '.png';
+            zip.file(sanitizedName, blob);
+          } catch (error) {
+            console.error(`Failed to download ${viz.name}:`, error);
+          }
+        }
+        
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        
+        const zipUrl = window.URL.createObjectURL(zipBlob);
+        const link = document.createElement('a');
+        link.href = zipUrl;
+        
+        const username = currentUser || 'User';
+        const sanitizedUsername = username.replace(/[<>:"/\\|?*]/g, '_');
+        link.download = `${sanitizedUsername}-Saved Visualizations.zip`;
+        
+        document.body.appendChild(link);
+        link.click();
+        
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(zipUrl);
+      } catch (error) {
+        console.error('Failed to create zip file:', error);
+        for (let i = 0; i < selectedVizs.length; i++) {
+          await handleDownload(selectedVizs[i].url, selectedVizs[i].name, selectedVizs[i].key);
+          if (i < selectedVizs.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+        }
+      }
+    } else {
+      if (selectedVizs.length === 1) {
+        await handleDownload(selectedVizs[0].url, selectedVizs[0].name, selectedVizs[0].key);
+      }
+    }
+  };
+
+  const handleDownload = async (url, name, s3Key = null) => {
+    try {
+      const key = s3Key || extractS3KeyFromUrl(url);
+      
+      const command = new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+      });
+
+      const response = await s3Client.send(command);
+      
+      let blob;
+      
+      if (response.Body && typeof response.Body.transformToByteArray === 'function') {
+        const byteArray = await response.Body.transformToByteArray();
+        blob = new Blob([byteArray], { type: 'image/png' });
+      } else if (response.Body && typeof response.Body.getReader === 'function') {
+        const chunks = [];
+        const reader = response.Body.getReader();
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+        }
+        
+        const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+        const combined = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of chunks) {
+          combined.set(chunk, offset);
+          offset += chunk.length;
+        }
+        blob = new Blob([combined], { type: 'image/png' });
+      } else if (response.Body && typeof response.Body.arrayBuffer === 'function') {
+        const arrayBuffer = await response.Body.arrayBuffer();
+        blob = new Blob([arrayBuffer], { type: 'image/png' });
+      } else {
+        const chunks = [];
+        for await (const chunk of response.Body) {
+          chunks.push(chunk);
+        }
+        blob = new Blob(chunks, { type: 'image/png' });
+      }
+      
       const blobUrl = window.URL.createObjectURL(blob);
       
-      // Create a download link
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `${name}.png`; // Ensure .png extension
+      link.download = `${name}.png`;
       document.body.appendChild(link);
       link.click();
       
-      // Clean up
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('Error downloading image from S3:', error);
-      // Fallback: try fetching from URL (may work for some cases)
       try {
         const response = await fetch(url);
         if (response.ok) {
@@ -369,8 +417,6 @@ const SavedVisualizationsList = ({ open, onClose }) => {
           throw new Error('Fetch also failed');
         }
       } catch (fetchError) {
-        console.error('Both S3 and fetch methods failed:', fetchError);
-        // Last resort: open in new tab
         window.open(url, '_blank');
       }
     }

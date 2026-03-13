@@ -4,6 +4,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import html2canvas from 'html2canvas';
 import { Upload } from "@aws-sdk/lib-storage";
 import { s3Client, BUCKET_NAME } from '../utils/s3Client';
+import { getAuthData } from '../utils/authUtils';
 
 const SaveVisualizationButton = ({ elementId, fileNamePrefix = 'visualization', variableNames }) => {
   const [isSaving, setIsSaving] = useState(false);
@@ -49,9 +50,6 @@ const SaveVisualizationButton = ({ elementId, fileNamePrefix = 'visualization', 
           tooltips.forEach(t => t.style.display = 'none');
           
           const elementToFind = hasId ? originalId : 'html2canvas-temp-id';
-          if (!clonedDoc.getElementById(elementToFind)) {
-            console.warn(`Element with ID ${elementToFind} not found in cloned document`);
-          }
         }
       });
 
@@ -62,8 +60,8 @@ const SaveVisualizationButton = ({ elementId, fileNamePrefix = 'visualization', 
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
       if (!blob) throw new Error('Failed to create image blob');
 
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const employeeName = user.name || 'anonymous';
+      const authData = getAuthData();
+      const employeeName = authData?.user?.name || 'anonymous';
       
       const now = new Date();
       const dateStr = now.toLocaleDateString('en-US', { 
@@ -127,7 +125,6 @@ const SaveVisualizationButton = ({ elementId, fileNamePrefix = 'visualization', 
       await upload.done();
       setSnackbar({ open: true, message: 'Visualization saved successfully!', severity: 'success' });
     } catch (error) {
-      console.error('Error saving visualization:', error);
       setSnackbar({ open: true, message: 'Failed to save visualization', severity: 'error' });
     } finally {
       setIsSaving(false);
@@ -138,7 +135,6 @@ const SaveVisualizationButton = ({ elementId, fileNamePrefix = 'visualization', 
     <>
       <Tooltip title="Save Visualization">
         <Button
-        id='save-visualization-btn'
           variant="outlined"
           startIcon={isSaving ? <CircularProgress size={20} /> : <SaveIcon />}
           onClick={handleSave}

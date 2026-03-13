@@ -17,6 +17,7 @@ import { useSessionStorage } from '../hooks/useSessionStorage';
 import CalculatedColumnsList from '../components/CalculatedColumnsList';
 import FormulaBuilder from '../components/FormulaBuilder';
 import NavigationButtons from '../components/NavigationButtons';
+import apiClient from '../utils/apiClient';
 
 function CalculatedColumnsBuilder() {
     const location = useLocation();
@@ -135,7 +136,13 @@ function CalculatedColumnsBuilder() {
         setBackendErrors([]);
     
         try {
-            const storedSessionId = sessionId || localStorage.getItem('session_id');
+            let storedSessionId = sessionId;
+            if (!storedSessionId) {
+                try {
+                    storedSessionId = localStorage.getItem('session_id');
+                } catch (e) {
+                }
+            }
             
             const columnsToProcess = calculatedColumns.map(col => ({
                 column_name: col.name,
@@ -143,53 +150,37 @@ function CalculatedColumnsBuilder() {
                 formula_elements: col.formulaElements
             }));
     
-            const response = await fetch('https://abhistat.com/api/save-calculated-columns', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Session-ID': storedSessionId || ''
-                },
-                credentials: 'include',
-                body: JSON.stringify({ 
-                    columns: columnsToProcess,
-                    session_id: storedSessionId
-                })
+            const data = await apiClient.post('/save-calculated-columns', {
+                columns: columnsToProcess,
+                session_id: storedSessionId
             });
-    
-            const data = await response.json();
-    
-            if (!response.ok) {
-                if (data.detail && typeof data.detail === 'object' && data.detail.debug_info) {
-                    console.error('Session debug info:', data.detail.debug_info);
-                }
-                
-                if (data.errors && Array.isArray(data.errors)) {
-                    setBackendErrors(data.errors);
-                    setNextButtonDisabled(true);
-                    setNotification({
-                        open: true,
-                        message: 'Failed to apply columns. Please fix the errors and try again.',
-                        severity: 'error'
-                    });
-                } else {
-                    throw new Error(data.error || data.detail?.error || 'Unknown error occurred');
-                }
-            } else {
-                const newColumns = data.new_columns || [];
-                setAvailableColumns(prev => [...new Set([...prev, ...newColumns])]);
-                setPendingColumns([]);
-                setUpdatedColumns([]);
-                setNextButtonDisabled(false);
-                setBackendErrors([]);
-                
-                setNotification({
-                    open: true,
-                    message: 'All calculated columns were successfully applied to the data files!',
-                    severity: 'success'
-                });
-            }
+            
+            const newColumns = data.new_columns || [];
+            setAvailableColumns(prev => [...new Set([...prev, ...newColumns])]);
+            setPendingColumns([]);
+            setUpdatedColumns([]);
+            setNextButtonDisabled(false);
+            setBackendErrors([]);
+            
+            setNotification({
+                open: true,
+                message: 'All calculated columns were successfully applied to the data files!',
+                severity: 'success'
+            });
         } catch (error) {
-            console.error('Error saving calculated columns:', error);
+            if (error.message.includes('errors')) {
+                try {
+                    const errorData = JSON.parse(error.message);
+                    if (Array.isArray(errorData)) {
+                        setBackendErrors(errorData);
+                    }
+                } catch (e) {
+                }
+            }
+            
+            if (error.message.includes('Session expired') || error.message.includes('Session not found')) {
+                setBackendErrors([error.message]);
+            }
             setNotification({
                 open: true,
                 message: `Error: ${error.message}`,

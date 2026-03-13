@@ -22,7 +22,9 @@ import ProcessFileButtons from '../components/ProcessFileButtons';
 import DataPreviewSection from '../components/DataPreviewSection';
 import NavigationButtons from '../components/NavigationButtons';
 import WelcomeModal from '../components/WelcomeModal';
-import { formatFileSize, saveToSessionStorage, getFromSessionStorage } from '../utils/fileUtils';
+import { formatFileSize, saveToSessionStorage, getFromSessionStorage, removeFromSessionStorage } from '../utils/fileUtils';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import apiClient from '../utils/apiClient';
 
 const DataFileChecks = () => {
     const location = useLocation();
@@ -75,10 +77,28 @@ const DataFileChecks = () => {
         getFromSessionStorage('productName', '')
     );
 
+    const [sessionId, setSessionId] = useLocalStorage('session_id', null);
+
     useEffect(() => {
         if (withoutProductData && withProductData) {
-            saveToSessionStorage('withoutProductData', withoutProductData);
-            saveToSessionStorage('withProductData', withProductData);
+            (async () => {
+                try {
+                    const dataSize1 = new Blob([JSON.stringify(withoutProductData)]).size;
+                    const dataSize2 = new Blob([JSON.stringify(withProductData)]).size;
+                    
+                    if (dataSize1 > 2 * 1024 * 1024 || dataSize2 > 2 * 1024 * 1024) {
+                        try {
+                            await removeFromSessionStorage('availableColumns');
+                            await removeFromSessionStorage('fileInfo');
+                        } catch (e) {
+                        }
+                    }
+                    
+                    await saveToSessionStorage('withoutProductData', withoutProductData);
+                    await saveToSessionStorage('withProductData', withProductData);
+                } catch (e) {
+                }
+            })();
 
             if (!dataErrors.withoutProduct && !dataErrors.withProduct) {
                 setCanProceedToNextStep(true);
@@ -101,6 +121,30 @@ const DataFileChecks = () => {
     }, [clientName, plantName, productName]);
 
     useEffect(() => {
+        const loadFromIndexedDB = async () => {
+            if (!withoutProductData && !location.state?.withoutProductData) {
+                const data = await getFromSessionStorage('withoutProductData', null, false);
+                if (data) {
+                    setWithoutProductData(data);
+                }
+            }
+            if (!withProductData && !location.state?.withProductData) {
+                const data = await getFromSessionStorage('withProductData', null, false);
+                if (data) {
+                    setWithProductData(data);
+                }
+            }
+            if (!fileInfo.withoutProduct && !fileInfo.withProduct) {
+                const data = await getFromSessionStorage('fileInfo', { withoutProduct: null, withProduct: null }, false);
+                if (data && (data.withoutProduct || data.withProduct)) {
+                    setFileInfo(data);
+                }
+            }
+        };
+        loadFromIndexedDB();
+    }, []);
+
+    useEffect(() => {
         window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
         
         if (location.state?.showWelcome) {
@@ -117,7 +161,7 @@ const DataFileChecks = () => {
         }
         if (!file) return;
 
-        const allowedTypes = ['csv', 'xlsx', 'xls', 'parquet'];
+        const allowedTypes = ['csv', 'xlsx', 'xls', 'xlsm', 'parquet'];
         const fileExtension = file.name.split('.').pop().toLowerCase();
         if (!allowedTypes.includes(fileExtension)) {
             setDataErrors(prev => ({
@@ -182,24 +226,44 @@ const DataFileChecks = () => {
         if (withSheet) formData.append('sheet2', withSheet);
 
         try {
-            const response = await fetch('https://abhistat.com/api/process-files', {
-                method: 'POST',
-                credentials: 'include',
-                body: formData
-            });
+            const result = await apiClient.post('/process-files', formData, { isFormData: true });
 
-            const result = await response.json();
-
-            if (response.ok && result.session_id) {
-                localStorage.setItem('session_id', result.session_id);
+            if (result.session_id) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                try {
+                    setSessionId(result.session_id);
+                } catch (e) {
+                    try {
+                        localStorage.removeItem('dependency-model-columns');
+                        setSessionId(result.session_id);
+                    } catch (e2) {
+                    }
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 50));
 
                 const file1Data = result.file1_info.data || result.file1_info.preview || [];
                 const file2Data = result.file2_info.data || result.file2_info.preview || [];
 
+                const dataSize1 = new Blob([JSON.stringify(file1Data)]).size;
+                const dataSize2 = new Blob([JSON.stringify(file2Data)]).size;
+                
+                if (dataSize1 > 2 * 1024 * 1024 || dataSize2 > 2 * 1024 * 1024) {
+                    try {
+                        await removeFromSessionStorage('withoutProductData');
+                        await removeFromSessionStorage('withProductData');
+                    } catch (e) {
+                    }
+                }
+
                 setWithoutProductData(file1Data);
                 setWithProductData(file2Data);
                 
-                localStorage.removeItem('dependency-model-columns');
+                try {
+                    localStorage.removeItem('dependency-model-columns');
+                } catch (e) {
+                }
 
                 setFileInfo(prev => ({
                     withoutProduct: {
@@ -212,26 +276,20 @@ const DataFileChecks = () => {
                         rows: result.file2_info.shape?.[0] || file2Data.length,
                         columns: result.file2_info.columns || Object.keys(file2Data[0] || {})
                     }
-                }
-            ));
-            } else {
-                const errorMessage = result.error || 'An error occurred processing the files';
-                if (errorMessage.toLowerCase().includes('file1') || errorMessage.toLowerCase().includes('withoutproduct')) {
-                    setDataErrors(prev => ({ ...prev, withoutProduct: errorMessage }));
-                } else if (errorMessage.toLowerCase().includes('file2') || errorMessage.toLowerCase().includes('withproduct')) {
-                    setDataErrors(prev => ({ ...prev, withProduct: errorMessage }));
-                } else {
-                    setDataErrors({
-                        withoutProduct: errorMessage,
-                        withProduct: errorMessage
-                    });
-                }
+                }));
             }
         } catch (error) {
-            setDataErrors({
-                withoutProduct: 'Server error. Please try again.',
-                withProduct: 'Server error. Please try again.'
-            });
+            const errorMessage = error.message || 'Server error. Please try again.';
+            if (errorMessage.toLowerCase().includes('file1') || errorMessage.toLowerCase().includes('withoutproduct')) {
+                setDataErrors(prev => ({ ...prev, withoutProduct: errorMessage }));
+            } else if (errorMessage.toLowerCase().includes('file2') || errorMessage.toLowerCase().includes('withproduct')) {
+                setDataErrors(prev => ({ ...prev, withProduct: errorMessage }));
+            } else {
+                setDataErrors({
+                    withoutProduct: errorMessage,
+                    withProduct: errorMessage
+                });
+            }
         } finally {
             setIsLoading(false);
         }
@@ -264,12 +322,23 @@ const DataFileChecks = () => {
         }
     }, [canProceedToNextStep, navigate, withoutProductData, withProductData, clientName, plantName, productName]);
 
-    const handleResetErrors = useCallback(() => {
+    const handleResetErrors = useCallback(async () => {
         setErrorType(null);
         setDataErrors({ withoutProduct: null, withProduct: null });
-        sessionStorage.removeItem('withoutProductData');
-        sessionStorage.removeItem('withProductData');
-        sessionStorage.removeItem('fileInfo');
+        
+        try {
+            await removeFromSessionStorage('withoutProductData');
+        } catch (e) {
+        }
+        try {
+            await removeFromSessionStorage('withProductData');
+        } catch (e) {
+        }
+        try {
+            await removeFromSessionStorage('fileInfo');
+        } catch (e) {
+        }
+        
         setWithoutProductData(null);
         setWithProductData(null);
         setFileInfo({
@@ -287,21 +356,58 @@ const DataFileChecks = () => {
         setIsLoading(false);
         setCanProceedToNextStep(false);
 
+        await new Promise(resolve => setTimeout(resolve, 150));
         window.location.reload();
     }, []);
 
-    const clearCache = useCallback(() => {
-        sessionStorage.removeItem('withoutProductData');
-        sessionStorage.removeItem('withProductData');
-        sessionStorage.removeItem('fileInfo');
-        sessionStorage.removeItem('clientName');
-        sessionStorage.removeItem('plantName');
-        sessionStorage.removeItem('productName');
-        localStorage.removeItem('session_id');
-        localStorage.removeItem('withoutProductData');
-        localStorage.removeItem('withProductData');
-        localStorage.removeItem('fileInfo');
-        localStorage.removeItem('dependency-model-columns');
+    const clearCache = useCallback(async () => {
+        try {
+            await removeFromSessionStorage('withoutProductData');
+        } catch (e) {
+        }
+        try {
+            await removeFromSessionStorage('withProductData');
+        } catch (e) {
+        }
+        try {
+            await removeFromSessionStorage('fileInfo');
+        } catch (e) {
+        }
+        try {
+            await removeFromSessionStorage('clientName');
+        } catch (e) {
+        }
+        try {
+            await removeFromSessionStorage('plantName');
+        } catch (e) {
+        }
+        try {
+            await removeFromSessionStorage('productName');
+        } catch (e) {
+        }
+        
+        try {
+            setSessionId(null);
+        } catch (e) {
+        }
+        
+        try {
+            localStorage.removeItem('withoutProductData');
+        } catch (e) {
+        }
+        try {
+            localStorage.removeItem('withProductData');
+        } catch (e) {
+        }
+        try {
+            localStorage.removeItem('fileInfo');
+        } catch (e) {
+        }
+        try {
+            localStorage.removeItem('dependency-model-columns');
+        } catch (e) {
+        }
+        
         setWithoutProductData(null);
         setWithProductData(null);
         setFileInfo({
@@ -320,8 +426,10 @@ const DataFileChecks = () => {
         setClientName('');
         setPlantName('');
         setProductName('');
+        
+        await new Promise(resolve => setTimeout(resolve, 150));
         window.location.reload();
-    }, []);
+    }, [setSessionId]);
 
     const hasErrors = dataErrors.withoutProduct || dataErrors.withProduct;
 

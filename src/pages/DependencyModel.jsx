@@ -48,8 +48,7 @@ import {
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import customTheme from '../theme/customTheme';
 import NavigationButtons from '../components/NavigationButtons';
-
-const API_BASE_URL = 'https://abhistat.com/api';
+import apiClient from '../utils/apiClient';
 
 const usePagination = (items, itemsPerPage) => {
     const [currentPage, setCurrentPage] = useState(1);
@@ -588,28 +587,21 @@ const DependencyModel = () => {
                 if (parts.length === 2) return parts.pop().split(';').shift();
                 return null;
             };
-            const storedSessionId = sessionId || localStorage.getItem('session_id');
+            let storedSessionId = sessionId;
+            if (!storedSessionId) {
+                try {
+                    storedSessionId = localStorage.getItem('session_id');
+                } catch (e) {
+                }
+            }
             if (!storedSessionId) {
                 throw new Error("Session not found. Please upload files first.");
             }
-            const response = await fetch(`${API_BASE_URL}/save-dependency-model`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Session-ID': storedSessionId || ''
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    dependent_variables: dependentVariables,
-                    independent_variables: independentVariables,
-                    session_id: storedSessionId
-                })
+            const data = await apiClient.post('/save-dependency-model', {
+                dependent_variables: dependentVariables,
+                independent_variables: independentVariables,
+                session_id: storedSessionId
             });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Failed to save dependency model");
-            }
-            const data = await response.json();
             navigate('/visualize-data', {
                 state: {
                     ...data,
@@ -623,7 +615,6 @@ const DependencyModel = () => {
                 }
             });
         } catch (error) {
-            console.error("Error saving dependency model:", error);
             setError(error.message || "Failed to save dependency model. Please try again.");
         } finally {
             setIsLoading(false);

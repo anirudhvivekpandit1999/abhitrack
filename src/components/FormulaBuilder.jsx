@@ -30,8 +30,8 @@ import FormulaPreviewSection from './FormulaPreviewSection';
 const operators = [
   { value: '+', display: '+' },
   { value: '-', display: '-' },
-  { value: '*', display:'*' },
-  { value: '/', display: '/' },
+  { value: '*', display: '×' },
+  { value: '/', display: '÷' },
   { value: '(', display: '(' },
   { value: ')', display: ')' },
 ];
@@ -50,8 +50,8 @@ const functionList = [
   { value: 'LINEAR_COMBO', label: 'LINEAR COMBO' },
 ];
 
-function FormulaBuilder({ availableColumns, updatedColumns, onAddColumn, withoutProductData, withProductData , newColumnName }) {
-  const [columnName, setColumnName] = useState(newColumnName);
+function FormulaBuilder({ availableColumns, updatedColumns, onAddColumn, withoutProductData, withProductData }) {
+  const [columnName, setColumnName] = useState('');
   const [formulaElements, setFormulaElements] = useState([]);
   const [customValue, setCustomValue] = useState('');
   const [isFormulaValid, setIsFormulaValid] = useState(false);
@@ -74,77 +74,6 @@ function FormulaBuilder({ availableColumns, updatedColumns, onAddColumn, without
     setFormulaElements([]);
     setShowPreview(false);
   }, []);
-  
-  useEffect(() => {
-  const syncColumnName = () => {
-    const saved = localStorage.getItem('newColumnName');
-    setColumnName(saved || '');
-  };
-
-  
-
-  window.addEventListener('columnNameChanged', syncColumnName);
-  
-  return () => window.removeEventListener('columnNameChanged', syncColumnName);
-}, []);
-
-useEffect(() => {
-  const syncSelectedColumnName = () => {
-    const saved = localStorage.getItem('selectedColumnName');
-    setSelectedColumn(saved || '');
-    addColumnToFormula(saved);
-  };
-
-  
-
-  window.addEventListener('selectedColumnNameChanged', syncSelectedColumnName);
-  return () =>
-    window.removeEventListener('selectedColumnNameChanged', syncSelectedColumnName);
-}, []);
-
-useEffect(()=> {
-  const syncClearColumnFormula = () => {
-    setFormulaElements([]);
-    setShowPreview(false);
-  }
-
-  window.addEventListener('selectedOperatorChanged', syncClearColumnFormula);
-  return () => window.removeEventListener('selectedOperatorChanged', syncClearColumnFormula);
-},[])
-
-useEffect(()=> {
-  const syncRemoveLast = () => {
-    setFormulaElements(prev => prev.slice(0, -1));
-    setShowPreview(false);
-  }
-
-  window.addEventListener('selectedOperatorChanged', syncRemoveLast);
-  return () => window.removeEventListener('selectedOperatorChanged', syncRemoveLast);
-},[])
-
-useEffect(()=> {
-  const syncSelectedOperator = () => {
-    const saved = localStorage.getItem('selectedOperator');
-    setFormulaElements(prev => [...prev, { type: 'operator', value: saved, display: saved }]);
-  }
-
-  window.addEventListener('selectedOperatorChanged', syncSelectedOperator);
-  return () => window.removeEventListener('selectedOperatorChanged', syncSelectedOperator);
-},[])
-
-useEffect(()=> {
-  const syncSubmission = () => {
-    handleSubmit();
-  }
-
-  window.addEventListener('submitFormula', syncSubmission);
-  return () => {
-    window.removeEventListener('submitFormula', syncSubmission);
-  }
-},[])
-
-
-
 
   const addColumnToFormula = useCallback((column) => {
     if (column) {
@@ -432,7 +361,6 @@ useEffect(()=> {
               onChange={(e) => {
                 setColumnName(e.target.value);
                 setShowPreview(false);
-                
               }}
               placeholder="Enter the name for your calculated column"
               margin="normal"
@@ -732,7 +660,6 @@ useEffect(()=> {
           <Grid item xs={12}>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
               <Button
-                id='submit-column-btn'
                 variant="contained"
                 color="primary"
                 endIcon={<Done />}

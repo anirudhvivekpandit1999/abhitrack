@@ -24,7 +24,7 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate('/full-excel-file', { replace: true });
+      navigate('/data-file-checks', { replace: true });
     }
   }, [navigate]);
 
@@ -68,6 +68,9 @@ const Login = () => {
         throw new Error('Failed to store authentication data');
       }
 
+      window.dispatchEvent(new Event('auth-storage-change'));
+      await new Promise(resolve => setTimeout(resolve, 150));
+
       if (auth?.loginUser?.mutateAsync) {
         try {
           await auth.loginUser.mutateAsync({
@@ -75,14 +78,12 @@ const Login = () => {
             token: data.access_token
           });
         } catch (authError) {
-          console.warn('Auth context update failed:', authError);
         }
       }
 
       navigate('/data-file-checks', { replace: true });
 
     } catch (err) {
-      console.error('Login error:', err);
       setError(err.message);
       clearAuthData();
     } finally {
@@ -93,7 +94,6 @@ const Login = () => {
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     setError('');
-    console.log('Google Credential Response:', credentialResponse);
 
     try {
       const res = await fetch('https://abhistat.com/api/google-login', {
@@ -123,10 +123,12 @@ const Login = () => {
         throw new Error('Failed to store authentication data');
       }
       
+      window.dispatchEvent(new Event('auth-storage-change'));
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
       navigate('/data-file-checks', { replace: true });
 
     } catch (err) {
-      console.error('Google OAuth error:', err);
       setError(err.message);
       clearAuthData();
     } finally {

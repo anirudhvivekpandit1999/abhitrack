@@ -45,13 +45,12 @@ import SaveVisualizationButton from '../SaveVisualizationButton'
 
 const DistributionCurveTab = ({ availableColumns, withProductData, withoutProductData, clientName = '', plantName = '', productName = '' }) => {
     const [selectedColumn, setSelectedColumn] = useState('');
-    const [singleViewSelectOpen, setSingleViewSelectOpen] = useState(false);
     const [viewMode, setViewMode] = useState('combined');
     const [singleViewType, setSingleViewType] = useState('withProduct');
     
     const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-    const [showInsights, setShowInsights] = useState(true);
-    const [showSummaryCards, setShowSummaryCards] = useState(true);
+    const [showInsights, setShowInsights] = useState(false);
+    const [showSummaryCards, setShowSummaryCards] = useState(false);
     
     const [combinedLegendLabels, setCombinedLegendLabels] = useState({
         withProduct: 'With Product',
@@ -168,72 +167,6 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
             setSelectedColumn(availableColumns[0]);
         }
     }, [availableColumns]);
-
-    useEffect(()=> {
-        const syncOpenChartState = () => {
-            const saved = localStorage.getItem('showDistributionChartTypeHelp');
-            setSingleViewSelectOpen(saved);
-        }
-
-        window.addEventListener('showDistributionChartTypeHelpChanged', syncOpenChartState);
-        return () => window.removeEventListener('showDistributionChartTypeHelpChanged', syncOpenChartState);
-    },[])
-
-    useEffect(()=>{
-        const syncDataFilterMax = () => {
-            const saved = localStorage.getItem('dataFilterMax');
-            setFilterMax(saved || '');
-        }
-
-        window.addEventListener('dataFilterMaxChanged', syncDataFilterMax);
-        return () => window.removeEventListener('dataFilterMaxChanged', syncDataFilterMax);
-    },[])
-
-    useEffect(()=>{
-        const syncDataFilterMin = () => {
-            const saved = localStorage.getItem('dataFilterMin');
-            setFilterMin(saved || '');
-        }
-
-        window.addEventListener('dataFilterMinChanged', syncDataFilterMin);
-        return () => window.removeEventListener('dataFilterMinChanged', syncDataFilterMin);
-    },[])
-
-    useEffect(()=>{
-        const syncSelectedColumnName = () => {
-            const saved = localStorage.getItem('selectedDistributionColumn');
-            setSelectedColumn(saved || '');
-        }
-
-        window.addEventListener('distributionColumnChanged', syncSelectedColumnName);
-        
-        return () => window.removeEventListener('distributionColumnChanged', syncSelectedColumnName);
-    },[])
-
-    useEffect(()=>{
-        const syncViewMode = () => {
-            const saved = localStorage.getItem('selectedDistributionViewMode');
-            setViewMode(saved);
-        }
-
-        window.addEventListener('distributionViewModeChanged', syncViewMode);
-
-        return () => window.removeEventListener('distributionViewModeChanged', syncViewMode);
-    },[])
-
-    useEffect(()=>{
-        const syncDataFilterColumn = () => {
-            const saved = localStorage.getItem('dataFilterColumn');
-            setFilterColumn(saved || '');
-
-        }
-
-        window.addEventListener('dataFilterColumnChanged', syncDataFilterColumn);
-        return () => window.removeEventListener('dataFilterColumnChanged', syncDataFilterColumn);
-    },[])
-
-
-
     const isDateTimeColumn = (allRows, columnName) => {
         if (!allRows || allRows.length === 0 || !columnName) return false;
         const sampleValues = allRows
@@ -1533,7 +1466,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                             flexWrap: "wrap",
                             justifyContent: { xs: "center", sm: "flex-end" }
                         }}>
-                            {/* <FormControlLabel
+                            <FormControlLabel
                                 control={
                                     <Switch
                                         checked={showNumberOfPoints}
@@ -1554,11 +1487,10 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                 }
                                 label="Show Area Chart"
                                 sx={{ mr: 1 }}
-                            /> */}
+                            />
                             
                             <MuiTooltip title="Chart Settings">
                                 <Button
-                                id='settings-button'
                                     variant="outlined"
                                     color="primary"
                                     onClick={openSettingsModal}
@@ -1579,8 +1511,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                 </Button>
                             </MuiTooltip>
 
-                            <SaveVisualizationButton
-                                
+                            <SaveVisualizationButton 
                                 elementId="visualization-content" 
                                 fileNamePrefix="distribution_curve"
                                 variableNames={selectedColumn}
@@ -1588,7 +1519,6 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
                             <MuiTooltip title="Download as PNG">
                                 <Button
-                                id='download-visualization-btn'
                                     variant="outlined"
                                     color="primary"
                                     onClick={() => downloadChartAsPNG(combinedChartRef, 'Combined_Distribution')}
@@ -2010,7 +1940,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                             </Typography>
 
                             <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
-                                {/* <FormControlLabel
+                                <FormControlLabel
                                     control={
                                         <Switch
                                             checked={showNumberOfPoints}
@@ -2020,9 +1950,9 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     }
                                     label="Number of Points"
                                     sx={{ mr: 1 }}
-                                /> */}
+                                />
                                 
-                                {/* <MuiTooltip title="Chart Settings">
+                                <MuiTooltip title="Chart Settings">
                                     <Button
                                         variant="outlined"
                                         color="primary"
@@ -2042,9 +1972,9 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     >
                                         Settings
                                     </Button>
-                                </MuiTooltip> */}
+                                </MuiTooltip>
 
-                                {/* <SaveVisualizationButton 
+                                <SaveVisualizationButton 
                                     elementId="visualization-content" 
                                     fileNamePrefix="distribution_curve_individual"
                                     variableNames={selectedColumn}
@@ -2070,7 +2000,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     >
                                         Download PNG
                                     </Button>
-                                </MuiTooltip> */}
+                                </MuiTooltip>
                             </Box>
                         </Box>
 
@@ -2191,7 +2121,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
                     <CardContent sx={{ p: { xs: 2, md: 4 } }}>
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
-                             <Typography
+                            <Typography
                                 variant="h6"
                                 sx={{
                                     fontWeight: 500,
@@ -2202,7 +2132,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                 With Product Distribution
                             </Typography>
 
-                            {/*<Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+                            <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
                                 <FormControlLabel
                                     control={
                                         <Switch
@@ -2264,7 +2194,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                         Download PNG
                                     </Button>
                                 </MuiTooltip>
-                            </Box> */}
+                            </Box>
                         </Box>
 
                         <Box sx={{ mb: 2 }}>
@@ -2634,7 +2564,6 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         Select Column
                     </Typography>
                     <Autocomplete
-                    id='distribution-column-select'
                         options={availableColumns}
                         value={selectedColumn}
                         onChange={(event, newValue) => {
@@ -2644,7 +2573,6 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         }}
                         renderInput={(params) => (
                             <TextField
-                                id='distribution-column-select'
                                 {...params}
                                 label="Select Column"
                                 variant="outlined"
@@ -2694,10 +2622,10 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         <ToggleButton value="combined" aria-label="combined view">
                             Combined
                         </ToggleButton>
-                        <ToggleButton id='view-mode-separate' value="separate" aria-label="separate view">
+                        <ToggleButton value="separate" aria-label="separate view">
                             Separate
                         </ToggleButton>
-                        <ToggleButton id='view-mode-single' value="single" aria-label="single view">
+                        <ToggleButton value="single" aria-label="single view">
                             Single
                         </ToggleButton>
                     </ToggleButtonGroup>
@@ -2710,7 +2638,6 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         <FormControl fullWidth size="small">
                             <InputLabel id="single-view-select-label">Chart Type</InputLabel>
                             <Select
-                            open={singleViewSelectOpen}
                                 labelId="single-view-select-label"
                                 value={singleViewType}
                                 label="Chart Type"
@@ -2732,13 +2659,11 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                     <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="center">
                         <Grid item xs={12} sm={6} md={3}>
                             <Autocomplete
-                                id='data-filter-column-select'
                                 options={availableColumns}
                                 value={filterColumn}
                                 onChange={(event, newValue) => setFilterColumn(newValue || '')}
                                 renderInput={(params) => (
                                     <TextField
-                                        id='data-filter-column-select'
                                         {...params}
                                         label="Filter Column"
                                         variant="outlined"
@@ -2746,7 +2671,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                         size="small"
                                     />
                                 )}
-                                disableClearable={true}
+                                disableClearable={false}
                                 size="small"
                             />
                         </Grid>
@@ -2776,7 +2701,6 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         </Grid>
                         <Grid item xs={12} sm={12} md={4}>
                             <Button 
-                            id='clear-data-filter-btn'
                                 onClick={resetLocalFilter} 
                                 variant="outlined" 
                                 size="small" 
@@ -2797,7 +2721,6 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
                     <MuiTooltip title="Download entire page as PNG">
                         <Button
-                            id='download-visualization-btn'
                             color="primary"
                             onClick={downloadPageAsPNG}
                             variant="outlined"

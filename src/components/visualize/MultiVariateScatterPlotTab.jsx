@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, useCallback, use } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import DebouncedTextField from '../DebouncedTextField';
 import {
   Box,
@@ -311,68 +311,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   useEffect(() => {
     setActivePairs(allPairs.map(p => p.key));
   }, [allPairs.length]);
-  useEffect(()=>{
-          const syncDataFilterMax = () => {
-              const saved = localStorage.getItem('dataFilterMax');
-              setFilterMax(saved || '');
-          }
-  
-          window.addEventListener('dataFilterMaxChanged', syncDataFilterMax);
-          return () => window.removeEventListener('dataFilterMaxChanged', syncDataFilterMax);
-      },[])
-  
-      useEffect(()=>{
-          const syncDataFilterMin = () => {
-              const saved = localStorage.getItem('dataFilterMin');
-              setFilterMin(saved || '');
-          }
-  
-          window.addEventListener('dataFilterMinChanged', syncDataFilterMin);
-          return () => window.removeEventListener('dataFilterMinChanged', syncDataFilterMin);
-      },[])
-
-      useEffect(()=>{
-              const syncDataFilterColumn = () => {
-                  const saved = localStorage.getItem('dataFilterColumn');
-                  setFilterColumn(saved || '');
-      
-              }
-      
-              window.addEventListener('dataFilterColumnChanged', syncDataFilterColumn);
-              return () => window.removeEventListener('dataFilterColumnChanged', syncDataFilterColumn);
-          },[])
-
-  useEffect(()=> {
-    const syncMultiXVariable = () => {
-        const saved = localStorage.getItem('multiVariateScatterXColumn');
-        if (saved && !selectedXVars.includes(saved)) {
-            setSelectedXVars(prev => [...prev, saved]);
-        }
-    }
-
-    window.addEventListener('multiVariateScatterXColumnChanged', syncMultiXVariable);
-    return () => window.removeEventListener('multiVariateScatterXColumnChanged', syncMultiXVariable);
-  },[])
-
-  useEffect(()=> {
-    const syncMultiYVariable = () => {
-        const saved = localStorage.getItem('multiVariateScatterYColumn');
-        if (saved && !selectedYVars.includes(saved)) {
-            setSelectedYVars(prev => [...prev, saved]);
-        }
-    }
-    window.addEventListener('multiVariateScatterYColumnChanged', syncMultiYVariable);
-    return () => window.removeEventListener('multiVariateScatterYColumnChanged', syncMultiYVariable);
-  },[])
-
-  useEffect(()=> {
-    const syncViewMode = () => {
-        const saved = localStorage.getItem('multiVariateScatterViewMode') || 'both';
-        setDatasetView(saved);
-    }
-    window.addEventListener('multiVariateScatterViewModeChanged', syncViewMode);
-    return () => window.removeEventListener('multiVariateScatterViewModeChanged', syncViewMode);
-  },[])
 
   const processData = useCallback((data, pairs) => {
     const result = [];
@@ -1056,7 +994,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             Select X (Independent) Variables
           </Typography>
           <Autocomplete
-            id = 'open-multiple-x-axis-btn'
             multiple
             options={availableColumns}
             value={selectedXVars}
@@ -1071,7 +1008,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             Select Y (Dependent) Variables
           </Typography>
           <Autocomplete
-            id="open-multiple-y-axis-btn"
             multiple
             options={availableColumns}
             value={selectedYVars}
@@ -1112,8 +1048,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             }}
           >
             <ToggleButton value="both">Both</ToggleButton>
-            <ToggleButton id="without product" value="withoutProduct">Without Product</ToggleButton>
-            <ToggleButton id="with product" value="withProduct">With Product</ToggleButton>
+            <ToggleButton value="withoutProduct">Without Product</ToggleButton>
+            <ToggleButton value="withProduct">With Product</ToggleButton>
           </ToggleButtonGroup>
         </Grid>
       </Grid>
@@ -1126,7 +1062,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="center">
             <Grid item xs={12} sm={6} md={3}>
               <Autocomplete
-                id='data-filter-column-select'
                 options={availableColumnsForFilter}
                 value={filterColumn}
                 onChange={(_, v) => setFilterColumn(v || '')}
@@ -1160,7 +1095,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             </Grid>
             <Grid item xs={12} sm={12} md={4}>
               <Button 
-              id='clear-data-filter-btn'
                 onClick={resetLocalFilter} 
                 variant="outlined" 
                 size="small" 
@@ -1255,7 +1189,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         flexDirection: { xs: 'column', sm: 'row' }
       }}>
         <Box sx={{ display: 'flex', gap: 1, order: { xs: 2, sm: 1 } }}>
-          {/* <ButtonGroup variant="outlined" size="small">
+          <ButtonGroup variant="outlined" size="small">
             <MuiTooltip title="Zoom In">
               <Button onClick={zoomIn} sx={{ minWidth: "40px", px: 1 }}>
                 <ZoomInIcon fontSize="small" />
@@ -1272,12 +1206,11 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               </Button>
             </MuiTooltip>
           </ButtonGroup>
-        </Box> */}
-       </Box> 
+        </Box>
+        
         <Box sx={{ display: 'flex', gap: 1, order: { xs: 1, sm: 2 }, alignItems: 'center' }}>
           <MuiTooltip title="Chart Settings">
             <Button
-              id="settings-button"
               variant="outlined"
               color="primary" 
               onClick={openSettingsModal}
@@ -1306,7 +1239,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
           <MuiTooltip title="Download as PNG">
             <Button
-              id="multivariate-btn"
               variant="outlined"
               color="primary" 
               onClick={downloadChartAsPNG}
@@ -1342,7 +1274,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               Multi-Variate Scatter Plot
             </Typography>
             <MuiTooltip title="Reset to Auto Scale">
-              {/* <Button 
+              <Button 
                 onClick={resetAxisRanges} 
                 size="small" 
                 variant="outlined"
@@ -1350,7 +1282,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                 sx={{ textTransform: 'none' }}
               >
                 Reset Auto
-              </Button> */}
+              </Button>
             </MuiTooltip>
           </Box>
 
