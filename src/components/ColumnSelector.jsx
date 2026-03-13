@@ -15,7 +15,7 @@ function ColumnSelector({ columns, onSelectColumn, searchTerm, setSearchTerm }) 
             calculated: columns.filter(col => col.includes('calc_') || col.includes('computed_'))
         };
         return categories;
-    }, [columns]);
+    }, [columns]); 
 
     const filteredColumns = useMemo(() => {
         const categoryColumns = selectedCategory === 'all' ? columns : columnCategories[selectedCategory];
