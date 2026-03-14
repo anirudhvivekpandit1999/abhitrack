@@ -17,6 +17,8 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, Grid, TextField, Typography, Button } from "@mui/material";
 import FormulaBuilder from "../components/FormulaBuilder";
 import { ContactPageSharp } from "@mui/icons-material";
+import apiClient from "../utils/apiClient";
+import { removeFromSessionStorage } from "../utils/fileUtils";
 
 
 const FullExcelFile = () => {
@@ -907,90 +909,61 @@ if (intent === "add_formula_column") {
     console.log('  After processFile - recentFiles state:', recentFiles);
   };
 
-  const processFiles = useCallback(async (withoutProductFile, withProductFile, withoutSheet, withSheet) => {
-        if (!withoutProductFile || !withProductFile) return;
-        setIsLoading(true);
-        setDataErrors({
-            withoutProduct: null,
-            withProduct: null
-        });
-        setErrorType(null);
+  const processFile = useCallback(async (file, sheet) => {
+    if (!file) return;
 
-        const formData = new FormData();
-        formData.append('file1', withoutProductFile);
-        formData.append('file2', withProductFile);
-        if (withoutSheet) formData.append('sheet1', withoutSheet);
-        if (withSheet) formData.append('sheet2', withSheet);
+    setIsLoading(true);
+   
+    
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    if (sheet) {
+        formData.append("sheet", sheet);
+    }
+
+    try {
+        const result = await apiClient.post("/process-file", formData, {
+            isFormData: true
+        });
+
+        if (!result?.session_id) return;
+
+        setSessionId(result.session_id);
+
+        const fileData = result?.file_info?.data || result?.file_info?.preview || [];
+
+        const dataSize = JSON.stringify(fileData).length;
+
+        if (dataSize > 2 * 1024 * 1024) {
+            await removeFromSessionStorage("fileData");
+        }
+
+        setFileData(fileData);
 
         try {
-            const result = await apiClient.post('/process-files', formData, { isFormData: true });
+            localStorage.removeItem("dependency-model-columns");
+        } catch {}
 
-            if (result.session_id) {
-                await new Promise(resolve => setTimeout(resolve, 50));
-                
-                try {
-                    setSessionId(result.session_id);
-                } catch (e) {
-                    try {
-                        localStorage.removeItem('dependency-model-columns');
-                        setSessionId(result.session_id);
-                    } catch (e2) {
-                    }
-                }
-                
-                await new Promise(resolve => setTimeout(resolve, 50));
+        setFileInfo({
+            rows: result?.file_info?.shape?.[0] ?? fileData.length,
+            columns:
+                result?.file_info?.columns ??
+                (fileData.length ? Object.keys(fileData[0]) : [])
+        });
 
-                const file1Data = result.file1_info.data || result.file1_info.preview || [];
-                const file2Data = result.file2_info.data || result.file2_info.preview || [];
+    } catch (error) {
+        const message =
+            error?.response?.data?.message ||
+            error?.message ||
+            "Server error. Please try again.";
 
-                const dataSize1 = new Blob([JSON.stringify(file1Data)]).size;
-                const dataSize2 = new Blob([JSON.stringify(file2Data)]).size;
-                
-                if (dataSize1 > 2 * 1024 * 1024 || dataSize2 > 2 * 1024 * 1024) {
-                    try {
-                        await removeFromSessionStorage('withoutProductData');
-                        await removeFromSessionStorage('withProductData');
-                    } catch (e) {
-                    }
-                }
-
-                setWithoutProductData(file1Data);
-                setWithProductData(file2Data);
-                
-                try {
-                    localStorage.removeItem('dependency-model-columns');
-                } catch (e) {
-                }
-
-                setFileInfo(prev => ({
-                    withoutProduct: {
-                        ...prev.withoutProduct,
-                        rows: result.file1_info.shape?.[0] || file1Data.length,
-                        columns: result.file1_info.columns || Object.keys(file1Data[0] || {})
-                    },
-                    withProduct: {
-                        ...prev.withProduct,
-                        rows: result.file2_info.shape?.[0] || file2Data.length,
-                        columns: result.file2_info.columns || Object.keys(file2Data[0] || {})
-                    }
-                }));
-            }
-        } catch (error) {
-            const errorMessage = error.message || 'Server error. Please try again.';
-            if (errorMessage.toLowerCase().includes('file1') || errorMessage.toLowerCase().includes('withoutproduct')) {
-                setDataErrors(prev => ({ ...prev, withoutProduct: errorMessage }));
-            } else if (errorMessage.toLowerCase().includes('file2') || errorMessage.toLowerCase().includes('withproduct')) {
-                setDataErrors(prev => ({ ...prev, withProduct: errorMessage }));
-            } else {
-                setDataErrors({
-                    withoutProduct: errorMessage,
-                    withProduct: errorMessage
-                });
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+        setDataErrors(message);
+    } finally {
+        setIsLoading(false);
+    }
+}, [apiClient, removeFromSessionStorage]);
 
   const normalizeSheetName = (name) => {
     if (!name) return "";

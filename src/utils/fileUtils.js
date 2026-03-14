@@ -1,3 +1,5 @@
+import { saveToSmartStorage, getFromSmartStorage, removeFromSmartStorage, saveToIndexedDB } from './indexedDBUtils';
+
 export const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -6,67 +8,52 @@ export const formatFileSize = (bytes) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-export const saveToSessionStorage = (key, data) => {
+export const saveToSessionStorage = async (key, data) => {
+    if (!data) return;
+    
     try {
-        if (data) {
-            const dataString = JSON.stringify(data);
-            const dataSize = new Blob([dataString]).size;
-            
-            if (dataSize > 4 * 1024 * 1024) {
-                console.warn(`Data for ${key} is too large (${(dataSize / 1024 / 1024).toFixed(2)}MB). Attempting to clear old data...`);
-                
-                const keysToClear = ['withoutProductData', 'withProductData'];
-                keysToClear.forEach(oldKey => {
-                    if (oldKey !== key) {
-                        try {
-                            sessionStorage.removeItem(oldKey);
-                        } catch (e) {
-                            // Ignore errors when clearing
-                        }
-                    }
-                });
-            }
-            
-            sessionStorage.setItem(key, dataString);
-        }
+        await saveToSmartStorage(key, data, 3 * 1024 * 1024);
     } catch (error) {
-        if (error.name === 'QuotaExceededError' || error.code === 22) {
-            console.warn(`Quota exceeded for ${key}. Attempting to free space...`);
-            
+        try {
+            const errorMarker = { 
+                _error: 'Data too large for storage',
+                _size: data?.length || 0,
+                _timestamp: new Date().toISOString(),
+                _message: error.message
+            };
             try {
-                const keysToClear = ['withoutProductData', 'withProductData'];
-                keysToClear.forEach(oldKey => {
-                    if (oldKey !== key) {
-                        sessionStorage.removeItem(oldKey);
-                    }
-                });
-                
+                sessionStorage.setItem(key, JSON.stringify(errorMarker));
+            } catch (e) {
                 try {
-                    sessionStorage.setItem(key, JSON.stringify(data));
-                    console.log(`Successfully saved ${key} after clearing old data`);
-                } catch (retryError) {
-                    console.error(`Failed to save ${key} even after clearing space. Data may be too large.`, retryError);
-                    sessionStorage.setItem(key, JSON.stringify({ 
-                        _error: 'Data too large for session storage',
-                        _size: data?.length || 0,
-                        _timestamp: new Date().toISOString()
-                    }));
+                    await saveToIndexedDB(key, errorMarker);
+                } catch (e2) {
                 }
-            } catch (clearError) {
-                console.error(`Error clearing storage for ${key}:`, clearError);
             }
-        } else {
-            console.error(`Error saving ${key} to session storage:`, error);
+        } catch (finalError) {
         }
     }
 };
 
-export const getFromSessionStorage = (key, defaultValue = null) => {
-    try {
-        const cachedData = sessionStorage.getItem(key);
-        return cachedData ? JSON.parse(cachedData) : defaultValue;
-    } catch (error) {
-        console.error(`Error getting ${key} from session storage:`, error);
+export const getFromSessionStorage = (key, defaultValue = null, sync = true) => {
+    if (sync) {
+        try {
+            const cachedData = sessionStorage.getItem(key);
+            if (cachedData) {
+                return JSON.parse(cachedData);
+            }
+        } catch (error) {
+        }
         return defaultValue;
+    } else {
+        return getFromSmartStorage(key, defaultValue).catch(error => {
+            return defaultValue;
+        });
+    }
+};
+
+export const removeFromSessionStorage = async (key) => {
+    try {
+        await removeFromSmartStorage(key);
+    } catch (error) {
     }
 };
