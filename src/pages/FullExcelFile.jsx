@@ -907,109 +907,90 @@ if (intent === "add_formula_column") {
     console.log('  After processFile - recentFiles state:', recentFiles);
   };
 
-  const processFile = (file) => {
-    console.log('📝 processFile called with:', file.name);
-
-    setFileName(file.name);
-    setError(null);
-    setVoiceFeedback("File selected: " + file.name + ". Processing...");
-
-    fileObjectsRef.current[file.name] = file;
-    fileObjectsRef.current[file.name.split('.')[0]] = file;
-
-    const newRecent = [file.name, ...recentFiles.filter(f => f !== file.name)].slice(0, 10);
-    console.log('  Updating recentFiles from:', recentFiles);
-    console.log('  To:', newRecent);
-    setRecentFiles(newRecent);
-
-    try {
-      localStorage.setItem('recentFiles', JSON.stringify(newRecent));
-      console.log('  ✓ Saved to localStorage:', newRecent);
-    } catch (e) {
-      console.error('  ✗ Failed to save to localStorage:', e);
-    }
-
-    const ext = file.name.split(".").pop().toLowerCase();
-    if (!["xlsx", "xls", "xlsm"].includes(ext)) {
-      setError("Unsupported file type");
-      setVoiceFeedback("Error: Unsupported file type. Please select an Excel file.");
-      setTimeout(() => setVoiceFeedback(""), 3000);
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const workbook = XLSX.read(evt.target.result, { type: "binary", cellDates: true, cellNF: true });
-        const sheets = workbook.SheetNames;
-        setSheetNames(sheets);
-        const parsed = sheets.map((name) => {
-          const ws = workbook.Sheets[name];
-          const rawRows = XLSX.utils.sheet_to_json(ws, { defval: "", raw: true });
-          const formattedRows = rawRows.map((row) => {
-            const newRow = { ...row };
-            Object.keys(newRow).forEach((k) => {
-              const v = newRow[k];
-              const keyLower = k.toLowerCase();
-              if (keyLower.includes("date")) {
-                if (v instanceof Date && !isNaN(v.getTime())) {
-                  const y = v.getFullYear();
-                  const m = v.getMonth();
-                  const d = v.getDate();
-                  newRow[k] = `${y}-${(m + 1)}-${(d)}`;
-                  newRow[`__num__${k}`] = Date.UTC(y, m, d);
-                }
-              } else if (keyLower.includes("time")) {
-                if (v instanceof Date && !isNaN(v.getTime())) {
-                  const hh = v.getHours();
-                  const mm = v.getMinutes();
-                  const ss = v.getSeconds();
-                  newRow[k] = `${hh}:${mm}:${ss}`;
-                  newRow[`__num__${k}`] = hh * 3600 + mm * 60 + ss;
-                }
-              }
-            });
-            return newRow;
-          });
-          return {
-            sheetName: name,
-            sheetData: formattedRows,
-          };
+  const processFiles = useCallback(async (withoutProductFile, withProductFile, withoutSheet, withSheet) => {
+        if (!withoutProductFile || !withProductFile) return;
+        setIsLoading(true);
+        setDataErrors({
+            withoutProduct: null,
+            withProduct: null
         });
-        setExcelData(parsed);
+        setErrorType(null);
+
+        const formData = new FormData();
+        formData.append('file1', withoutProductFile);
+        formData.append('file2', withProductFile);
+        if (withoutSheet) formData.append('sheet1', withoutSheet);
+        if (withSheet) formData.append('sheet2', withSheet);
 
         try {
-          const existing = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
-          const merged = { ...(existing || {}) };
-          parsed.forEach((s) => { merged[s.sheetName] = s.sheetData; });
-          localStorage.setItem('saved_excel_sheets', JSON.stringify(merged));
-          const existingNames = JSON.parse(localStorage.getItem('saved_sheet_names') || '[]');
-          const mergedNames = Array.from(new Set([...(existingNames || []), ...parsed.map((s) => s.sheetName)]));
-          localStorage.setItem('saved_sheet_names', JSON.stringify(mergedNames));
-          console.log('Saved sheets to localStorage:', mergedNames);
-        } catch (e) {
-          console.error('Failed to save sheets to localStorage', e);
+            const result = await apiClient.post('/process-files', formData, { isFormData: true });
+
+            if (result.session_id) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                try {
+                    setSessionId(result.session_id);
+                } catch (e) {
+                    try {
+                        localStorage.removeItem('dependency-model-columns');
+                        setSessionId(result.session_id);
+                    } catch (e2) {
+                    }
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 50));
+
+                const file1Data = result.file1_info.data || result.file1_info.preview || [];
+                const file2Data = result.file2_info.data || result.file2_info.preview || [];
+
+                const dataSize1 = new Blob([JSON.stringify(file1Data)]).size;
+                const dataSize2 = new Blob([JSON.stringify(file2Data)]).size;
+                
+                if (dataSize1 > 2 * 1024 * 1024 || dataSize2 > 2 * 1024 * 1024) {
+                    try {
+                        await removeFromSessionStorage('withoutProductData');
+                        await removeFromSessionStorage('withProductData');
+                    } catch (e) {
+                    }
+                }
+
+                setWithoutProductData(file1Data);
+                setWithProductData(file2Data);
+                
+                try {
+                    localStorage.removeItem('dependency-model-columns');
+                } catch (e) {
+                }
+
+                setFileInfo(prev => ({
+                    withoutProduct: {
+                        ...prev.withoutProduct,
+                        rows: result.file1_info.shape?.[0] || file1Data.length,
+                        columns: result.file1_info.columns || Object.keys(file1Data[0] || {})
+                    },
+                    withProduct: {
+                        ...prev.withProduct,
+                        rows: result.file2_info.shape?.[0] || file2Data.length,
+                        columns: result.file2_info.columns || Object.keys(file2Data[0] || {})
+                    }
+                }));
+            }
+        } catch (error) {
+            const errorMessage = error.message || 'Server error. Please try again.';
+            if (errorMessage.toLowerCase().includes('file1') || errorMessage.toLowerCase().includes('withoutproduct')) {
+                setDataErrors(prev => ({ ...prev, withoutProduct: errorMessage }));
+            } else if (errorMessage.toLowerCase().includes('file2') || errorMessage.toLowerCase().includes('withproduct')) {
+                setDataErrors(prev => ({ ...prev, withProduct: errorMessage }));
+            } else {
+                setDataErrors({
+                    withoutProduct: errorMessage,
+                    withProduct: errorMessage
+                });
+            }
+        } finally {
+            setIsLoading(false);
         }
-        if (sheets.length > 0) setSelectedSheet(sheets[0]);
-        const sheetText = sheets.length > 1 ? "sheets" : "sheet";
-        setVoiceFeedback("File loaded! Found " + sheets.length + " " + sheetText);
-        setTimeout(() => setVoiceFeedback(""), 3000);
-      } catch (err) {
-        const msg = String(err?.message || err || "");
-        if (msg.toLowerCase().includes("password") || msg.toLowerCase().includes("protected")) {
-          setError("This Excel file appears to be password protected. Please remove the password and upload again.");
-          setVoiceFeedback("Error: File is password protected. Please remove the password and try again.");
-          alert("This Excel file appears to be password protected. Please remove the password and upload again.");
-        } else {
-          setError("Failed to read the Excel file. Please upload a valid file.");
-          setVoiceFeedback("Error: Failed to read Excel file. Please upload a valid file.");
-          alert("Failed to read the Excel file. Please upload a valid file.");
-        }
-        setTimeout(() => setVoiceFeedback(""), 4000);
-        setFileName("");
-      }
-    };
-    reader.readAsBinaryString(file);
-  };
+    }, []);
 
   const normalizeSheetName = (name) => {
     if (!name) return "";
