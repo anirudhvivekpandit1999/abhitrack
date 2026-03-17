@@ -48,11 +48,11 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
     const [singleViewSelectOpen, setSingleViewSelectOpen] = useState(false);
     const [viewMode, setViewMode] = useState('combined');
     const [singleViewType, setSingleViewType] = useState('withProduct');
-    
+
     const [settingsModalOpen, setSettingsModalOpen] = useState(false);
     const [showInsights, setShowInsights] = useState(true);
     const [showSummaryCards, setShowSummaryCards] = useState(true);
-    
+
     const [combinedLegendLabels, setCombinedLegendLabels] = useState({
         withProduct: 'With Product',
         withoutProduct: 'Without Product',
@@ -77,7 +77,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
     });
     const [separateXAxisLabel, setSeparateXAxisLabel] = useState('');
     const [separateYAxisLabel, setSeparateYAxisLabel] = useState('Frequency');
-    
+
     const [showGrid, setShowGrid] = useState(true);
     const [showDataPoints, setShowDataPoints] = useState(false);
     const [showNumberOfPoints, setShowNumberOfPoints] = useState(true);
@@ -109,24 +109,24 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
     // Custom bar shape for superimposed bars
     const SuperimposedBar = (props) => {
         if (!showNumberOfPoints) return null;
-        
+
         const { x, y, width, height, payload } = props;
         const withoutCount = payload?.withoutProductCount || 0;
         const withCount = payload?.withProductCount || 0;
-        
+
         if (withoutCount === 0 && withCount === 0) return null;
-        
+
         // Find the maximum count across all data points for proper scaling
         const allData = combinedDistributionPercent || [];
         const maxCountInDataset = Math.max(
             ...allData.map(d => Math.max(d.withoutProductCount || 0, d.withProductCount || 0)),
             1
         );
-        
+
         // Calculate heights based on the maximum value in the dataset
         const withoutHeight = (withoutCount / maxCountInDataset) * height;
         const withHeight = (withCount / maxCountInDataset) * height;
-        
+
         return (
             <g>
                 {/* Without Product Bar (behind) */}
@@ -169,7 +169,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
         }
     }, [availableColumns]);
 
-    useEffect(()=> {
+    useEffect(() => {
         const syncOpenChartState = () => {
             const saved = localStorage.getItem('showDistributionChartTypeHelp');
             setSingleViewSelectOpen(saved);
@@ -177,9 +177,9 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
         window.addEventListener('showDistributionChartTypeHelpChanged', syncOpenChartState);
         return () => window.removeEventListener('showDistributionChartTypeHelpChanged', syncOpenChartState);
-    },[])
+    }, [])
 
-    useEffect(()=>{
+    useEffect(() => {
         const syncDataFilterMax = () => {
             const saved = localStorage.getItem('dataFilterMax');
             setFilterMax(saved || '');
@@ -187,9 +187,9 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
         window.addEventListener('dataFilterMaxChanged', syncDataFilterMax);
         return () => window.removeEventListener('dataFilterMaxChanged', syncDataFilterMax);
-    },[])
+    }, [])
 
-    useEffect(()=>{
+    useEffect(() => {
         const syncDataFilterMin = () => {
             const saved = localStorage.getItem('dataFilterMin');
             setFilterMin(saved || '');
@@ -197,20 +197,20 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
         window.addEventListener('dataFilterMinChanged', syncDataFilterMin);
         return () => window.removeEventListener('dataFilterMinChanged', syncDataFilterMin);
-    },[])
+    }, [])
 
-    useEffect(()=>{
+    useEffect(() => {
         const syncSelectedColumnName = () => {
             const saved = localStorage.getItem('selectedDistributionColumn');
             setSelectedColumn(saved || '');
         }
 
         window.addEventListener('distributionColumnChanged', syncSelectedColumnName);
-        
-        return () => window.removeEventListener('distributionColumnChanged', syncSelectedColumnName);
-    },[])
 
-    useEffect(()=>{
+        return () => window.removeEventListener('distributionColumnChanged', syncSelectedColumnName);
+    }, [])
+
+    useEffect(() => {
         const syncViewMode = () => {
             const saved = localStorage.getItem('selectedDistributionViewMode');
             setViewMode(saved);
@@ -219,9 +219,9 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
         window.addEventListener('distributionViewModeChanged', syncViewMode);
 
         return () => window.removeEventListener('distributionViewModeChanged', syncViewMode);
-    },[])
+    }, [])
 
-    useEffect(()=>{
+    useEffect(() => {
         const syncDataFilterColumn = () => {
             const saved = localStorage.getItem('dataFilterColumn');
             setFilterColumn(saved || '');
@@ -230,7 +230,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
         window.addEventListener('dataFilterColumnChanged', syncDataFilterColumn);
         return () => window.removeEventListener('dataFilterColumnChanged', syncDataFilterColumn);
-    },[])
+    }, [])
 
 
 
@@ -272,9 +272,9 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
         if (!filterColumn) return withProductData || [];
         const minVal = columnIsDateTime ? (filterMin ? parseDateTimeFromInput(filterMin) : null) : (filterMin !== '' ? Number.parseFloat(filterMin) : null);
         const maxVal = columnIsDateTime ? (filterMax ? parseDateTimeFromInput(filterMax) : null) : (filterMax !== '' ? Number.parseFloat(filterMax) : null);
-        
+
         if (minVal == null && maxVal == null) return withProductData || [];
-        
+
         return (withProductData || []).filter((row) => {
             const raw = row?.[filterColumn];
             if (raw == null) return false;
@@ -290,9 +290,9 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
         if (!filterColumn) return withoutProductData || [];
         const minVal = columnIsDateTime ? (filterMin ? parseDateTimeFromInput(filterMin) : null) : (filterMin !== '' ? Number.parseFloat(filterMin) : null);
         const maxVal = columnIsDateTime ? (filterMax ? parseDateTimeFromInput(filterMax) : null) : (filterMax !== '' ? Number.parseFloat(filterMax) : null);
-        
+
         if (minVal == null && maxVal == null) return withoutProductData || [];
-        
+
         return (withoutProductData || []).filter((row) => {
             const raw = row?.[filterColumn];
             if (raw == null) return false;
@@ -353,15 +353,15 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
         const mean = d3.mean(values);
         const std = d3.deviation(values);
-        
+
         const skewness = values.reduce((sum, val) => {
             return sum + Math.pow((val - mean) / std, 3);
         }, 0) / values.length;
 
         return {
             value: skewness.toFixed(3),
-            interpretation: Math.abs(skewness) < 0.5 ? 'Symmetric' : 
-                           skewness > 0 ? 'Right-skewed' : 'Left-skewed'
+            interpretation: Math.abs(skewness) < 0.5 ? 'Symmetric' :
+                skewness > 0 ? 'Right-skewed' : 'Left-skewed'
         };
     };
 
@@ -373,15 +373,15 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
         const mean = d3.mean(values);
         const std = d3.deviation(values);
-        
+
         const kurtosis = values.reduce((sum, val) => {
             return sum + Math.pow((val - mean) / std, 4);
         }, 0) / values.length - 3;
 
         return {
             value: kurtosis.toFixed(3),
-            interpretation: Math.abs(kurtosis) < 0.5 ? 'Normal' : 
-                           kurtosis > 0 ? 'Heavy-tailed' : 'Light-tailed'
+            interpretation: Math.abs(kurtosis) < 0.5 ? 'Normal' :
+                kurtosis > 0 ? 'Heavy-tailed' : 'Light-tailed'
         };
     };
 
@@ -407,10 +407,10 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
         const totalCount = data.length;
         const validCount = values.length;
         const outliers = detectOutliers(data);
-        
+
         const completeness = (validCount / totalCount) * 100;
         const outlierPercentage = (outliers.length / validCount) * 100;
-        
+
         let quality = 'Excellent';
         let score = 100;
 
@@ -454,7 +454,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
             .filter(value => !isNaN(value));
 
         const allValues = [...withProductValues, ...withoutProductValues];
-        
+
         if (allValues.length === 0) {
             return { min: 0, max: 0 };
         }
@@ -503,7 +503,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
             const binMiddle = (binStart + binEnd) / 2;
             const actualBinEnd = binEnd > binStart ? binEnd : binStart + binWidth;
             const actualBinMiddle = binMiddle > 0 ? binMiddle : (binStart + actualBinEnd) / 2;
-            
+
             return {
                 binMiddle: actualBinMiddle.toFixed(2),
                 count,
@@ -560,20 +560,20 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
     const combinedDistributionPercent = useMemo(() => {
         if (!withProductDistribution.length || !withoutProductDistribution.length) return [];
-        
+
         const maxLength = Math.max(withProductDistribution.length, withoutProductDistribution.length);
-        
+
         return Array.from({ length: maxLength }, (_, index) => {
             const withProductBin = withProductDistribution[index];
             const withoutProductBin = withoutProductDistribution[index];
-            
+
             if (!withProductBin && !withoutProductBin) return null;
-            
+
             const withPct = totalWithProduct && withProductBin ? (withProductBin.count / totalWithProduct) * 100 : 0;
             const withoutPct = totalWithoutProduct && withoutProductBin ? (withoutProductBin.count / totalWithoutProduct) * 100 : 0;
-            
+
             const validBin = withProductBin || withoutProductBin;
-            
+
             return {
                 binMiddle: validBin.binMiddle,
                 withProductPercent: withPct,
@@ -627,9 +627,9 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
             </div>
             <div>
                 <div style={{ fontSize: isMobile ? '6px' : '8px', lineHeight: '1' }}>Powered by</div>
-                <div style={{ 
-                    fontSize: isMobile ? '7px' : '9px', 
-                    fontWeight: 'bold', 
+                <div style={{
+                    fontSize: isMobile ? '7px' : '9px',
+                    fontWeight: 'bold',
                     color: '#1976d2',
                     lineHeight: '1.1'
                 }}>
@@ -673,7 +673,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
         convertImageToDataURL(logo).then((logoDataURL) => {
             const svgClone = svgElement.cloneNode(true);
-            
+
             if (logoDataURL) {
                 const watermarkGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
                 watermarkGroup.setAttribute("transform", `translate(${svgRect.width - 170}, 10)`);
@@ -686,7 +686,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 bgRect.setAttribute("stroke", "rgba(0,0,0,0.1)");
                 bgRect.setAttribute("stroke-width", "1");
                 bgRect.setAttribute("rx", "4");
-                
+
                 const logoImg = document.createElementNS("http://www.w3.org/2000/svg", "image");
                 logoImg.setAttributeNS('http://www.w3.org/1999/xlink', 'href', logoDataURL);
                 logoImg.setAttribute("x", "8");
@@ -694,7 +694,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 logoImg.setAttribute("width", "24");
                 logoImg.setAttribute("height", "24");
                 logoImg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-                
+
                 const poweredByText = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 poweredByText.setAttribute("x", "40");
                 poweredByText.setAttribute("y", "18");
@@ -702,16 +702,16 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 poweredByText.setAttribute("font-size", "10");
                 poweredByText.setAttribute("font-family", "Arial, sans-serif");
                 poweredByText.textContent = "Powered by";
-                
-        const brandText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        brandText.setAttribute("x", "40");
-        brandText.setAttribute("y", "30");
-        brandText.setAttribute("fill", "#1976d2");
-        brandText.setAttribute("font-size", "11");
-        brandText.setAttribute("font-weight", "bold");
-        brandText.setAttribute("font-family", "Arial, sans-serif");
-        brandText.textContent = "Abhitech's AbhiStat";
-                
+
+                const brandText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                brandText.setAttribute("x", "40");
+                brandText.setAttribute("y", "30");
+                brandText.setAttribute("fill", "#1976d2");
+                brandText.setAttribute("font-size", "11");
+                brandText.setAttribute("font-weight", "bold");
+                brandText.setAttribute("font-family", "Arial, sans-serif");
+                brandText.textContent = "Abhitech's AbhiStat";
+
                 watermarkGroup.appendChild(bgRect);
                 watermarkGroup.appendChild(logoImg);
                 watermarkGroup.appendChild(poweredByText);
@@ -736,17 +736,17 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 if (!logoDataURL) {
                     const watermarkX = canvas.width - 160 * scaleFactor - 10 * scaleFactor;
                     const watermarkY = 10 * scaleFactor;
-                    
+
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
                     ctx.fillRect(watermarkX, watermarkY, 160 * scaleFactor, 36 * scaleFactor);
                     ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
                     ctx.lineWidth = 1 * scaleFactor;
                     ctx.strokeRect(watermarkX, watermarkY, 160 * scaleFactor, 36 * scaleFactor);
-                    
+
                     ctx.fillStyle = '#666';
                     ctx.font = `${10 * scaleFactor}px Arial`;
                     ctx.fillText('Powered by', watermarkX + 8 * scaleFactor, watermarkY + 18 * scaleFactor);
-                    
+
                     ctx.fillStyle = '#1976d2';
                     ctx.font = `bold ${11 * scaleFactor}px Arial`;
                     ctx.fillText("Abhitech's AbhiStat", watermarkX + 8 * scaleFactor, watermarkY + 30 * scaleFactor);
@@ -772,17 +772,17 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
                 const watermarkX = canvas.width - 160 * scaleFactor - 10 * scaleFactor;
                 const watermarkY = 10 * scaleFactor;
-                
+
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
                 ctx.fillRect(watermarkX, watermarkY, 160 * scaleFactor, 36 * scaleFactor);
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
                 ctx.lineWidth = 1 * scaleFactor;
                 ctx.strokeRect(watermarkX, watermarkY, 160 * scaleFactor, 36 * scaleFactor);
-                
+
                 ctx.fillStyle = '#666';
                 ctx.font = `${10 * scaleFactor}px Arial`;
                 ctx.fillText('Powered by', watermarkX + 8 * scaleFactor, watermarkY + 18 * scaleFactor);
-                
+
                 ctx.fillStyle = '#1976d2';
                 ctx.font = `bold ${11 * scaleFactor}px Arial`;
                 ctx.fillText("Abhitech's AbhiStat", watermarkX + 8 * scaleFactor, watermarkY + 30 * scaleFactor);
@@ -800,12 +800,12 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
     const SummaryCards = () => (
         <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
-            <Box 
-                sx={{ 
-                    p: 2, 
-                    cursor: 'pointer', 
-                    display: 'flex', 
-                    alignItems: 'center', 
+            <Box
+                sx={{
+                    p: 2,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'space-between',
                     borderBottom: showSummaryCards ? '1px solid' : 'none',
                     borderColor: 'divider',
@@ -827,8 +827,8 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 <CardContent sx={{ p: 3 }}>
                     <Grid container spacing={2}>
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card sx={{ 
-                                height: '100%', 
+                            <Card sx={{
+                                height: '100%',
                                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                                 color: 'white'
                             }}>
@@ -848,10 +848,10 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                 </CardContent>
                             </Card>
                         </Grid>
-                        
+
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card sx={{ 
-                                height: '100%', 
+                            <Card sx={{
+                                height: '100%',
                                 background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
                                 color: 'white'
                             }}>
@@ -871,10 +871,10 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                 </CardContent>
                             </Card>
                         </Grid>
-                        
+
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card sx={{ 
-                                height: '100%', 
+                            <Card sx={{
+                                height: '100%',
                                 background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                                 color: 'white'
                             }}>
@@ -894,10 +894,10 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                 </CardContent>
                             </Card>
                         </Grid>
-                        
+
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card sx={{ 
-                                height: '100%', 
+                            <Card sx={{
+                                height: '100%',
                                 background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
                                 color: 'white'
                             }}>
@@ -925,12 +925,12 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
     const InsightsPanel = () => (
         <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2, border: '1px solid', borderColor: 'primary.light' }}>
-            <Box 
-                sx={{ 
-                    p: 2, 
-                    cursor: 'pointer', 
-                    display: 'flex', 
-                    alignItems: 'center', 
+            <Box
+                sx={{
+                    p: 2,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'space-between',
                     borderBottom: showInsights ? '1px solid' : 'none',
                     borderColor: 'divider',
@@ -960,7 +960,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     <ListItemIcon>
                                         <TrendingUpIcon color="success" />
                                     </ListItemIcon>
-                                    <ListItemText 
+                                    <ListItemText
                                         primary="Mean"
                                         secondary={withProductStats ? withProductStats.mean : 'N/A'}
                                     />
@@ -969,7 +969,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     <ListItemIcon>
                                         <BarChartIcon color="success" />
                                     </ListItemIcon>
-                                    <ListItemText 
+                                    <ListItemText
                                         primary="Standard Deviation"
                                         secondary={withProductStats ? withProductStats.std : 'N/A'}
                                     />
@@ -978,7 +978,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     <ListItemIcon>
                                         <InfoIcon color="success" />
                                     </ListItemIcon>
-                                    <ListItemText 
+                                    <ListItemText
                                         primary="Skewness"
                                         secondary={withProductSkewness ? `${withProductSkewness.value} (${withProductSkewness.interpretation})` : 'N/A'}
                                     />
@@ -987,14 +987,14 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     <ListItemIcon>
                                         <AnalyticsIcon color="success" />
                                     </ListItemIcon>
-                                    <ListItemText 
+                                    <ListItemText
                                         primary="Data Quality"
                                         secondary={withProductQuality ? `${withProductQuality.quality} (${withProductQuality.score}/100)` : 'N/A'}
                                     />
                                 </ListItem>
                             </List>
                         </Grid>
-                        
+
                         <Grid item xs={12} md={6}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'error.main' }}>
                                 Without Product Analysis
@@ -1004,7 +1004,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     <ListItemIcon>
                                         <TrendingUpIcon color="error" />
                                     </ListItemIcon>
-                                    <ListItemText 
+                                    <ListItemText
                                         primary="Mean"
                                         secondary={withoutProductStats ? withoutProductStats.mean : 'N/A'}
                                     />
@@ -1013,7 +1013,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     <ListItemIcon>
                                         <BarChartIcon color="error" />
                                     </ListItemIcon>
-                                    <ListItemText 
+                                    <ListItemText
                                         primary="Standard Deviation"
                                         secondary={withoutProductStats ? withoutProductStats.std : 'N/A'}
                                     />
@@ -1022,7 +1022,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     <ListItemIcon>
                                         <InfoIcon color="error" />
                                     </ListItemIcon>
-                                    <ListItemText 
+                                    <ListItemText
                                         primary="Skewness"
                                         secondary={withoutProductSkewness ? `${withoutProductSkewness.value} (${withoutProductSkewness.interpretation})` : 'N/A'}
                                     />
@@ -1031,7 +1031,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     <ListItemIcon>
                                         <AnalyticsIcon color="error" />
                                     </ListItemIcon>
-                                    <ListItemText 
+                                    <ListItemText
                                         primary="Data Quality"
                                         secondary={withoutProductQuality ? `${withoutProductQuality.quality} (${withoutProductQuality.score}/100)` : 'N/A'}
                                     />
@@ -1039,7 +1039,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                             </List>
                         </Grid>
                     </Grid>
-                    
+
                     {combinedInsights.outliers && combinedInsights.outliers.length > 0 && (
                         <Box sx={{ mt: 2, p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'warning.dark' }}>
@@ -1058,441 +1058,441 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
     const [draftSettings, setDraftSettings] = useState(null)
 
     const openSettingsModal = () => {
-      setDraftSettings({
-        showGrid,
-        showStatistics,
-        showOutliers,
-        showDataPoints,
-        areaOpacity,
-        binCount,
-        combinedLegendLabels: { ...combinedLegendLabels },
-        combinedXAxisLabel,
-        combinedYAxisLabel,
-        distributionColors: { ...distributionColors },
-        barColors: { ...barColors },
-        singleLegendLabel,
-        singleXAxisLabel,
-        singleYAxisLabel,
-        separateLegendLabels: { ...separateLegendLabels },
-        separateXAxisLabel,
-        separateYAxisLabel,
-      })
-      setSettingsModalOpen(true)
+        setDraftSettings({
+            showGrid,
+            showStatistics,
+            showOutliers,
+            showDataPoints,
+            areaOpacity,
+            binCount,
+            combinedLegendLabels: { ...combinedLegendLabels },
+            combinedXAxisLabel,
+            combinedYAxisLabel,
+            distributionColors: { ...distributionColors },
+            barColors: { ...barColors },
+            singleLegendLabel,
+            singleXAxisLabel,
+            singleYAxisLabel,
+            separateLegendLabels: { ...separateLegendLabels },
+            separateXAxisLabel,
+            separateYAxisLabel,
+        })
+        setSettingsModalOpen(true)
     }
 
     const handleSettingsModalClose = () => {
-      setSettingsModalOpen(false)
-      setDraftSettings(null)
+        setSettingsModalOpen(false)
+        setDraftSettings(null)
     }
 
     const handleSettingsSave = () => {
-      if (!draftSettings) return
-      setShowGrid(draftSettings.showGrid)
-      setShowStatistics(draftSettings.showStatistics)
-      setShowOutliers(draftSettings.showOutliers)
-      setShowDataPoints(draftSettings.showDataPoints)
-      setAreaOpacity(draftSettings.areaOpacity)
-      setBinCount(draftSettings.binCount)
-      setCombinedLegendLabels({ ...draftSettings.combinedLegendLabels })
-      setCombinedXAxisLabel(draftSettings.combinedXAxisLabel)
-      setCombinedYAxisLabel(draftSettings.combinedYAxisLabel)
-      setDistributionColors({ ...draftSettings.distributionColors })
-      setBarColors({ ...draftSettings.barColors })
-      setSingleLegendLabel(draftSettings.singleLegendLabel)
-      setSingleXAxisLabel(draftSettings.singleXAxisLabel)
-      setSingleYAxisLabel(draftSettings.singleYAxisLabel)
-      setSeparateLegendLabels({ ...draftSettings.separateLegendLabels })
-      setSeparateXAxisLabel(draftSettings.separateXAxisLabel)
-      setSeparateYAxisLabel(draftSettings.separateYAxisLabel)
-      setSettingsModalOpen(false)
-      setDraftSettings(null)
+        if (!draftSettings) return
+        setShowGrid(draftSettings.showGrid)
+        setShowStatistics(draftSettings.showStatistics)
+        setShowOutliers(draftSettings.showOutliers)
+        setShowDataPoints(draftSettings.showDataPoints)
+        setAreaOpacity(draftSettings.areaOpacity)
+        setBinCount(draftSettings.binCount)
+        setCombinedLegendLabels({ ...draftSettings.combinedLegendLabels })
+        setCombinedXAxisLabel(draftSettings.combinedXAxisLabel)
+        setCombinedYAxisLabel(draftSettings.combinedYAxisLabel)
+        setDistributionColors({ ...draftSettings.distributionColors })
+        setBarColors({ ...draftSettings.barColors })
+        setSingleLegendLabel(draftSettings.singleLegendLabel)
+        setSingleXAxisLabel(draftSettings.singleXAxisLabel)
+        setSingleYAxisLabel(draftSettings.singleYAxisLabel)
+        setSeparateLegendLabels({ ...draftSettings.separateLegendLabels })
+        setSeparateXAxisLabel(draftSettings.separateXAxisLabel)
+        setSeparateYAxisLabel(draftSettings.separateYAxisLabel)
+        setSettingsModalOpen(false)
+        setDraftSettings(null)
     }
-    
+
     const CustomSlider = ({ value, onChange, min, max, step, label, formatValue }) => {
-      const [tempValue, setTempValue] = useState(value);
-      const [isDragging, setIsDragging] = useState(false);
+        const [tempValue, setTempValue] = useState(value);
+        const [isDragging, setIsDragging] = useState(false);
 
-      const handleMouseDown = () => setIsDragging(true);
-      const handleMouseUp = () => {
-        setIsDragging(false);
-        onChange(tempValue);
-      };
+        const handleMouseDown = () => setIsDragging(true);
+        const handleMouseUp = () => {
+            setIsDragging(false);
+            onChange(tempValue);
+        };
 
-      const handleChange = (newValue) => {
-        setTempValue(newValue);
-      };
+        const handleChange = (newValue) => {
+            setTempValue(newValue);
+        };
 
-      useEffect(() => {
-        if (!isDragging) {
-          setTempValue(value);
-        }
-      }, [value, isDragging]);
+        useEffect(() => {
+            if (!isDragging) {
+                setTempValue(value);
+            }
+        }, [value, isDragging]);
 
-      return (
-        <Box sx={{ width: '100%' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>
-              {label}
-            </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontWeight: 600, 
-                color: '#1976d2',
-                backgroundColor: '#f5f5f5',
-                padding: '2px 8px',
-                borderRadius: '12px',
-                fontSize: '0.8rem'
-              }}
-            >
-              {formatValue ? formatValue(tempValue) : tempValue}
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              position: 'relative',
-              height: '6px',
-              backgroundColor: '#e0e0e0',
-              borderRadius: '3px',
-              cursor: 'pointer'
-            }}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-          >
-            <Box
-              sx={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                height: '100%',
-                backgroundColor: '#1976d2',
-                borderRadius: '3px',
-                width: `${((tempValue - min) / (max - min)) * 100}%`,
-                transition: isDragging ? 'none' : 'width 0.2s ease'
-              }}
-            />
-            <input
-              type="range"
-              min={min}
-              max={max}
-              step={step}
-              value={tempValue}
-              onChange={(e) => handleChange(Number(e.target.value))}
-              style={{
-                position: 'absolute',
-                top: '-8px',
-                left: 0,
-                width: '100%',
-                height: '22px',
-                opacity: 0,
-                cursor: 'pointer'
-              }}
-              onMouseDown={handleMouseDown}
-              onMouseUp={handleMouseUp}
-            />
-          </Box>
-        </Box>
-      );
+        return (
+            <Box sx={{ width: '100%' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>
+                        {label}
+                    </Typography>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            fontWeight: 600,
+                            color: '#1976d2',
+                            backgroundColor: '#f5f5f5',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontSize: '0.8rem'
+                        }}
+                    >
+                        {formatValue ? formatValue(tempValue) : tempValue}
+                    </Typography>
+                </Box>
+                <Box
+                    sx={{
+                        position: 'relative',
+                        height: '6px',
+                        backgroundColor: '#e0e0e0',
+                        borderRadius: '3px',
+                        cursor: 'pointer'
+                    }}
+                    onMouseDown={handleMouseDown}
+                    onMouseUp={handleMouseUp}
+                >
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            height: '100%',
+                            backgroundColor: '#1976d2',
+                            borderRadius: '3px',
+                            width: `${((tempValue - min) / (max - min)) * 100}%`,
+                            transition: isDragging ? 'none' : 'width 0.2s ease'
+                        }}
+                    />
+                    <input
+                        type="range"
+                        min={min}
+                        max={max}
+                        step={step}
+                        value={tempValue}
+                        onChange={(e) => handleChange(Number(e.target.value))}
+                        style={{
+                            position: 'absolute',
+                            top: '-8px',
+                            left: 0,
+                            width: '100%',
+                            height: '22px',
+                            opacity: 0,
+                            cursor: 'pointer'
+                        }}
+                        onMouseDown={handleMouseDown}
+                        onMouseUp={handleMouseUp}
+                    />
+                </Box>
+            </Box>
+        );
     };
 
     const SettingsModal = () => {
-      const featureSections = [
-        <Box key="chart-features">
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
-            Chart Features
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={!!draftSettings?.showGrid}
-                    onChange={e => setDraftSettings(ds => ({ ...ds, showGrid: e.target.checked }))}
-                  />
-                }
-                label="Show Grid"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={!!draftSettings?.showStatistics}
-                    onChange={e => setDraftSettings(ds => ({ ...ds, showStatistics: e.target.checked }))}
-                  />
-                }
-                label="Show Statistics"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={!!draftSettings?.showOutliers}
-                    onChange={e => setDraftSettings(ds => ({ ...ds, showOutliers: e.target.checked }))}
-                  />
-                }
-                label="Highlight Outliers"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={!!draftSettings?.showDataPoints}
-                    onChange={e => setDraftSettings(ds => ({ ...ds, showDataPoints: e.target.checked }))}
-                  />
-                }
-                label="Show Data Points"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <CustomSlider
-                value={draftSettings?.areaOpacity ?? 0.6}
-                onChange={(value) => setDraftSettings(ds => ({ ...ds, areaOpacity: value }))}
-                min={0}
-                max={1}
-                step={0.1}
-                label="Area Opacity"
-                formatValue={(val) => `${Math.round(val * 100)}%`}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <CustomSlider
-                value={draftSettings?.binCount ?? 20}
-                onChange={(value) => setDraftSettings(ds => ({ ...ds, binCount: value }))}
-                min={5}
-                max={50}
-                step={5}
-                label="Bin Count"
-                formatValue={(val) => `${val}`}
-              />
-            </Grid>
-          </Grid>
-        </Box>,
-        <Box key="combined-labels">
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
-            Combined View Labels
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                  With Product Legend
+        const featureSections = [
+            <Box key="chart-features">
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
+                    Chart Features
                 </Typography>
-                <DebouncedTextField
-                  value={draftSettings?.combinedLegendLabels?.withProduct || ''}
-                  onChange={e => setDraftSettings(ds => ({ ...ds, combinedLegendLabels: { ...ds.combinedLegendLabels, withProduct: e.target.value } }))}
-                  size="small"
-                  fullWidth
-                  placeholder="Enter legend label"
-                />
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                  Without Product Legend
+                <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={!!draftSettings?.showGrid}
+                                    onChange={e => setDraftSettings(ds => ({ ...ds, showGrid: e.target.checked }))}
+                                />
+                            }
+                            label="Show Grid"
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={!!draftSettings?.showStatistics}
+                                    onChange={e => setDraftSettings(ds => ({ ...ds, showStatistics: e.target.checked }))}
+                                />
+                            }
+                            label="Show Statistics"
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={!!draftSettings?.showOutliers}
+                                    onChange={e => setDraftSettings(ds => ({ ...ds, showOutliers: e.target.checked }))}
+                                />
+                            }
+                            label="Highlight Outliers"
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={!!draftSettings?.showDataPoints}
+                                    onChange={e => setDraftSettings(ds => ({ ...ds, showDataPoints: e.target.checked }))}
+                                />
+                            }
+                            label="Show Data Points"
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <CustomSlider
+                            value={draftSettings?.areaOpacity ?? 0.6}
+                            onChange={(value) => setDraftSettings(ds => ({ ...ds, areaOpacity: value }))}
+                            min={0}
+                            max={1}
+                            step={0.1}
+                            label="Area Opacity"
+                            formatValue={(val) => `${Math.round(val * 100)}%`}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <CustomSlider
+                            value={draftSettings?.binCount ?? 20}
+                            onChange={(value) => setDraftSettings(ds => ({ ...ds, binCount: value }))}
+                            min={5}
+                            max={50}
+                            step={5}
+                            label="Bin Count"
+                            formatValue={(val) => `${val}`}
+                        />
+                    </Grid>
+                </Grid>
+            </Box>,
+            <Box key="combined-labels">
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
+                    Combined View Labels
                 </Typography>
-                <DebouncedTextField
-                  value={draftSettings?.combinedLegendLabels?.withoutProduct || ''}
-                  onChange={e => setDraftSettings(ds => ({ ...ds, combinedLegendLabels: { ...ds.combinedLegendLabels, withoutProduct: e.target.value } }))}
-                  size="small"
-                  fullWidth
-                  placeholder="Enter legend label"
-                />
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                  X Axis Label
+                <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+                                With Product Legend
+                            </Typography>
+                            <DebouncedTextField
+                                value={draftSettings?.combinedLegendLabels?.withProduct || ''}
+                                onChange={e => setDraftSettings(ds => ({ ...ds, combinedLegendLabels: { ...ds.combinedLegendLabels, withProduct: e.target.value } }))}
+                                size="small"
+                                fullWidth
+                                placeholder="Enter legend label"
+                            />
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+                                Without Product Legend
+                            </Typography>
+                            <DebouncedTextField
+                                value={draftSettings?.combinedLegendLabels?.withoutProduct || ''}
+                                onChange={e => setDraftSettings(ds => ({ ...ds, combinedLegendLabels: { ...ds.combinedLegendLabels, withoutProduct: e.target.value } }))}
+                                size="small"
+                                fullWidth
+                                placeholder="Enter legend label"
+                            />
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+                                X Axis Label
+                            </Typography>
+                            <DebouncedTextField
+                                value={draftSettings?.combinedXAxisLabel || ''}
+                                onChange={e => setDraftSettings(ds => ({ ...ds, combinedXAxisLabel: e.target.value }))}
+                                size="small"
+                                fullWidth
+                                placeholder="Enter X axis label"
+                            />
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+                                Y Axis Label
+                            </Typography>
+                            <DebouncedTextField
+                                value={draftSettings?.combinedYAxisLabel || ''}
+                                onChange={e => setDraftSettings(ds => ({ ...ds, combinedYAxisLabel: e.target.value }))}
+                                size="small"
+                                fullWidth
+                                placeholder="Enter Y axis label"
+                            />
+                        </Box>
+                    </Grid>
+                </Grid>
+            </Box>,
+            <Box key="separate-labels">
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
+                    Separate View Labels
                 </Typography>
-                <DebouncedTextField
-                  value={draftSettings?.combinedXAxisLabel || ''}
-                  onChange={e => setDraftSettings(ds => ({ ...ds, combinedXAxisLabel: e.target.value }))}
-                  size="small"
-                  fullWidth
-                  placeholder="Enter X axis label"
-                />
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                  Y Axis Label
+                <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+                                With Product Legend
+                            </Typography>
+                            <DebouncedTextField
+                                value={draftSettings?.separateLegendLabels?.withProduct || ''}
+                                onChange={e => setDraftSettings(ds => ({ ...ds, separateLegendLabels: { ...ds.separateLegendLabels, withProduct: e.target.value } }))}
+                                size="small"
+                                fullWidth
+                                placeholder="Enter legend label"
+                            />
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+                                Without Product Legend
+                            </Typography>
+                            <DebouncedTextField
+                                value={draftSettings?.separateLegendLabels?.withoutProduct || ''}
+                                onChange={e => setDraftSettings(ds => ({ ...ds, separateLegendLabels: { ...ds.separateLegendLabels, withoutProduct: e.target.value } }))}
+                                size="small"
+                                fullWidth
+                                placeholder="Enter legend label"
+                            />
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+                                X Axis Label
+                            </Typography>
+                            <DebouncedTextField
+                                value={draftSettings?.separateXAxisLabel || ''}
+                                onChange={e => setDraftSettings(ds => ({ ...ds, separateXAxisLabel: e.target.value }))}
+                                size="small"
+                                fullWidth
+                                placeholder="Enter X axis label"
+                            />
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+                                Y Axis Label
+                            </Typography>
+                            <DebouncedTextField
+                                value={draftSettings?.separateYAxisLabel || ''}
+                                onChange={e => setDraftSettings(ds => ({ ...ds, separateYAxisLabel: e.target.value }))}
+                                size="small"
+                                fullWidth
+                                placeholder="Enter Y axis label"
+                            />
+                        </Box>
+                    </Grid>
+                </Grid>
+            </Box>,
+            <Box key="single-labels">
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
+                    Single View Labels
                 </Typography>
-                <DebouncedTextField
-                  value={draftSettings?.combinedYAxisLabel || ''}
-                  onChange={e => setDraftSettings(ds => ({ ...ds, combinedYAxisLabel: e.target.value }))}
-                  size="small"
-                  fullWidth
-                  placeholder="Enter Y axis label"
-                />
-              </Box>
-            </Grid>
-          </Grid>
-        </Box>,
-        <Box key="separate-labels">
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
-            Separate View Labels
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                  With Product Legend
-                </Typography>
-                <DebouncedTextField
-                  value={draftSettings?.separateLegendLabels?.withProduct || ''}
-                  onChange={e => setDraftSettings(ds => ({ ...ds, separateLegendLabels: { ...ds.separateLegendLabels, withProduct: e.target.value } }))}
-                  size="small"
-                  fullWidth
-                  placeholder="Enter legend label"
-                />
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                  Without Product Legend
-                </Typography>
-                <DebouncedTextField
-                  value={draftSettings?.separateLegendLabels?.withoutProduct || ''}
-                  onChange={e => setDraftSettings(ds => ({ ...ds, separateLegendLabels: { ...ds.separateLegendLabels, withoutProduct: e.target.value } }))}
-                  size="small"
-                  fullWidth
-                  placeholder="Enter legend label"
-                />
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                  X Axis Label
-                </Typography>
-                <DebouncedTextField
-                  value={draftSettings?.separateXAxisLabel || ''}
-                  onChange={e => setDraftSettings(ds => ({ ...ds, separateXAxisLabel: e.target.value }))}
-                  size="small"
-                  fullWidth
-                  placeholder="Enter X axis label"
-                />
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                  Y Axis Label
-                </Typography>
-                <DebouncedTextField
-                  value={draftSettings?.separateYAxisLabel || ''}
-                  onChange={e => setDraftSettings(ds => ({ ...ds, separateYAxisLabel: e.target.value }))}
-                  size="small"
-                  fullWidth
-                  placeholder="Enter Y axis label"
-                />
-              </Box>
-            </Grid>
-          </Grid>
-        </Box>,
-        <Box key="single-labels">
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
-            Single View Labels
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}>
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                  Legend Label
-                </Typography>
-                <DebouncedTextField
-                  value={draftSettings?.singleLegendLabel || ''}
-                  onChange={e => setDraftSettings(ds => ({ ...ds, singleLegendLabel: e.target.value }))}
-                  size="small"
-                  fullWidth
-                  placeholder="Enter legend label"
-                />
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                  X Axis Label
-                </Typography>
-                <DebouncedTextField
-                  value={draftSettings?.singleXAxisLabel || ''}
-                  onChange={e => setDraftSettings(ds => ({ ...ds, singleXAxisLabel: e.target.value }))}
-                  size="small"
-                  fullWidth
-                  placeholder="Enter X axis label"
-                />
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Box>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                  Y Axis Label
-                </Typography>
-                <DebouncedTextField
-                  value={draftSettings?.singleYAxisLabel || ''}
-                  onChange={e => setDraftSettings(ds => ({ ...ds, singleYAxisLabel: e.target.value }))}
-                  size="small"
-                  fullWidth
-                  placeholder="Enter Y axis label"
-                />
-              </Box>
-            </Grid>
-          </Grid>
-        </Box>
-      ];
+                <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+                                Legend Label
+                            </Typography>
+                            <DebouncedTextField
+                                value={draftSettings?.singleLegendLabel || ''}
+                                onChange={e => setDraftSettings(ds => ({ ...ds, singleLegendLabel: e.target.value }))}
+                                size="small"
+                                fullWidth
+                                placeholder="Enter legend label"
+                            />
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+                                X Axis Label
+                            </Typography>
+                            <DebouncedTextField
+                                value={draftSettings?.singleXAxisLabel || ''}
+                                onChange={e => setDraftSettings(ds => ({ ...ds, singleXAxisLabel: e.target.value }))}
+                                size="small"
+                                fullWidth
+                                placeholder="Enter X axis label"
+                            />
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+                                Y Axis Label
+                            </Typography>
+                            <DebouncedTextField
+                                value={draftSettings?.singleYAxisLabel || ''}
+                                onChange={e => setDraftSettings(ds => ({ ...ds, singleYAxisLabel: e.target.value }))}
+                                size="small"
+                                fullWidth
+                                placeholder="Enter Y axis label"
+                            />
+                        </Box>
+                    </Grid>
+                </Grid>
+            </Box>
+        ];
 
-      const colorPairs = [
-        {
-          key: 'withProduct',
-          value: draftSettings?.distributionColors?.withProduct || '#3B82F6',
-          onChange: (color) => setDraftSettings(ds => ({ ...ds, distributionColors: { ...ds.distributionColors, withProduct: color } })),
-          label: 'With Product Area Color'
-        },
-        {
-          key: 'withoutProduct',
-          value: draftSettings?.distributionColors?.withoutProduct || '#EF4444',
-          onChange: (color) => setDraftSettings(ds => ({ ...ds, distributionColors: { ...ds.distributionColors, withoutProduct: color } })),
-          label: 'Without Product Area Color'
-        },
-        {
-          key: 'withProductBar',
-          value: draftSettings?.barColors?.withProduct || '#EF4444',
-          onChange: (color) => setDraftSettings(ds => ({ ...ds, barColors: { ...ds.barColors, withProduct: color } })),
-          label: 'With Product Bar Color'
-        },
-        {
-          key: 'withoutProductBar',
-          value: draftSettings?.barColors?.withoutProduct || '#3B82F6',
-          onChange: (color) => setDraftSettings(ds => ({ ...ds, barColors: { ...ds.barColors, withoutProduct: color } })),
-          label: 'Without Product Bar Color'
-        }
-      ];
+        const colorPairs = [
+            {
+                key: 'withProduct',
+                value: draftSettings?.distributionColors?.withProduct || '#3B82F6',
+                onChange: (color) => setDraftSettings(ds => ({ ...ds, distributionColors: { ...ds.distributionColors, withProduct: color } })),
+                label: 'With Product Area Color'
+            },
+            {
+                key: 'withoutProduct',
+                value: draftSettings?.distributionColors?.withoutProduct || '#EF4444',
+                onChange: (color) => setDraftSettings(ds => ({ ...ds, distributionColors: { ...ds.distributionColors, withoutProduct: color } })),
+                label: 'Without Product Area Color'
+            },
+            {
+                key: 'withProductBar',
+                value: draftSettings?.barColors?.withProduct || '#EF4444',
+                onChange: (color) => setDraftSettings(ds => ({ ...ds, barColors: { ...ds.barColors, withProduct: color } })),
+                label: 'With Product Bar Color'
+            },
+            {
+                key: 'withoutProductBar',
+                value: draftSettings?.barColors?.withoutProduct || '#3B82F6',
+                onChange: (color) => setDraftSettings(ds => ({ ...ds, barColors: { ...ds.barColors, withoutProduct: color } })),
+                label: 'Without Product Bar Color'
+            }
+        ];
 
-      return (
-        <ChartSettingsModal
-          open={settingsModalOpen}
-          onClose={handleSettingsModalClose}
-          onApply={handleSettingsSave}
-          onReset={() => setDraftSettings(null)}
-          settings={null}
-          draftSettings={draftSettings}
-          setDraftSettings={setDraftSettings}
-          colorPairs={colorPairs}
-          colorOptions={['#3B82F6', '#EF4444', '#2196f3', '#ff9800', '#9c27b0', '#00bcd4', '#e91e63', '#607d8b', '#ffc107', '#3f51b5', '#6B7280', '#9CA3AF', '#4B5563', '#D1D5DB', '#374151', '#111827']}
-          featureSections={featureSections}
-          colorSection={true}
-          title="Chart Settings"
-          description="Customize your distribution curve appearance"
-          minHeight={600}
-          maxWidth="md"
-        />
-      );
+        return (
+            <ChartSettingsModal
+                open={settingsModalOpen}
+                onClose={handleSettingsModalClose}
+                onApply={handleSettingsSave}
+                onReset={() => setDraftSettings(null)}
+                settings={null}
+                draftSettings={draftSettings}
+                setDraftSettings={setDraftSettings}
+                colorPairs={colorPairs}
+                colorOptions={['#3B82F6', '#EF4444', '#2196f3', '#ff9800', '#9c27b0', '#00bcd4', '#e91e63', '#607d8b', '#ffc107', '#3f51b5', '#6B7280', '#9CA3AF', '#4B5563', '#D1D5DB', '#374151', '#111827']}
+                featureSections={featureSections}
+                colorSection={true}
+                title="Chart Settings"
+                description="Customize your distribution curve appearance"
+                minHeight={600}
+                maxWidth="md"
+            />
+        );
     };
 
     const renderCombinedChart = () => {
@@ -1506,13 +1506,13 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
         return (
             <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
                 <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-                    <Box sx={{ 
-                        display: "flex", 
-                        justifyContent: "space-between", 
-                        alignItems: "center", 
-                        mb: 3, 
+                    <Box sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mb: 3,
                         flexDirection: { xs: "column", sm: "row" },
-                        gap: 2 
+                        gap: 2
                     }}>
                         <Typography
                             variant="h6"
@@ -1526,10 +1526,10 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                             Combined Distribution Curves
                         </Typography>
 
-                        <Box sx={{ 
-                            display: "flex", 
-                            gap: 1, 
-                            alignItems: "center", 
+                        <Box sx={{
+                            display: "flex",
+                            gap: 1,
+                            alignItems: "center",
                             flexWrap: "wrap",
                             justifyContent: { xs: "center", sm: "flex-end" }
                         }}>
@@ -1555,16 +1555,16 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                 label="Show Area Chart"
                                 sx={{ mr: 1 }}
                             /> */}
-                            
+
                             <MuiTooltip title="Chart Settings">
                                 <Button
-                                id='settings-button'
+                                    id='settings-button'
                                     variant="outlined"
                                     color="primary"
                                     onClick={openSettingsModal}
                                     startIcon={<SettingsIcon />}
                                     size="small"
-                                    sx={{ 
+                                    sx={{
                                         textTransform: 'none',
                                         height: 32,
                                         border: "1px solid",
@@ -1580,21 +1580,21 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                             </MuiTooltip>
 
                             <SaveVisualizationButton
-                                
-                                elementId="visualization-content" 
+
+                                elementId="visualization-content"
                                 fileNamePrefix="distribution_curve"
                                 variableNames={selectedColumn}
                             />
 
                             <MuiTooltip title="Download as PNG">
                                 <Button
-                                id='download-visualization-btn'
+                                    id='download-visualization-btn'
                                     variant="outlined"
                                     color="primary"
                                     onClick={() => downloadChartAsPNG(combinedChartRef, 'Combined_Distribution')}
                                     startIcon={<DownloadIcon />}
                                     size="small"
-                                    sx={{ 
+                                    sx={{
                                         textTransform: 'none',
                                         height: 32,
                                         border: "1px solid",
@@ -1612,9 +1612,9 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                     </Box>
 
                     <Box sx={{ mb: 3 }}>
-                        <Alert severity="info" sx={{ 
-                            display: "flex", 
-                            alignItems: "center", 
+                        <Alert severity="info" sx={{
+                            display: "flex",
+                            alignItems: "center",
                             gap: 1,
                             borderRadius: 2,
                             fontSize: { xs: "0.8rem", sm: "0.875rem" }
@@ -1695,10 +1695,10 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                         <Tooltip
                                             content={({ active, payload, label }) => {
                                                 if (!active || !payload || !payload.length) return null;
-                                                
+
                                                 const data = payload[0]?.payload;
                                                 if (!data) return null;
-                                                
+
                                                 return (
                                                     <div style={{
                                                         backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -1711,7 +1711,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                                         <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
                                                             {combinedXAxisLabel}: {label}
                                                         </div>
-                                                        
+
                                                         {showAreaChart && (
                                                             <>
                                                                 {data.withoutProductPercent > 0 && (
@@ -1726,7 +1726,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                                                 )}
                                                             </>
                                                         )}
-                                                        
+
                                                         {showNumberOfPoints && (
                                                             <>
                                                                 {data.withoutProductCount > 0 && (
@@ -1741,7 +1741,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                                                 )}
                                                             </>
                                                         )}
-                                                        
+
                                                         <div style={{ marginTop: '4px', fontSize: '11px', color: '#666' }}>
                                                             Range: {data.binRange}
                                                         </div>
@@ -1839,54 +1839,54 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         </Typography>
 
                         <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
-                                <MuiTooltip title="Chart Settings">
-                                    <Button
-                                        variant="outlined"
-                                        color="primary"
-                                        onClick={openSettingsModal}
-                                        startIcon={<SettingsIcon />}
-                                        size="small"
-                                        sx={{ 
-                                            textTransform: 'none',
-                                            height: 32,
-                                            border: "1px solid",
-                                            borderColor: "primary.main",
-                                            "&:hover": {
-                                                backgroundColor: "primary.light",
-                                                color: "white"
-                                            }
-                                        }}
-                                    >
-                                        Settings
-                                    </Button>
-                                </MuiTooltip>
+                            <MuiTooltip title="Chart Settings">
+                                <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    onClick={openSettingsModal}
+                                    startIcon={<SettingsIcon />}
+                                    size="small"
+                                    sx={{
+                                        textTransform: 'none',
+                                        height: 32,
+                                        border: "1px solid",
+                                        borderColor: "primary.main",
+                                        "&:hover": {
+                                            backgroundColor: "primary.light",
+                                            color: "white"
+                                        }
+                                    }}
+                                >
+                                    Settings
+                                </Button>
+                            </MuiTooltip>
 
-                                <SaveVisualizationButton 
-                                    elementId="visualization-content" 
-                                    fileNamePrefix="distribution_curve" 
-                                />
+                            <SaveVisualizationButton
+                                elementId="visualization-content"
+                                fileNamePrefix="distribution_curve"
+                            />
 
-                                <MuiTooltip title="Download as PNG">
-                                    <Button
-                                        variant="outlined"
-                                        color="primary"
-                                        onClick={() => downloadChartAsPNG(chartRef, title)}
-                                        startIcon={<DownloadIcon />}
-                                        size="small"
-                                        sx={{ 
-                                            textTransform: 'none',
-                                            height: 32,
-                                            border: "1px solid",
-                                            borderColor: "primary.main",
-                                            "&:hover": {
-                                                backgroundColor: "primary.light",
-                                                color: "white"
-                                            }
-                                        }}
-                                    >
-                                        Download PNG
-                                    </Button>
-                                </MuiTooltip>
+                            <MuiTooltip title="Download as PNG">
+                                <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    onClick={() => downloadChartAsPNG(chartRef, title)}
+                                    startIcon={<DownloadIcon />}
+                                    size="small"
+                                    sx={{
+                                        textTransform: 'none',
+                                        height: 32,
+                                        border: "1px solid",
+                                        borderColor: "primary.main",
+                                        "&:hover": {
+                                            backgroundColor: "primary.light",
+                                            color: "white"
+                                        }
+                                    }}
+                                >
+                                    Download PNG
+                                </Button>
+                            </MuiTooltip>
                         </Box>
                     </Box>
 
@@ -2021,7 +2021,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                     label="Number of Points"
                                     sx={{ mr: 1 }}
                                 /> */}
-                                
+
                                 {/* <MuiTooltip title="Chart Settings">
                                     <Button
                                         variant="outlined"
@@ -2191,7 +2191,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
                     <CardContent sx={{ p: { xs: 2, md: 4 } }}>
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
-                             <Typography
+                            <Typography
                                 variant="h6"
                                 sx={{
                                     fontWeight: 500,
@@ -2383,6 +2383,8 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
         </Grid>
     );
 
+
+
     const renderSingleChart = () => {
         const isWithProduct = singleViewType === 'withProduct';
         const data = isWithProduct ? withProductDistribution : withoutProductDistribution;
@@ -2391,6 +2393,35 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
         const barColor = isWithProduct ? barColors.withProduct : barColors.withoutProduct;
         const chartRef = isWithProduct ? withProductChartRef : withoutProductChartRef;
 
+        // 🔥 SERIES CONFIG (EXTENSIBLE)
+        const seriesConfig = [
+            {
+                key: "count",
+                label: singleLegendLabel,
+                axis: "left",
+                type: "area",
+                color: color,
+                show: showAreaChart && data?.some(d => d.count !== undefined)
+            },
+            {
+                key: "count",
+                label: "Number of Points",
+                axis: "right",
+                type: "bar",
+                color: barColor,
+                show: showNumberOfPoints && data?.some(d => d.count !== undefined)
+            },
+            // 👉 Future metrics (just enable when data exists)
+            // {
+            //     key: "premium",
+            //     label: "Premium",
+            //     axis: "right",
+            //     type: "line",
+            //     color: "#82ca9d",
+            //     show: data?.some(d => d.premium !== undefined)
+            // }
+        ];
+
         if (!data || data.length === 0) {
             return (
                 <Alert severity="info" sx={{ width: '100%', mx: { xs: 1, sm: 0 } }}>
@@ -2398,6 +2429,9 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 </Alert>
             );
         }
+
+        // ✅ Ensure at least left axis always exists
+        const axes = ["left", ...new Set(seriesConfig.filter(s => s.show).map(s => s.axis).filter(a => a !== "left"))];
 
         return (
             <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
@@ -2426,51 +2460,31 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                 label="Number of Points"
                                 sx={{ mr: 1 }}
                             />
-                            
-                                <MuiTooltip title="Chart Settings">
-                                    <Button
-                                        variant="outlined"
-                                        color="primary"
-                                        onClick={openSettingsModal}
-                                        startIcon={<SettingsIcon />}
-                                        size="small"
-                                        sx={{ 
-                                            textTransform: 'none',
-                                            height: 32,
-                                            border: "1px solid",
-                                            borderColor: "primary.main",
-                                            "&:hover": {
-                                                backgroundColor: "primary.light",
-                                                color: "white"
-                                            }
-                                        }}
-                                    >
-                                        Settings
-                                    </Button>
-                                </MuiTooltip>
 
-                                <SaveVisualizationButton 
-                                    elementId="visualization-content" 
-                                    fileNamePrefix="distribution_curve" 
-                                />
+                            <MuiTooltip title="Chart Settings">
+                                <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    onClick={openSettingsModal}
+                                    startIcon={<SettingsIcon />}
+                                    size="small"
+                                >
+                                    Settings
+                                </Button>
+                            </MuiTooltip>
 
-                                <MuiTooltip title="Download as PNG">
+                            <SaveVisualizationButton
+                                elementId="visualization-content"
+                                fileNamePrefix="distribution_curve"
+                            />
+
+                            <MuiTooltip title="Download as PNG">
                                 <Button
                                     variant="outlined"
                                     color="primary"
                                     onClick={() => downloadChartAsPNG(chartRef, title.replace(/\s+/g, '_'))}
                                     startIcon={<DownloadIcon />}
                                     size="small"
-                                    sx={{ 
-                                        textTransform: 'none',
-                                        height: 32,
-                                        border: "1px solid",
-                                        borderColor: "primary.main",
-                                        "&:hover": {
-                                            backgroundColor: "primary.light",
-                                            color: "white"
-                                        }
-                                    }}
                                 >
                                     Download PNG
                                 </Button>
@@ -2481,129 +2495,117 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                     <Box sx={{ mb: 2 }}>
                         <Alert severity="info" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                             <PanToolIcon fontSize="small" />
-                            <Typography variant="body2" sx={{ fontSize: { xs: "0.75rem", md: "0.875rem" } }}>
-                                Interactive distribution curve with customizable bins, colors, and statistical analysis.
+                            <Typography variant="body2">
+                                Interactive distribution curve with multi-metric support.
                             </Typography>
                         </Alert>
                     </Box>
 
-                    <div ref={chartRef} className="abhitech-plot-area" style={{
-                        width: '100%',
-                        height: isMobile ? 280 : isTablet ? 320 : 350,
-                        position: 'relative'
-                    }}>
-                        <ResponsiveContainer width="100%" height="100%" key={`single-${showNumberOfPoints}`}>
-                            <ComposedChart
-                                data={data}
-                                margin={{
-                                    top: 10,
-                                    right: isMobile ? 50 : 60,
-                                    left: isMobile ? 10 : 20,
-                                    bottom: isMobile ? 50 : 40
-                                }}
-                            >
+                    <div
+                        ref={chartRef}
+                        className="abhitech-plot-area"
+                        style={{
+                            width: '100%',
+                            height: isMobile ? 280 : isTablet ? 320 : 350,
+                            position: 'relative'
+                        }}
+                    >
+                        <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={data}>
+
                                 {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-                                <XAxis
-                                    dataKey="binMiddle"
-                                    label={{
-                                        value: singleXAxisLabel,
-                                        position: 'insideBottom',
-                                        offset: isMobile ? -30 : -20,
-                                        style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                    }}
-                                    tick={{ fontSize: isMobile ? 10 : 12 }}
-                                />
-                                <YAxis
-                                    yAxisId="left"
-                                    label={{
-                                        value: singleYAxisLabel,
-                                        angle: -90,
-                                        position: 'insideLeft',
-                                        offset: -5,
-                                        style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                    }}
-                                    tick={{ fontSize: isMobile ? 10 : 12 }}
-                                />
-                                {showNumberOfPoints ? (
+
+                                <XAxis dataKey="binMiddle" />
+
+                                {/* 🔥 DYNAMIC AXES */}
+                                {axes.map(axis => (
                                     <YAxis
-                                        yAxisId="right"
-                                        orientation="right"
-                                        label={{
-                                            value: 'Number of Points',
-                                            angle: 90,
-                                            position: 'insideRight',
-                                            offset: -5,
-                                            style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                        }}
-                                        tick={{ fontSize: isMobile ? 10 : 12 }}
+                                        key={axis}
+                                        yAxisId={axis}
+                                        orientation={axis === "right" ? "right" : "left"}
                                     />
-                                ) : (
-                                    <YAxis
-                                        yAxisId="right"
-                                        orientation="right"
-                                        tick={false}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        width={0}
-                                    />
-                                )}
+                                ))}
+
                                 <Tooltip
-                                    formatter={(value, name) => {
-                                        if (name === 'count') {
-                                            return [value, 'Number of Points'];
-                                        }
-                                        return [value, singleLegendLabel];
-                                    }}
+                                    formatter={(value, name) => [value, name]}
                                     labelFormatter={(label) => `${singleXAxisLabel}: ${label}`}
-                                    contentStyle={{ fontSize: isMobile ? '12px' : '14px' }}
                                 />
-                                <Legend
-                                    verticalAlign="top"
-                                    height={36}
-                                    align="left"
-                                    wrapperStyle={{ fontSize: isMobile ? '12px' : '14px' }}
-                                />
-                                <Area
-                                    yAxisId="left"
-                                    type="monotone"
-                                    dataKey="count"
-                                    stroke={color}
-                                    fill={color}
-                                    fillOpacity={areaOpacity}
-                                    name={singleLegendLabel}
-                                    dot={showDataPoints ? { r: 3, fill: color } : false}
-                                    hide={!showAreaChart}
-                                />
-                                <Bar
-                                    yAxisId="right"
-                                    dataKey="count"
-                                    fill={barColor}
-                                    fillOpacity={showNumberOfPoints ? 0.5 : 0}
-                                    name="Number of Points"
-                                    radius={[4, 4, 0, 0]}
-                                    barSize={20}
-                                    hide={!showNumberOfPoints}
-                                />
+
+                                <Legend />
+
+                                {/* 🔥 DYNAMIC SERIES */}
+                                {seriesConfig.map(series => {
+                                    if (!series.show) return null;
+
+                                    if (series.type === "area") {
+                                        return (
+                                            <Area
+                                                key={series.label}
+                                                yAxisId={series.axis}
+                                                type="monotone"
+                                                dataKey={series.key}
+                                                stroke={series.color}
+                                                fill={series.color}
+                                                fillOpacity={areaOpacity}
+                                                name={series.label}
+                                                dot={showDataPoints ? { r: 3 } : false}
+                                            />
+                                        );
+                                    }
+
+                                    if (series.type === "bar") {
+                                        return (
+                                            <Bar
+                                                key={series.label}
+                                                yAxisId={series.axis}
+                                                dataKey={series.key}
+                                                fill={series.color}
+                                                fillOpacity={0.5}
+                                                name={series.label}
+                                                barSize={20}
+                                            />
+                                        );
+                                    }
+
+                                    if (series.type === "line") {
+                                        return (
+                                            <Line
+                                                key={series.label}
+                                                yAxisId={series.axis}
+                                                type="monotone"
+                                                dataKey={series.key}
+                                                stroke={series.color}
+                                                name={series.label}
+                                            />
+                                        );
+                                    }
+
+                                    return null;
+                                })}
+
                             </ComposedChart>
                         </ResponsiveContainer>
+
                         <WatermarkContent />
                     </div>
                 </CardContent>
             </Card>
         );
     };
-    
+
+
+
     const downloadPageAsPNG = async () => {
         if (!pageRef.current) return
-        
+
         const originalShowSummaryCards = showSummaryCards
         const originalShowInsights = showInsights
-        
+
         setShowSummaryCards(true)
         setShowInsights(true)
-        
+
         await new Promise(resolve => setTimeout(resolve, 400))
-        
+
         const element = pageRef.current
         const canvas = await html2canvas(element, {
             useCORS: true,
@@ -2613,10 +2615,10 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
             windowWidth: element.scrollWidth,
             windowHeight: element.scrollHeight,
         })
-        
+
         setShowSummaryCards(originalShowSummaryCards)
         setShowInsights(originalShowInsights)
-        
+
         const link = document.createElement('a')
         const fileName = generateFileName(`DistributionCurve_Page_${selectedColumn}`)
         link.download = `${fileName}.png`
@@ -2634,7 +2636,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         Select Column
                     </Typography>
                     <Autocomplete
-                    id='distribution-column-select'
+                        id='distribution-column-select'
                         options={availableColumns}
                         value={selectedColumn}
                         onChange={(event, newValue) => {
@@ -2710,7 +2712,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         <FormControl fullWidth size="small">
                             <InputLabel id="single-view-select-label">Chart Type</InputLabel>
                             <Select
-                            open={singleViewSelectOpen}
+                                open={singleViewSelectOpen}
                                 labelId="single-view-select-label"
                                 value={singleViewType}
                                 label="Chart Type"
@@ -2775,12 +2777,12 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                             />
                         </Grid>
                         <Grid item xs={12} sm={12} md={4}>
-                            <Button 
-                            id='clear-data-filter-btn'
-                                onClick={resetLocalFilter} 
-                                variant="outlined" 
-                                size="small" 
-                                sx={{ 
+                            <Button
+                                id='clear-data-filter-btn'
+                                onClick={resetLocalFilter}
+                                variant="outlined"
+                                size="small"
+                                sx={{
                                     textTransform: 'none',
                                     width: { xs: '100%', md: 'auto' },
                                     minWidth: '120px'
