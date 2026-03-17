@@ -17,8 +17,6 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, Grid, TextField, Typography, Button } from "@mui/material";
 import FormulaBuilder from "../components/FormulaBuilder";
 import { ContactPageSharp } from "@mui/icons-material";
-import apiClient from "../utils/apiClient";
-import { removeFromSessionStorage } from "../utils/fileUtils";
 
 
 const FullExcelFile = () => {
@@ -362,6 +360,15 @@ if(intent === "go_to_results"){
               const postSheetData = (excelData?.find(s => s?.sheetName === postProduct))?.sheetData
               console.log("[DEBUG] postProductData", postSheetData ?? {});
               const postSheetName = postProduct ?? "";
+              console.log("[debug] navigation Pre Product Data",preSheetData)
+              console.log("[debug] navigation post product data",postSheetData);
+              console.log("[debug] navigation excel data",excelData);
+              console.log("[debug] navigation sheet names",sheet);
+              console.log("[debug] navigation pre sheet name",preSheetName);
+              console.log("[debug] navigation post sheet name",postSheetName);
+              
+              
+              
               navigation("/visualize-data", {
                 state: {
                   availableCols: Array.from(new Set(cols || [])),
@@ -909,61 +916,109 @@ if (intent === "add_formula_column") {
     console.log('  After processFile - recentFiles state:', recentFiles);
   };
 
-  const processFile = useCallback(async (file, sheet) => {
-    if (!file) return;
+  const processFile = (file) => {
+    console.log('📝 processFile called with:', file.name);
 
-    setIsLoading(true);
-   
-    
+    setFileName(file.name);
+    setError(null);
+    setVoiceFeedback("File selected: " + file.name + ". Processing...");
 
-    const formData = new FormData();
-    formData.append("file", file);
+    fileObjectsRef.current[file.name] = file;
+    fileObjectsRef.current[file.name.split('.')[0]] = file;
 
-    if (sheet) {
-        formData.append("sheet", sheet);
-    }
+    const newRecent = [file.name, ...recentFiles.filter(f => f !== file.name)].slice(0, 10);
+    console.log('  Updating recentFiles from:', recentFiles);
+    console.log('  To:', newRecent);
+    setRecentFiles(newRecent);
 
     try {
-        const result = await apiClient.post("/process-file", formData, {
-            isFormData: true
+      localStorage.setItem('recentFiles', JSON.stringify(newRecent));
+      console.log('  ✓ Saved to localStorage:', newRecent);
+    } catch (e) {
+      console.error('  ✗ Failed to save to localStorage:', e);
+    }
+
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (!["xlsx", "xls", "xlsm"].includes(ext)) {
+      setError("Unsupported file type");
+      setVoiceFeedback("Error: Unsupported file type. Please select an Excel file.");
+      setTimeout(() => setVoiceFeedback(""), 3000);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const workbook = XLSX.read(evt.target.result, { type: "binary", cellDates: true, cellNF: true });
+        const sheets = workbook.SheetNames;
+        setSheetNames(sheets);
+        const parsed = sheets.map((name) => {
+          const ws = workbook.Sheets[name];
+          const rawRows = XLSX.utils.sheet_to_json(ws, { defval: "", raw: true });
+          const formattedRows = rawRows.map((row) => {
+            const newRow = { ...row };
+            Object.keys(newRow).forEach((k) => {
+              const v = newRow[k];
+              const keyLower = k.toLowerCase();
+              if (keyLower.includes("date")) {
+                if (v instanceof Date && !isNaN(v.getTime())) {
+                  const y = v.getFullYear();
+                  const m = v.getMonth();
+                  const d = v.getDate();
+                  newRow[k] = `${y}-${(m + 1)}-${(d)}`;
+                  newRow[`__num__${k}`] = Date.UTC(y, m, d);
+                }
+              } else if (keyLower.includes("time")) {
+                if (v instanceof Date && !isNaN(v.getTime())) {
+                  const hh = v.getHours();
+                  const mm = v.getMinutes();
+                  const ss = v.getSeconds();
+                  newRow[k] = `${hh}:${mm}:${ss}`;
+                  newRow[`__num__${k}`] = hh * 3600 + mm * 60 + ss;
+                }
+              }
+            });
+            return newRow;
+          });
+          return {
+            sheetName: name,
+            sheetData: formattedRows,
+          };
         });
-
-        if (!result?.session_id) return;
-
-        setSessionId(result.session_id);
-
-        const fileData = result?.file_info?.data || result?.file_info?.preview || [];
-
-        const dataSize = JSON.stringify(fileData).length;
-
-        if (dataSize > 2 * 1024 * 1024) {
-            await removeFromSessionStorage("fileData");
-        }
-
-        setFileData(fileData);
+        setExcelData(parsed);
 
         try {
-            localStorage.removeItem("dependency-model-columns");
-        } catch {}
-
-        setFileInfo({
-            rows: result?.file_info?.shape?.[0] ?? fileData.length,
-            columns:
-                result?.file_info?.columns ??
-                (fileData.length ? Object.keys(fileData[0]) : [])
-        });
-
-    } catch (error) {
-        const message =
-            error?.response?.data?.message ||
-            error?.message ||
-            "Server error. Please try again.";
-
-        setDataErrors(message);
-    } finally {
-        setIsLoading(false);
-    }
-}, [apiClient, removeFromSessionStorage]);
+          const existing = JSON.parse(localStorage.getItem('saved_excel_sheets') || '{}');
+          const merged = { ...(existing || {}) };
+          parsed.forEach((s) => { merged[s.sheetName] = s.sheetData; });
+          localStorage.setItem('saved_excel_sheets', JSON.stringify(merged));
+          const existingNames = JSON.parse(localStorage.getItem('saved_sheet_names') || '[]');
+          const mergedNames = Array.from(new Set([...(existingNames || []), ...parsed.map((s) => s.sheetName)]));
+          localStorage.setItem('saved_sheet_names', JSON.stringify(mergedNames));
+          console.log('Saved sheets to localStorage:', mergedNames);
+        } catch (e) {
+          console.error('Failed to save sheets to localStorage', e);
+        }
+        if (sheets.length > 0) setSelectedSheet(sheets[0]);
+        const sheetText = sheets.length > 1 ? "sheets" : "sheet";
+        setVoiceFeedback("File loaded! Found " + sheets.length + " " + sheetText);
+        setTimeout(() => setVoiceFeedback(""), 3000);
+      } catch (err) {
+        const msg = String(err?.message || err || "");
+        if (msg.toLowerCase().includes("password") || msg.toLowerCase().includes("protected")) {
+          setError("This Excel file appears to be password protected. Please remove the password and upload again.");
+          setVoiceFeedback("Error: File is password protected. Please remove the password and try again.");
+          alert("This Excel file appears to be password protected. Please remove the password and upload again.");
+        } else {
+          setError("Failed to read the Excel file. Please upload a valid file.");
+          setVoiceFeedback("Error: Failed to read Excel file. Please upload a valid file.");
+          alert("Failed to read the Excel file. Please upload a valid file.");
+        }
+        setTimeout(() => setVoiceFeedback(""), 4000);
+        setFileName("");
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
 
   const normalizeSheetName = (name) => {
     if (!name) return "";
@@ -2579,6 +2634,22 @@ if (intent === "add_formula_column") {
                                   </div>
                                 ))}
                               </div>
+                              <div className="mt-3 flex gap-2">
+                              <button
+                                id="submit-excel-btn"
+                                onClick={handleAddSheetSubmit}
+                                className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm"
+                                disabled={addLoading}
+                              >
+                                {addLoading ? "Creating..." : "Submit"}
+                              </button>
+                              <button
+                                onClick={() => setShowAddPanel(false)}
+                                className="bg-white border px-3 py-1.5 rounded-md text-sm"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                             </div>
                           </div>
 
@@ -2632,140 +2703,10 @@ if (intent === "add_formula_column") {
                           </div>
 
                           {/* ---------------- CARD 3 ---------------- */}
-                          <div className="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-100 p-5 overflow-auto h-full shadow-sm">
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-xs font-medium text-indigo-800 mb-1">
-                                  X-Axis
-                                </label>
-                                <select
-                                  value={xAxis}
-                                  onChange={(e) => setXAxis(e.target.value)}
-                                  className="w-full rounded-md border px-2 py-2 text-sm"
-                                >
-                                  <option value="">Select column</option>
-                                  {columnNames.map((col) => (
-                                    <option key={col} value={col}>{col}</option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div>
-                                <label className="block text-xs font-medium text-indigo-800 mb-1">
-                                  Y-Axis
-                                </label>
-                                <select
-                                  value={yAxis}
-                                  onChange={(e) => setYAxis(e.target.value)}
-                                  className="w-full rounded-md border px-2 py-2 text-sm"
-                                >
-                                  <option value="">Select column</option>
-                                  {columnNames.map((col) => (
-                                    <option key={col} value={col}>{col}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-
-                            {/* Column Selection */}
-                            <div className="mt-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="text-xs font-medium text-slate-600">
-                                  Select columns to keep
-                                </div>
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={handleAddColumnSelector}
-                                    disabled={
-                                      columnNames.length === 0 ||
-                                      selectedColumns.length >= columnNames.length
-                                    }
-                                    className="inline-flex items-center rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
-                                  >
-                                    +
-                                  </button>
-
-                                  <button
-                                    onClick={openColumnBuilder}
-                                    className="inline-flex items-center rounded-md bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700"
-                                  >
-                                    Column Builder
-                                  </button>
-                                </div>
-                              </div>
-
-                              <div className="space-y-2">
-                                {selectedColumns.map((sel, idx) => {
-                                  const available = columnNames.filter(
-                                    (c) => c === sel || !selectedColumns.includes(c)
-                                  );
-                                  return (
-                                    <div key={idx}>
-                                      <select
-                                        value={sel}
-                                        onChange={(e) =>
-                                          handleColumnChange(idx, e.target.value)
-                                        }
-                                        className="w-full rounded-md border px-3 py-2 text-sm"
-                                      >
-                                        <option value="">-- select column --</option>
-                                        {available.map((col) => (
-                                          <option key={col} value={col}>{col}</option>
-                                        ))}
-                                      </select>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            {error && (
-                              <div className="mt-3 text-xs text-red-600">{error}</div>
-                            )}
-
-                            <div className="mt-3 flex gap-2">
-                              <button
-                                id="submit-excel-btn"
-                                onClick={handleAddSheetSubmit}
-                                className="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm"
-                                disabled={addLoading}
-                              >
-                                {addLoading ? "Creating..." : "Submit"}
-                              </button>
-                              <button
-                                onClick={() => setShowAddPanel(false)}
-                                className="bg-white border px-3 py-1.5 rounded-md text-sm"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-
-                            {/* ✅ COLUMN BUILDER RESTORED */}
-                            {showColumnBuilder && (
-                              <div className="mt-4 p-3 rounded-md border bg-gray-50">
-                                <div className="flex justify-between items-center mb-2">
-                                  <div className="text-sm font-medium">Column Builder</div>
-                                  <Button size="small" onClick={() => setShowColumnBuilder(false)}>
-                                    Close
-                                  </Button>
-                                </div>
-
-                                <FormulaBuilder
-                                newColumnName={newColumnName}
-                                  availableColumns={columnNames}
-                                  updatedColumns={[]}
-                                  onAddColumn={handleAddColumn}
-                                  withProductData={builderRows}
-                                  withoutProductData={builderRows}
-                                />
-                              </div>
-                            )}
-
-                          </div>
+                         
 
                           {/* ---------------- CARD 4 (Scatter) ---------------- */}
-                          <div className="rounded-2xl border border-indigo-200 bg-white p-3 overflow-auto">
+                          {/* <div className="rounded-2xl border border-indigo-200 bg-white p-3 overflow-auto">
                             {scatterSlicesData.some((s) => s.data?.length > 0) ? (
                               <D3ScatterPlot
                                 scatterSlicesData={scatterSlicesData}
@@ -2777,7 +2718,7 @@ if (intent === "add_formula_column") {
                                 No scatter data
                               </div>
                             )}
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                     </div>
