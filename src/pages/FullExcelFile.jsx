@@ -800,25 +800,152 @@ const FullExcelFile = () => {
                     </select>
                   </div>
 
-                  <div className="xf-group" style={{marginTop:"20px"}}>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px"}}>
-                      <label className="xf-label" style={{margin:0}}>Row Ranges</label>
-                      <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={addRowRange}>+ Add Range</button>
-                    </div>
-                    <div style={{display:"flex",gap:"6px",marginBottom:"6px"}}>
-                      <span style={{flex:"1.2",fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:"var(--ink-60)"}}>Name</span>
-                      <span style={{flex:1,fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:"var(--ink-60)"}}>Start</span>
-                      <span style={{flex:1,fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:"var(--ink-60)"}}>End</span>
-                    </div>
-                    {rowRanges.map((rr,idx)=>(
-                      <div key={idx} className="xf-range-row">
-                        <input value={rr.name} onChange={e=>handleRowRangeChange(idx,"name",e.target.value,newSheetName)} placeholder="Pre / Post" style={{flex:"1.2"}} />
-                        <input value={rr.startDisplay||rr.startRange} onChange={e=>handleRowRangeChange(idx,"startRange",e.target.value,newSheetName)} placeholder="start" style={{flex:1}} onMouseDown={()=>setActiveTarget({idx,field:"startRange"})} />
-                        <input value={rr.endDisplay||rr.endRange} onChange={e=>handleRowRangeChange(idx,"endRange",e.target.value,newSheetName)} placeholder="end" style={{flex:1}} onMouseDown={()=>setActiveTarget({idx,field:"endRange"})} />
-                        {rowRanges.length>1&&<button className="xf-btn xf-btn-danger xf-btn-sm" onClick={()=>removeRowRange(idx)}>✕</button>}
-                      </div>
-                    ))}
-                  </div>
+                  <div className="xf-group" style={{ marginTop: "20px" }}>
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+    <label className="xf-label" style={{ margin: 0 }}>Row Ranges</label>
+    <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={addRowRange}>+ Add Range</button>
+  </div>
+
+  <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
+    <span style={{ flex: "1.2", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>Name</span>
+    <span style={{ flex: 1, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>Start Date</span>
+    <span style={{ flex: 1, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>End Date</span>
+  </div>
+
+  {rowRanges.map((rr, idx) => (
+    <div key={idx} className="xf-range-row">
+      <input
+        value={rr.name}
+        onChange={e => handleRowRangeChange(idx, "name", e.target.value, newSheetName)}
+        placeholder="Pre / Post"
+        style={{ flex: "1.2" }}
+      />
+
+      {/* Start date input */}
+      <input
+        type="date"
+        value={rr.startRange}
+        onChange={e => {
+          const dateVal = e.target.value; // "YYYY-MM-DD"
+          // Find the row index in the preview data that matches this date
+          const dateKey = previewHeaders.find(h => h.toLowerCase().includes("date"))
+            || previewHeaders.find(h => h.toLowerCase().includes("time"))
+            || previewHeaders[0];
+
+          let matchedRowIndex = -1;
+          if (dateKey && previewSheetWithPending.sheetData?.length) {
+            matchedRowIndex = previewSheetWithPending.sheetData.findIndex(row => {
+              const cellVal = formatDate(row[dateKey]);
+              // normalize both to YYYY-M-D for comparison
+              const cellNorm = String(cellVal || "").replace(/-0/g, "-");
+              const inputNorm = dateVal.replace(/-0(\d)/g, "-$1");
+              return cellNorm === inputNorm || String(cellVal) === dateVal;
+            });
+          }
+
+          setRowRanges(prev => prev.map((r, i) => {
+            if (i !== idx) return r;
+            return {
+              ...r,
+              startRange: matchedRowIndex !== -1 ? String(matchedRowIndex + 1) : "",
+              startDisplay: dateVal,
+            };
+          }));
+
+          if (matchedRowIndex === -1 && dateVal) {
+            // show user feedback that no row matched
+            setRowRanges(prev => prev.map((r, i) => {
+              if (i !== idx) return r;
+              return { ...r, startDisplay: dateVal, startRange: "" };
+            }));
+          }
+        }}
+        style={{
+          flex: 1,
+          background: "var(--paper)",
+          border: `1.5px solid ${rr.startRange ? "var(--green)" : "var(--ink-20)"}`,
+          borderRadius: "8px",
+          padding: "8px 10px",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: "0.82rem",
+          color: "var(--ink)",
+          outline: "none",
+        }}
+      />
+
+      {/* End date input */}
+      <input
+        type="date"
+        value={rr.endDisplay || ""}
+        onChange={e => {
+          const dateVal = e.target.value;
+          const dateKey = previewHeaders.find(h => h.toLowerCase().includes("date"))
+            || previewHeaders.find(h => h.toLowerCase().includes("time"))
+            || previewHeaders[0];
+
+          let matchedRowIndex = -1;
+          if (dateKey && previewSheetWithPending.sheetData?.length) {
+            // For end date, find the LAST row that matches or is before this date
+            const data = previewSheetWithPending.sheetData;
+            for (let i = data.length - 1; i >= 0; i--) {
+              const cellVal = formatDate(data[i][dateKey]);
+              const cellNorm = String(cellVal || "").replace(/-0/g, "-");
+              const inputNorm = dateVal.replace(/-0(\d)/g, "-$1");
+              if (cellNorm === inputNorm || String(cellVal) === dateVal) {
+                matchedRowIndex = i;
+                break;
+              }
+            }
+
+            // If no exact match, find the last row whose date is <= the input date
+            if (matchedRowIndex === -1) {
+              const inputMs = new Date(dateVal).getTime();
+              for (let i = data.length - 1; i >= 0; i--) {
+                const cellVal = formatDate(data[i][dateKey]);
+                const cellMs = new Date(String(cellVal)).getTime();
+                if (!isNaN(cellMs) && cellMs <= inputMs) {
+                  matchedRowIndex = i;
+                  break;
+                }
+              }
+            }
+          }
+
+          setRowRanges(prev => prev.map((r, i) => {
+            if (i !== idx) return r;
+            return {
+              ...r,
+              endRange: matchedRowIndex !== -1 ? String(matchedRowIndex + 1) : "",
+              endDisplay: dateVal,
+            };
+          }));
+        }}
+        style={{
+          flex: 1,
+          background: "var(--paper)",
+          border: `1.5px solid ${rr.endRange ? "var(--green)" : "var(--ink-20)"}`,
+          borderRadius: "8px",
+          padding: "8px 10px",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: "0.82rem",
+          color: "var(--ink)",
+          outline: "none",
+        }}
+      />
+
+      {/* Row match indicator */}
+      <div style={{ fontSize: "0.68rem", color: "var(--ink-60)", minWidth: "80px", textAlign: "center", display: "flex", flexDirection: "column", gap: "2px" }}>
+        {rr.startRange && <span style={{ color: "var(--green)", fontWeight: 600 }}>▶ row {rr.startRange}</span>}
+        {rr.endRange && <span style={{ color: "var(--green)", fontWeight: 600 }}>◀ row {rr.endRange}</span>}
+        {(rr.startDisplay && !rr.startRange) && <span style={{ color: "var(--red)", fontSize: "0.65rem" }}>No match</span>}
+      </div>
+
+      {rowRanges.length > 1 && (
+        <button className="xf-btn xf-btn-danger xf-btn-sm" onClick={() => removeRowRange(idx)}>✕</button>
+      )}
+    </div>
+  ))}
+</div>
 
                   {error && <div style={{padding:"10px 14px",background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:"10px",fontSize:"0.8rem",color:"var(--red)",marginTop:"12px"}}>{error}</div>}
 
