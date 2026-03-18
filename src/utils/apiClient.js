@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://abhistat.com/api';
+const API_BASE_URL = 'https://abhitech-statistical-tool-backend-xxt2.onrender.com/api';
 
 const getSessionId = () => {
     try {
@@ -88,24 +88,30 @@ export const apiClient = {
     },
     
     post: async (endpoint, data = null, options = {}) => {
-        const { includeAuth = false, isFormData = false, ...fetchOptions } = options;
+        const { includeAuth = false, ...fetchOptions } = options;
         const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
         
-        let headers;
-        if (isFormData) {
-            headers = {};
+        // 🔥 AUTO-DETECT FormData
+        const isFormData = data instanceof FormData;
+
+        let headers = {};
+
+        if (!isFormData) {
+            // ✅ Normal JSON request
+            headers = getHeaders(includeAuth, 'application/json');
+        } else {
+            // ✅ FormData request (DO NOT set Content-Type)
             const sessionId = getSessionId();
             if (sessionId) {
                 headers['X-Session-ID'] = sessionId;
             }
+
             if (includeAuth) {
                 const token = getAuthToken();
                 if (token) {
                     headers['Authorization'] = `Bearer ${token}`;
                 }
             }
-        } else {
-            headers = getHeaders(includeAuth, 'application/json');
         }
         
         const body = isFormData ? data : (data ? JSON.stringify(data) : null);

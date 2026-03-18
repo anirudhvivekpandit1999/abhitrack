@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, Grid, TextField, Typography, Button } from "@mui/material";
 import FormulaBuilder from "../components/FormulaBuilder";
 import { ContactPageSharp } from "@mui/icons-material";
+import apiClient from "../utils/apiClient";
 
 /* ─────────────────────────────────────────────
    GLOBAL STYLES injected once
@@ -605,43 +606,74 @@ const FullExcelFile = () => {
     if(e.target)e.target.value="";
   };
 
-  const processFile=(file)=>{
-    setFileName(file.name);setError(null);setVoiceFeedback("Processing "+file.name+"...");
-    fileObjectsRef.current[file.name]=file;fileObjectsRef.current[file.name.split(".")[0]]=file;
-    const newRecent=[file.name,...recentFiles.filter(f=>f!==file.name)].slice(0,10);
-    setRecentFiles(newRecent);
-    try{localStorage.setItem("recentFiles",JSON.stringify(newRecent));}catch(e){}
-    const ext=file.name.split(".").pop().toLowerCase();
-    if(!["xlsx","xls","xlsm"].includes(ext)){setError("Unsupported file type");setVoiceFeedback("Error: Please select an Excel file.");setTimeout(()=>setVoiceFeedback(""),3000);return;}
-    const reader=new FileReader();
-    reader.onload=(evt)=>{
-      try{
-        const workbook=XLSX.read(evt.target.result,{type:"binary",cellDates:true,cellNF:true});
-        const sheets=workbook.SheetNames;setSheetNames(sheets);
-        const parsed=sheets.map((name)=>{
-          const ws=workbook.Sheets[name];const rawRows=XLSX.utils.sheet_to_json(ws,{defval:"",raw:true});
-          const formattedRows=rawRows.map((row)=>{
-            const newRow={...row};
-            Object.keys(newRow).forEach((k)=>{const v=newRow[k];const keyLower=k.toLowerCase();
-              if(keyLower.includes("date")){if(v instanceof Date&&!isNaN(v.getTime())){const y=v.getFullYear();const m=v.getMonth();const d=v.getDate();newRow[k]=`${y}-${m+1}-${d}`;newRow[`__num__${k}`]=Date.UTC(y,m,d);}}
-              else if(keyLower.includes("time")){if(v instanceof Date&&!isNaN(v.getTime())){const hh=v.getHours();const mm=v.getMinutes();const ss=v.getSeconds();newRow[k]=`${hh}:${mm}:${ss}`;newRow[`__num__${k}`]=hh*3600+mm*60+ss;}}
-            });return newRow;
-          });
-          return{sheetName:name,sheetData:formattedRows};
-        });
-        setExcelData(parsed);
-        try{const existing=JSON.parse(localStorage.getItem("saved_excel_sheets")||"{}");const merged={...(existing||{})};parsed.forEach(s=>{merged[s.sheetName]=s.sheetData;});localStorage.setItem("saved_excel_sheets",JSON.stringify(merged));const existingNames=JSON.parse(localStorage.getItem("saved_sheet_names")||"[]");const mergedNames=Array.from(new Set([...(existingNames||[]),...parsed.map(s=>s.sheetName)]));localStorage.setItem("saved_sheet_names",JSON.stringify(mergedNames));}catch(e){}
-        if(sheets.length>0)setSelectedSheet(sheets[0]);
-        setVoiceFeedback(`Loaded! Found ${sheets.length} sheet${sheets.length>1?"s":""}`);setTimeout(()=>setVoiceFeedback(""),3000);
-      }catch(err){
-        const msg=String(err?.message||err||"");
-        if(msg.toLowerCase().includes("password")||msg.toLowerCase().includes("protected")){setError("File is password protected.");alert("This Excel file appears to be password protected. Please remove the password and upload again.");}
-        else{setError("Failed to read the Excel file.");alert("Failed to read the Excel file. Please upload a valid file.");}
-        setTimeout(()=>setVoiceFeedback(""),4000);setFileName("");
-      }
-    };
-    reader.readAsBinaryString(file);
-  };
+  const processFile = useCallback(async (file, sheet) => {
+    if (!file) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    if (sheet) {
+        formData.append("sheet", sheet);
+    }
+
+    try {
+        const result = await apiClient.post("/process-file", formData);
+
+        
+
+        // ✅ Extract from your backend structure
+        const sheetNames = result?.file_info?.sheets || [];
+        const sheetsDataObj = result?.file_info?.sheets_data || {};
+
+        if (!sheetNames.length) {
+            throw new Error("No sheets found in response");
+        }
+
+        // ✅ Convert backend → UI format
+        const formattedSheets = sheetNames.map(name => ({
+            sheetName: name,
+            sheetData: sheetsDataObj[name]?.data || []
+        }));
+
+        // ✅ Store everything
+        setExcelData(formattedSheets);
+        setSheetNames(sheetNames);
+
+        // ✅ Default selection
+        const firstSheet = sheetNames[0];
+        setSelectedSheet(firstSheet);
+
+        const firstSheetData = sheetsDataObj[firstSheet]?.data || [];
+
+        // ✅ THIS drives your table
+        setSelectedSheetData(firstSheetData);
+
+        // ✅ Columns
+        setCols(
+            sheetsDataObj[firstSheet]?.columns ||
+            (firstSheetData.length ? Object.keys(firstSheetData[0]) : [])
+        );
+
+        // Optional debug
+        console.log("Loaded sheets:", sheetNames);
+        console.log("First sheet rows:", firstSheetData.length);
+
+    } catch (error) {
+        console.error("Upload Error:", error);
+
+        const message =
+            error?.error ||
+            error?.message ||
+            "Server error. Please try again.";
+
+        setError(message);
+    } finally {
+        setIsLoading(false);
+    }
+}, [apiClient]);
 
   const normalizeSheetName=(name)=>{ if(!name)return"";return name.trim().slice(0,31);};
   const parseRange=(a,b)=>{let start,end;if(typeof b!=="undefined"){start=parseInt(a,10);end=parseInt(b,10);}else if(typeof a==="string"){const parts=a.split("-").map(s=>s.trim());if(parts.length!==2)return null;start=parseInt(parts[0],10);end=parseInt(parts[1],10);}else return null;if(Number.isNaN(start)||Number.isNaN(end))return null;const s=Math.max(1,Math.min(start,end));const e=Math.max(1,Math.max(start,end));return[s-1,e-1];};
