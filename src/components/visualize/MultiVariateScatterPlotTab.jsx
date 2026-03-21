@@ -37,8 +37,8 @@ const COLORS = [
 ];
 
 const DATASET_COLORS = {
-  "With Product": "#1976d2",
-  "Without Product": "#ff6b35"
+  "With Product": "#4caf50",
+  "Without Product": "#f44336"
 };
 
 
@@ -276,18 +276,15 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   }, [allPairs]);
 
   const getPointColor = useCallback((pairKey, dataset) => {
-    if (dataset === "With Product" && chartSettings.withProductColorOverride[pairKey]) {
-      return chartSettings.withProductColorOverride[pairKey];
-    }
-    if (dataset === "Without Product" && chartSettings.withoutProductColorOverride[pairKey]) {
-      return chartSettings.withoutProductColorOverride[pairKey];
-    }
-    
-    const baseColor = colorMap[pairKey];
-    const datasetColor = DATASET_COLORS[dataset];
-    const blendRatio = 0.7;
-    return blendColors(baseColor, datasetColor, blendRatio);
-  }, [colorMap, chartSettings.withProductColorOverride, chartSettings.withoutProductColorOverride]);
+  if (dataset === "With Product" && chartSettings.withProductColorOverride[pairKey]) {
+    return chartSettings.withProductColorOverride[pairKey];
+  }
+  if (dataset === "Without Product" && chartSettings.withoutProductColorOverride[pairKey]) {
+    return chartSettings.withoutProductColorOverride[pairKey];
+  }
+  
+  return DATASET_COLORS[dataset];
+}, [chartSettings.withProductColorOverride, chartSettings.withoutProductColorOverride]);
 
   const blendColors = useCallback((color1, color2, ratio) => {
     const hex1 = color1.replace('#', '');
@@ -374,39 +371,48 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     return () => window.removeEventListener('multiVariateScatterViewModeChanged', syncViewMode);
   },[])
 
-  const processData = useCallback((data, pairs) => {
-    const result = [];
-    for (const pair of pairs) {
-      for (let idx = 0; idx < data.length; idx++) {
-        const row = data[idx];
-        const xVal = row[pair.x];
-        const yVal = row[pair.y];
-        if (xVal != null && yVal != null && !isNaN(Number(xVal)) && !isNaN(Number(yVal))) {
-          result.push({
-            x: Number(xVal),
-            y: Number(yVal),
-            xLabel: pair.x,
-            yLabel: pair.y,
-            pairKey: pair.key,
-            dataset: data === withProductData ? "With Product" : "Without Product",
-            id: uuidv4(),
-            original: row
-          });
-        }
+  const processData = useCallback((data, pairs, datasetLabel) => {
+  const result = [];
+  for (const pair of pairs) {
+    for (let idx = 0; idx < data.length; idx++) {
+      const row = data[idx];
+      const xVal = row[pair.x];
+      const yVal = row[pair.y];
+      if (xVal != null && yVal != null && !isNaN(Number(xVal)) && !isNaN(Number(yVal))) {
+        result.push({
+          x: Number(xVal),
+          y: Number(yVal),
+          xLabel: pair.x,
+          yLabel: pair.y,
+          pairKey: pair.key,
+          dataset: datasetLabel,
+          id: uuidv4(),
+          original: row
+        });
       }
     }
-    return result;
-  }, [withProductData]);
+  }
+  return result;
+}, []);  
 
-  const withProductPoints = useMemo(() => processData(filteredWithProductData, allPairs), [filteredWithProductData, allPairs, processData]);
-  const withoutProductPoints = useMemo(() => processData(filteredWithoutProductData, allPairs), [filteredWithoutProductData, allPairs, processData]);
+  const withProductPoints = useMemo(
+  () => processData(filteredWithProductData, allPairs, "With Product"),
+  [filteredWithProductData, allPairs, processData]
+);
 
-  const allPoints = useMemo(() => {
-    let arr = [];
-    if (datasetView === "both" || datasetView === "withProduct") arr = arr.concat(withProductPoints);
-    if (datasetView === "both" || datasetView === "withoutProduct") arr = arr.concat(withoutProductPoints);
-    return arr.filter(pt => activePairs.includes(pt.pairKey));
-  }, [withProductPoints, withoutProductPoints, datasetView, activePairs]);
+const withoutProductPoints = useMemo(
+  () => processData(filteredWithoutProductData, allPairs, "Without Product"),
+  [filteredWithoutProductData, allPairs, processData]
+);
+  
+
+const allPoints = useMemo(() => {
+  let arr = [];
+  if (datasetView === "both" || datasetView === "withoutProduct") arr = arr.concat(withoutProductPoints);
+  if (datasetView === "both" || datasetView === "withProduct") arr = arr.concat(withProductPoints);
+  return arr.filter(pt => activePairs.includes(pt.pairKey));
+}, [withProductPoints, withoutProductPoints, datasetView, activePairs]);
+
 
   const autoRanges = useMemo(() => {
     if (allPoints.length === 0) return { xMin: 0, xMax: 1, yMin: 0, yMax: 1 };
@@ -1102,8 +1108,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                 border: "1px solid",
                 borderColor: "primary.main",
                 "&.Mui-selected": {
-                  backgroundColor: "primary.main",
-                  color: "white",
+  backgroundColor: "primary.main",  
+  color: "white",
                   "&:hover": {
                     backgroundColor: "primary.dark",
                   }
@@ -1534,7 +1540,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                   maxWidth: 300,
                   borderRadius: 2,
                   border: "1px solid",
-                  borderColor: "primary.light",
+                  borderColor: tooltip.data?.dataset === "With Product" ? "success.light" : "error.light",
                   boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                   pointerEvents: "none",
                   zIndex: 1000,
