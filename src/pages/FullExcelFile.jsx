@@ -1210,7 +1210,7 @@ const FullExcelFile = () => {
           <div style={{display:"flex",justifyContent:"center",paddingTop:"8px",paddingBottom:"16px"}}>
             <button
               id="show-result-btn"
-              disabled={!fileName}
+              
               className="xf-btn xf-btn-primary"
               style={{padding:"16px 56px",fontSize:"1rem",letterSpacing:"-0.02em"}}
               onClick={()=>{
