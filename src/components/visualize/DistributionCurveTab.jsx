@@ -25,7 +25,8 @@ import {
     List,
     ListItem,
     ListItemText,
-    ListItemIcon
+    ListItemIcon,
+    Chip
 } from '@mui/material';
 import DebouncedTextField from '../DebouncedTextField';
 import { ResponsiveContainer, AreaChart, ComposedChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from 'recharts';
@@ -42,6 +43,16 @@ import logo from "../../assets/abhitech-logo.png"
 import html2canvas from "html2canvas"
 import ChartSettingsModal from '../ChartSettingsModal'
 import SaveVisualizationButton from '../SaveVisualizationButton'
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+
+const SERIES_COLORS = [
+    '#3B82F6', '#EF4444', '#10B981', '#F59E0B',
+    '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16',
+    '#F97316', '#6366F1', '#14B8A6', '#E11D48',
+];
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 const DistributionCurveTab = ({ availableColumns, withProductData, withoutProductData, clientName = '', plantName = '', productName = '' }) => {
     const [selectedColumn, setSelectedColumn] = useState('');
@@ -90,13 +101,14 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
     const [filterColumn, setFilterColumn] = useState('');
     const [filterMin, setFilterMin] = useState('');
     const [filterMax, setFilterMax] = useState('');
+    const [combinedXColumns, setCombinedXColumns] = useState([]);
+const [combinedYColumns, setCombinedYColumns] = useState([]);
 
     const combinedChartRef = useRef(null);
     const withoutProductChartRef = useRef(null);
     const withProductChartRef = useRef(null);
     const pageRef = useRef(null)
 
-    // Generate custom filename based on project information
     const generateFileName = (visualizationName) => {
         const parts = [];
         if (clientName) parts.push(clientName.replace(/\s+/g, '_'));
@@ -106,7 +118,6 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
         return parts.join('-');
     };
 
-    // Custom bar shape for superimposed bars
     const SuperimposedBar = (props) => {
         if (!showNumberOfPoints) return null;
 
@@ -116,20 +127,17 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
         if (withoutCount === 0 && withCount === 0) return null;
 
-        // Find the maximum count across all data points for proper scaling
         const allData = combinedDistributionPercent || [];
         const maxCountInDataset = Math.max(
             ...allData.map(d => Math.max(d.withoutProductCount || 0, d.withProductCount || 0)),
             1
         );
 
-        // Calculate heights based on the maximum value in the dataset
         const withoutHeight = (withoutCount / maxCountInDataset) * height;
         const withHeight = (withCount / maxCountInDataset) * height;
 
         return (
             <g>
-                {/* Without Product Bar (behind) */}
                 {withoutCount > 0 && (
                     <rect
                         x={x}
@@ -142,7 +150,6 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                         ry={4}
                     />
                 )}
-                {/* With Product Bar (in front, overlapping) */}
                 {withCount > 0 && (
                     <rect
                         x={x}
@@ -163,11 +170,13 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-    useEffect(() => {
-        if (availableColumns.length > 0) {
-            setSelectedColumn(availableColumns[0]);
-        }
-    }, [availableColumns]);
+useEffect(() => {
+    if (availableColumns.length > 0) {
+        setSelectedColumn(availableColumns[0]);
+        setCombinedXColumns([availableColumns[0]]);  
+        setCombinedYColumns([availableColumns[0]]);  
+    }
+}, [availableColumns]);
 
     useEffect(() => {
         const syncOpenChartState = () => {
@@ -311,10 +320,11 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
     };
 
     useEffect(() => {
-        setCombinedXAxisLabel(selectedColumn || '');
-        setSingleXAxisLabel(selectedColumn || '');
-        setSeparateXAxisLabel(selectedColumn || '');
-    }, [selectedColumn]);
+        setCombinedXAxisLabel(combinedXColumns.length > 0 ? combinedXColumns.join(', ') : '');
+        setCombinedYAxisLabel(combinedYColumns.length > 0 ? combinedYColumns.join(', ') : 'Frequency (%)');
+        setSingleXAxisLabel(combinedXColumns.length > 0 ? combinedXColumns.join(', ') : '');
+        setSeparateXAxisLabel(combinedXColumns.length > 0 ? combinedXColumns.join(', ') : '');
+    }, [combinedXColumns, combinedYColumns]);
 
     const calculateDistributionStats = (data) => {
         if (!data || data.length === 0) return null;
@@ -464,6 +474,55 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
             max: Math.max(...allValues)
         };
     }, [filteredWithProductData, filteredWithoutProductData, selectedColumn]);
+
+    const extractValues = (data, columns) => {
+        if (!data || !columns || columns.length === 0) return [];
+        return columns.flatMap(col => data.map(r => parseFloat(r[col])).filter(v => !isNaN(v)));
+    };
+
+    const multiCombinedMinMax = useMemo(() => {
+        if (!combinedXColumns.length) return { min: 0, max: 0 };
+        const all = [...extractValues(filteredWithProductData, combinedXColumns), ...extractValues(filteredWithoutProductData, combinedXColumns)];
+        if (all.length === 0) return { min: 0, max: 0 };
+        return { min: Math.min(...all), max: Math.max(...all) };
+    }, [filteredWithProductData, filteredWithoutProductData, combinedXColumns]);
+
+    const buildBins = (values, globalMin = null, globalMax = null) => {
+        if (!values || values.length === 0) return [];
+        const min = globalMin !== null ? globalMin : Math.min(...values);
+        const max = globalMax !== null ? globalMax : Math.max(...values);
+        if (min === max) return [{ binMiddle: min.toFixed(2), count: values.length, binRange: `${min.toFixed(2)} - ${min.toFixed(2)}` }];
+        const dynamicBinCount = Math.min(binCount, Math.ceil(Math.sqrt(values.length)));
+        const binWidth = (max - min) / dynamicBinCount;
+        const bins = Array(dynamicBinCount).fill(0);
+        values.forEach(v => { const i = Math.min(Math.floor((v - min) / binWidth), dynamicBinCount - 1); bins[i]++; });
+        return bins.map((count, i) => {
+            const binStart = min + i * binWidth;
+            const binEnd = i === dynamicBinCount - 1 ? max : binStart + binWidth;
+            const binMiddle = (binStart + binEnd) / 2;
+            return { binMiddle: binMiddle.toFixed(2), count, binRange: `${binStart.toFixed(2)} - ${binEnd.toFixed(2)}` };
+        }).filter(b => parseFloat(b.binMiddle) > 0);
+    };
+
+    const multiSeriesData = useMemo(() => {
+    if (!combinedXColumns.length || !combinedYColumns.length) return [];
+    const { min: gMin, max: gMax } = multiCombinedMinMax;
+    const refBins = buildBins([...extractValues(filteredWithProductData, combinedXColumns), ...extractValues(filteredWithoutProductData, combinedXColumns)], gMin, gMax);
+    if (refBins.length === 0) return [];
+    const rows = refBins.map(b => ({ binMiddle: b.binMiddle, binRange: b.binRange }));
+    combinedYColumns.forEach(col => {
+        const vWith = extractValues(filteredWithProductData, [col]);
+        const bWith = buildBins(vWith, gMin, gMax);
+        const totalWith = bWith.reduce((s, b) => s + b.count, 0) || 1;
+        bWith.forEach(b => { const row = rows.find(r => r.binMiddle === b.binMiddle); if (row) { row[`${col}_with_%`] = (b.count / totalWith) * 100; row[`${col}_with_count`] = b.count; } });
+        const vWithout = extractValues(filteredWithoutProductData, [col]);
+        const bWithout = buildBins(vWithout, gMin, gMax);
+        const totalWithout = bWithout.reduce((s, b) => s + b.count, 0) || 1;
+        bWithout.forEach(b => { const row = rows.find(r => r.binMiddle === b.binMiddle); if (row) { row[`${col}_without_%`] = (b.count / totalWithout) * 100; row[`${col}_without_count`] = b.count; } });
+    });
+    rows.forEach(row => { combinedYColumns.forEach(col => { if (row[`${col}_with_%`] == null) { row[`${col}_with_%`] = 0; row[`${col}_with_count`] = 0; } if (row[`${col}_without_%`] == null) { row[`${col}_without_%`] = 0; row[`${col}_without_count`] = 0; } }); });
+    return rows.filter(r => r.binMiddle !== '0' && r.binMiddle !== '0.00');
+}, [combinedXColumns, combinedYColumns, filteredWithProductData, filteredWithoutProductData, multiCombinedMinMax, binCount]);
 
     const processDataForDistribution = (data, columnName, globalMin = null, globalMax = null) => {
         if (!data || data.length === 0 || !columnName) return [];
@@ -729,7 +788,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 ctx.fillStyle = 'black';
                 ctx.font = `${16 * scaleFactor}px Arial`;
                 ctx.textAlign = 'center';
-                ctx.fillText(`${title} (${selectedColumn})`, canvas.width / 2, 30 * scaleFactor);
+                ctx.fillText(`${title} (${combinedYColumns.join(', ')})`, canvas.width / 2, 30 * scaleFactor);
 
                 ctx.drawImage(img, 0, 50 * scaleFactor, svgRect.width * scaleFactor, svgRect.height * scaleFactor);
 
@@ -753,7 +812,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 }
 
                 const downloadLink = document.createElement('a');
-                const fileName = generateFileName(`DistributionCurve_${selectedColumn}`);
+                const fileName = generateFileName(`DistributionCurve_${combinedYColumns.join('_')}`);
                 downloadLink.download = `${fileName}.png`;
                 downloadLink.href = canvas.toDataURL('image/png');
                 downloadLink.click();
@@ -766,7 +825,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 ctx.fillStyle = 'black';
                 ctx.font = `${16 * scaleFactor}px Arial`;
                 ctx.textAlign = 'center';
-                ctx.fillText(`${title} (${selectedColumn})`, canvas.width / 2, 30 * scaleFactor);
+                ctx.fillText(`${title} (${combinedYColumns.join(', ')})`, canvas.width / 2, 30 * scaleFactor);
 
                 ctx.drawImage(svgElement, 0, 50 * scaleFactor, svgRect.width * scaleFactor, svgRect.height * scaleFactor);
 
@@ -788,7 +847,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                 ctx.fillText("Abhitech's AbhiStat", watermarkX + 8 * scaleFactor, watermarkY + 30 * scaleFactor);
 
                 const downloadLink = document.createElement('a');
-                const fileName = generateFileName(`DistributionCurve_${selectedColumn}`);
+                const fileName = generateFileName(`DistributionCurve_${combinedYColumns.join('_')}`);
                 downloadLink.download = `${fileName}.png`;
                 downloadLink.href = canvas.toDataURL('image/png');
                 downloadLink.click();
@@ -1496,11 +1555,122 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
     };
 
     const renderCombinedChart = () => {
-        if (!combinedDistributionPercent || combinedDistributionPercent.length === 0) {
-            return (
-                <Alert severity="info" sx={{ width: '100%', mx: { xs: 1, sm: 0 } }}>
-                    No data available for visualization
-                </Alert>
+        const isMulti = combinedXColumns.length > 1 || combinedYColumns.length > 1;
+        const chartData = isMulti ? multiSeriesData : combinedDistributionPercent;
+        if (!chartData || chartData.length === 0) { return <Alert severity="info">No data available</Alert>; }
+
+        const areaSeries = [];
+        const barSeries = [];
+        const legendPayload = [];
+
+        if (isMulti) {
+            combinedYColumns.forEach((col, index) => {
+                const color = SERIES_COLORS[index % SERIES_COLORS.length];
+                areaSeries.push(
+                    <Area
+                        key={`${col}_with`}
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey={`${col}_with_%`}
+                        stackId={`with_${index}`}
+                        stroke={color}
+                        fill={color}
+                        fillOpacity={areaOpacity}
+                        name={`${col} (With Product)`}
+                        dot={showDataPoints ? { r: 3, fill: color } : false}
+                        hide={!showAreaChart}
+                    />,
+                    <Area
+                        key={`${col}_without`}
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey={`${col}_without_%`}
+                        stackId={`without_${index}`}
+                        stroke={color}
+                        fill={color}
+                        fillOpacity={areaOpacity}
+                        name={`${col} (Without Product)`}
+                        dot={showDataPoints ? { r: 3, fill: color } : false}
+                        hide={!showAreaChart}
+                    />
+                );
+                if (showNumberOfPoints) {
+                    barSeries.push(
+                        <Bar
+                            key={`${col}_count`}
+                            yAxisId="right"
+                            dataKey={`${col}_with_count`}
+                            fill="transparent"
+                            name={`${col} Count (With Product)`}
+                            isAnimationActive={false}
+                            barSize={20}
+                        />,
+                        <Bar
+                            key={`${col}_count_without`}
+                            yAxisId="right"
+                            dataKey={`${col}_without_count`}
+                            fill="transparent"
+                            name={`${col} Count (Without Product)`}
+                            isAnimationActive={false}
+                            barSize={20}
+                        />
+                    );
+                }
+                legendPayload.push(
+                    { value: `${col} (With Product)`, type: 'square', color: color, id: `${col}_with` },
+                    { value: `${col} (Without Product)`, type: 'square', color: color, id: `${col}_without` }
+                );
+            });
+        } else {
+            areaSeries.push(
+                <Area
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="withoutProductPercent"
+                    stackId="1"
+                    stroke={distributionColors.withoutProduct}
+                    fill={distributionColors.withoutProduct}
+                    fillOpacity={areaOpacity}
+                    name={combinedLegendLabels.withoutProduct}
+                    dot={showDataPoints ? { r: 3, fill: distributionColors.withoutProduct } : false}
+                    hide={!showAreaChart}
+                />,
+                <Area
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="withProductPercent"
+                    stackId="2"
+                    stroke={distributionColors.withProduct}
+                    fill={distributionColors.withProduct}
+                    fillOpacity={areaOpacity}
+                    name={combinedLegendLabels.withProduct}
+                    dot={showDataPoints ? { r: 3, fill: distributionColors.withProduct } : false}
+                    hide={!showAreaChart}
+                />
+            );
+            if (showNumberOfPoints) {
+                barSeries.push(
+                    <Bar
+                        yAxisId="right"
+                        dataKey="withoutProductCount"
+                        fill="transparent"
+                        name="Number of Points"
+                        hide={!showNumberOfPoints}
+                        isAnimationActive={false}
+                        barSize={30}
+                        shape={SuperimposedBar}
+                    />
+                );
+            }
+            legendPayload.push(
+                ...(showAreaChart ? [
+                    { value: combinedLegendLabels.withoutProduct, type: 'square', color: distributionColors.withoutProduct, id: 'withoutProductPercent' },
+                    { value: combinedLegendLabels.withProduct, type: 'square', color: distributionColors.withProduct, id: 'withProductPercent' },
+                ] : []),
+                ...(showNumberOfPoints ? [
+                    { value: 'Number of Points (Without Product)', type: 'square', color: barColors.withoutProduct, id: 'withoutProductCount' },
+                    { value: 'Number of Points (With Product)', type: 'square', color: barColors.withProduct, id: 'withProductCount' },
+                ] : [])
             );
         }
         return (
@@ -1583,7 +1753,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
 
                                 elementId="visualization-content"
                                 fileNamePrefix="distribution_curve"
-                                variableNames={selectedColumn}
+                                variableNames={isMulti ? combinedYColumns.join('_') : selectedColumn}
                             />
 
                             <MuiTooltip title="Download as PNG">
@@ -1635,7 +1805,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                             }}>
                                 <ResponsiveContainer width="100%" height="100%" key={`combined-${showNumberOfPoints}`}>
                                     <ComposedChart
-                                        data={combinedDistributionPercent}
+                                        data={chartData}
                                         margin={{
                                             top: 10,
                                             right: isMobile ? 50 : 60,
@@ -1712,35 +1882,11 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                                             {combinedXAxisLabel}: {label}
                                                         </div>
 
-                                                        {showAreaChart && (
-                                                            <>
-                                                                {data.withoutProductPercent > 0 && (
-                                                                    <div style={{ color: distributionColors.withoutProduct }}>
-                                                                        {combinedLegendLabels.withoutProduct}: {data.withoutProductPercent.toFixed(2)}% ({data.withoutProductCount} points)
-                                                                    </div>
-                                                                )}
-                                                                {data.withProductPercent > 0 && (
-                                                                    <div style={{ color: distributionColors.withProduct }}>
-                                                                        {combinedLegendLabels.withProduct}: {data.withProductPercent.toFixed(2)}% ({data.withProductCount} points)
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        )}
-
-                                                        {showNumberOfPoints && (
-                                                            <>
-                                                                {data.withoutProductCount > 0 && (
-                                                                    <div style={{ color: barColors.withoutProduct }}>
-                                                                        Number of Points (Without Product): {data.withoutProductCount}
-                                                                    </div>
-                                                                )}
-                                                                {data.withProductCount > 0 && (
-                                                                    <div style={{ color: barColors.withProduct }}>
-                                                                        Number of Points (With Product): {data.withProductCount}
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        )}
+                                                        {payload.map((entry, index) => (
+                                                            <div key={index} style={{ color: entry.color }}>
+                                                                {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}{entry.dataKey.includes('%') ? '%' : entry.dataKey.includes('count') ? ' points' : ''}
+                                                            </div>
+                                                        ))}
 
                                                         <div style={{ marginTop: '4px', fontSize: '11px', color: '#666' }}>
                                                             Range: {data.binRange}
@@ -1754,52 +1900,10 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                                             height={36}
                                             align="left"
                                             wrapperStyle={{ fontSize: isMobile ? '12px' : '14px' }}
-                                            payload={[
-                                                ...(showAreaChart ? [
-                                                    { value: combinedLegendLabels.withoutProduct, type: 'square', color: distributionColors.withoutProduct, id: 'withoutProductPercent' },
-                                                    { value: combinedLegendLabels.withProduct, type: 'square', color: distributionColors.withProduct, id: 'withProductPercent' },
-                                                ] : []),
-                                                ...(showNumberOfPoints ? [
-                                                    { value: 'Number of Points (Without Product)', type: 'square', color: barColors.withoutProduct, id: 'withoutProductCount' },
-                                                    { value: 'Number of Points (With Product)', type: 'square', color: barColors.withProduct, id: 'withProductCount' },
-                                                ] : [])
-                                            ]}
+                                            payload={legendPayload}
                                         />
-                                        <Area
-                                            yAxisId="left"
-                                            type="monotone"
-                                            dataKey="withoutProductPercent"
-                                            stackId="1"
-                                            stroke={distributionColors.withoutProduct}
-                                            fill={distributionColors.withoutProduct}
-                                            fillOpacity={areaOpacity}
-                                            name={combinedLegendLabels.withoutProduct}
-                                            dot={showDataPoints ? { r: 3, fill: distributionColors.withoutProduct } : false}
-                                            hide={!showAreaChart}
-                                        />
-                                        <Area
-                                            yAxisId="left"
-                                            type="monotone"
-                                            dataKey="withProductPercent"
-                                            stackId="2"
-                                            stroke={distributionColors.withProduct}
-                                            fill={distributionColors.withProduct}
-                                            fillOpacity={areaOpacity}
-                                            name={combinedLegendLabels.withProduct}
-                                            dot={showDataPoints ? { r: 3, fill: distributionColors.withProduct } : false}
-                                            hide={!showAreaChart}
-                                        />
-                                        <Bar
-                                            yAxisId="right"
-                                            dataKey="withoutProductCount"
-                                            fill="transparent"
-                                            name="Number of Points"
-                                            hide={!showNumberOfPoints}
-                                            isAnimationActive={false}
-                                            barSize={30}
-                                            shape={SuperimposedBar}
-
-                                        />
+                                        {areaSeries}
+                                        {barSeries}
                                     </ComposedChart>
                                 </ResponsiveContainer>
                                 <WatermarkContent />
@@ -2631,29 +2735,64 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
             <SettingsModal />
 
             <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, sm: 4 } }}>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid item xs={12} sm={6} md={3}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'primary.main' }}>
-                        Select Column
+                        X-Axis Columns
                     </Typography>
                     <Autocomplete
-                        id='distribution-column-select'
+                        multiple
+                        id='distribution-x-columns-select'
                         options={availableColumns}
-                        value={selectedColumn}
+                        value={combinedXColumns}
                         onChange={(event, newValue) => {
-                            if (newValue) {
-                                setSelectedColumn(newValue);
-                            }
+                            setCombinedXColumns(newValue || []);
                         }}
                         renderInput={(params) => (
                             <TextField
-                                id='distribution-column-select'
                                 {...params}
-                                label="Select Column"
+                                label="Select X-Axis Columns"
                                 variant="outlined"
                                 fullWidth
                                 size="small"
                             />
                         )}
+                        renderTags={(value, getTagProps) =>
+                            value.map((option, index) => (
+                                <Chip variant="outlined" label={option} {...getTagProps({ index })} />
+                            ))
+                        }
+                        disableClearable
+                        autoHighlight
+                        openOnFocus
+                        size="small"
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'secondary.main' }}>
+                        Y-Axis Columns
+                    </Typography>
+                    <Autocomplete
+                        multiple
+                        id='distribution-y-columns-select'
+                        options={availableColumns}
+                        value={combinedYColumns}
+                        onChange={(event, newValue) => {
+                            setCombinedYColumns(newValue || []);
+                        }}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Select Y-Axis Columns"
+                                variant="outlined"
+                                fullWidth
+                                size="small"
+                            />
+                        )}
+                        renderTags={(value, getTagProps) =>
+                            value.map((option, index) => (
+                                <Chip variant="outlined" label={option} {...getTagProps({ index })} />
+                            ))
+                        }
                         disableClearable
                         autoHighlight
                         openOnFocus
@@ -2812,7 +2951,7 @@ const DistributionCurveTab = ({ availableColumns, withProductData, withoutProduc
                     </MuiTooltip>
                 </Box>
 
-                {selectedColumn && (
+                {(combinedXColumns.length > 0 || combinedYColumns.length > 0) && (
                     <Box>
                         {viewMode === 'combined' && renderCombinedChart()}
                         {viewMode === 'separate' && renderSeparateCharts()}
