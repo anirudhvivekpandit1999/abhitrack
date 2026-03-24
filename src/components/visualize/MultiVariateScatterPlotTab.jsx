@@ -1261,7 +1261,7 @@ const allPoints = useMemo(() => {
         flexDirection: { xs: 'column', sm: 'row' }
       }}>
         <Box sx={{ display: 'flex', gap: 1, order: { xs: 2, sm: 1 } }}>
-          {/* <ButtonGroup variant="outlined" size="small">
+          <ButtonGroup variant="outlined" size="small">
             <MuiTooltip title="Zoom In">
               <Button onClick={zoomIn} sx={{ minWidth: "40px", px: 1 }}>
                 <ZoomInIcon fontSize="small" />
@@ -1278,8 +1278,7 @@ const allPoints = useMemo(() => {
               </Button>
             </MuiTooltip>
           </ButtonGroup>
-        </Box> */}
-       </Box> 
+        </Box>
         <Box sx={{ display: 'flex', gap: 1, order: { xs: 1, sm: 2 }, alignItems: 'center' }}>
           <MuiTooltip title="Chart Settings">
             <Button
@@ -1348,7 +1347,7 @@ const allPoints = useMemo(() => {
               Multi-Variate Scatter Plot
             </Typography>
             <MuiTooltip title="Reset to Auto Scale">
-              {/* <Button 
+              <Button 
                 onClick={resetAxisRanges} 
                 size="small" 
                 variant="outlined"
@@ -1356,7 +1355,7 @@ const allPoints = useMemo(() => {
                 sx={{ textTransform: 'none' }}
               >
                 Reset Auto
-              </Button> */}
+              </Button>
             </MuiTooltip>
           </Box>
 

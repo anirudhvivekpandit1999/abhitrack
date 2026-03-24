@@ -74,7 +74,6 @@ const BootstrappingTab = ({
     const [columnSearchTerm, setColumnSearchTerm] = useState('');
     const tableRef = useRef(null);
 
-    // Generate custom filename based on project information
     const generateFileName = (visualizationName) => {
         const parts = [];
         if (clientName) parts.push(clientName.replace(/\s+/g, '_'));
@@ -289,7 +288,6 @@ const BootstrappingTab = ({
                     />
                 </Box>
                 
-                {/* Download PNG Button */}
                 <Box sx={{ 
                     mb: 2, 
                     display: 'flex', 

@@ -1703,7 +1703,7 @@ useEffect(() => {
                             flexWrap: "wrap",
                             justifyContent: { xs: "center", sm: "flex-end" }
                         }}>
-                            {/* <FormControlLabel
+                            <FormControlLabel
                                 control={
                                     <Switch
                                         checked={showNumberOfPoints}
@@ -1724,7 +1724,7 @@ useEffect(() => {
                                 }
                                 label="Show Area Chart"
                                 sx={{ mr: 1 }}
-                            /> */}
+                            />
 
                             <MuiTooltip title="Chart Settings">
                                 <Button
@@ -2114,7 +2114,7 @@ useEffect(() => {
                             </Typography>
 
                             <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
-                                {/* <FormControlLabel
+                                <FormControlLabel
                                     control={
                                         <Switch
                                             checked={showNumberOfPoints}
@@ -2124,9 +2124,9 @@ useEffect(() => {
                                     }
                                     label="Number of Points"
                                     sx={{ mr: 1 }}
-                                /> */}
+                                />
 
-                                {/* <MuiTooltip title="Chart Settings">
+                                <MuiTooltip title="Chart Settings">
                                     <Button
                                         variant="outlined"
                                         color="primary"
@@ -2146,9 +2146,9 @@ useEffect(() => {
                                     >
                                         Settings
                                     </Button>
-                                </MuiTooltip> */}
+                                </MuiTooltip>
 
-                                {/* <SaveVisualizationButton 
+                                <SaveVisualizationButton 
                                     elementId="visualization-content" 
                                     fileNamePrefix="distribution_curve_individual"
                                     variableNames={selectedColumn}
@@ -2174,7 +2174,7 @@ useEffect(() => {
                                     >
                                         Download PNG
                                     </Button>
-                                </MuiTooltip> */}
+                                </MuiTooltip>
                             </Box>
                         </Box>
 
@@ -2306,7 +2306,7 @@ useEffect(() => {
                                 With Product Distribution
                             </Typography>
 
-                            {/*<Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+                            <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
                                 <FormControlLabel
                                     control={
                                         <Switch
@@ -2368,7 +2368,7 @@ useEffect(() => {
                                         Download PNG
                                     </Button>
                                 </MuiTooltip>
-                            </Box> */}
+                            </Box>
                         </Box>
 
                         <Box sx={{ mb: 2 }}>
@@ -2515,15 +2515,15 @@ useEffect(() => {
                 color: barColor,
                 show: showNumberOfPoints && data?.some(d => d.count !== undefined)
             },
-            // 👉 Future metrics (just enable when data exists)
-            // {
-            //     key: "premium",
-            //     label: "Premium",
-            //     axis: "right",
-            //     type: "line",
-            //     color: "#82ca9d",
-            //     show: data?.some(d => d.premium !== undefined)
-            // }
+            // // 👉 Future metrics (just enable when data exists)
+             {
+                 key: "premium",
+                 label: "Premium",
+                 axis: "right",
+                 type: "line",
+                 color: "#82ca9d",
+                 show: data?.some(d => d.premium !== undefined)
+             }
         ];
 
         if (!data || data.length === 0) {
