@@ -23,6 +23,7 @@ import BootstrappingTab from '../components/visualize/BootstrappingTab';
 import MultiVariateScatterPlotTab from '../components/visualize/MultiVariateScatterPlotTab';
 import CorrelationAnalysisTab from '../components/visualize/CorrelationAnalysisTab';
 import Assistant from '../components/Assistant';
+import IndustrialTrendViewTab from '../components/visualize/IndustrialTrendViewTab';
 
 const safeArray = (arr) => Array.isArray(arr) ? arr : [];
 
@@ -368,6 +369,14 @@ const VisualizeData = () => {
                         productName={productName}
                     />
                 );
+              case 4:
+  return (
+    <IndustrialTrendViewTab
+      withProductData={withProductData}
+      withoutProductData={withoutProductData}
+      availableColumns={availableColumns}
+    />
+  );
 
             default:
                 return null;
@@ -601,6 +610,7 @@ const VisualizeData = () => {
                                 <Tab label="Multi Variate Scatter" />
                                 <Tab label="Bootstrapping" />
                                 <Tab label="Correlation Analysis" />
+                                <Tab label="Industrial Trend" />
 
                             </Tabs>
 

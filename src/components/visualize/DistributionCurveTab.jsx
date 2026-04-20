@@ -1,35 +1,15 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-    Box,
-    Typography,
-    Card,
-    CardContent,
-    Grid,
-    Alert,
-    TextField,
-    Autocomplete,
-    IconButton,
-    Tooltip as MuiTooltip,
-    ToggleButton,
-    ToggleButtonGroup,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    useTheme,
-    useMediaQuery,
-    Button,
-    Switch,
-    FormControlLabel,
-    Collapse,
-    List,
-    ListItem,
-    ListItemText,
-    ListItemIcon,
-    Chip
+    Box, Typography, Card, CardContent, Grid, Alert, TextField, Autocomplete,
+    IconButton, Tooltip as MuiTooltip, ToggleButton, ToggleButtonGroup,
+    useTheme, useMediaQuery, Button, Switch, FormControlLabel, Collapse,
+    List, ListItem, ListItemText, ListItemIcon, Slider, Divider, Chip
 } from '@mui/material';
 import DebouncedTextField from '../DebouncedTextField';
-import { ResponsiveContainer, AreaChart, ComposedChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from 'recharts';
+import {
+    ResponsiveContainer, ComposedChart, Area, Bar, XAxis, YAxis,
+    CartesianGrid, Tooltip, Legend, Line
+} from 'recharts';
 import DownloadIcon from '@mui/icons-material/Download';
 import PanToolIcon from '@mui/icons-material/PanTool';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -39,76 +19,116 @@ import InfoIcon from '@mui/icons-material/Info';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import * as d3 from 'd3';
-import logo from "../../assets/abhitech-logo.png"
-import html2canvas from "html2canvas"
-import ChartSettingsModal from '../ChartSettingsModal'
-import SaveVisualizationButton from '../SaveVisualizationButton'
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import logo from "../../assets/abhitech-logo.png";
+import html2canvas from "html2canvas";
+import ChartSettingsModal from '../ChartSettingsModal';
+import SaveVisualizationButton from '../SaveVisualizationButton';
 
-const SERIES_COLORS = [
-    '#3B82F6', '#EF4444', '#10B981', '#F59E0B',
-    '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16',
-    '#F97316', '#6366F1', '#14B8A6', '#E11D48',
+// ============================================================================
+// Color system: each column index gets a pair [with=deep, without=light]
+// Both are solid fills — no dashes, visually distinct by hue + lightness
+// ============================================================================
+const COLOR_PAIRS = [
+    { with: '#2563EB', without: '#93C5FD' },  // Blue deep / Blue light
+    { with: '#DC2626', without: '#FCA5A5' },  // Red deep / Red light
+    { with: '#059669', without: '#6EE7B7' },  // Green deep / Green light
+    { with: '#D97706', without: '#FCD34D' },  // Amber deep / Amber light
+    { with: '#7C3AED', without: '#C4B5FD' },  // Purple deep / Purple light
+    { with: '#DB2777', without: '#F9A8D4' },  // Pink deep / Pink light
+    { with: '#0891B2', without: '#67E8F9' },  // Cyan deep / Cyan light
+    { with: '#EA580C', without: '#FDBA74' },  // Orange deep / Orange light
+    { with: '#4338CA', without: '#A5B4FC' },  // Indigo deep / Indigo light
+    { with: '#0D9488', without: '#5EEAD4' },  // Teal deep / Teal light
 ];
-const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
-const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
-const DistributionCurveTab = ({ availableColumns, withProductData, withoutProductData, clientName = '', plantName = '', productName = '' }) => {
-    const [selectedColumn, setSelectedColumn] = useState('');
-    const [singleViewSelectOpen, setSingleViewSelectOpen] = useState(false);
+// Fixed colors for single/separate views
+const SINGLE_COLORS = {
+    withProduct:    { area: '#2563EB', bar: '#93C5FD' },   // Blue family
+    withoutProduct: { area: '#DC2626', bar: '#FCA5A5' },   // Red family
+};
+
+const DistributionCurveTab = ({
+    availableColumns, withProductData, withoutProductData,
+    clientName = '', plantName = '', productName = ''
+}) => {
+    // ========================================================================
+    // State
+    // ========================================================================
+    const [selectedColumns, setSelectedColumns] = useState([]);
     const [viewMode, setViewMode] = useState('combined');
     const [singleViewType, setSingleViewType] = useState('withProduct');
 
+    // Y-axis column selection
+    const [yAxisColumn, setYAxisColumn] = useState('');
+    const [singleYAxisColumn, setSingleYAxisColumn] = useState('');
+    const [separateYAxisColumn, setSeparateYAxisColumn] = useState('');
+    const [yAggregation, setYAggregation] = useState('mean');
+
     const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-    const [showInsights, setShowInsights] = useState(true);
-    const [showSummaryCards, setShowSummaryCards] = useState(true);
+    const [showInsights, setShowInsights] = useState(false);
+    const [showSummaryCards, setShowSummaryCards] = useState(false);
 
-    const [combinedLegendLabels, setCombinedLegendLabels] = useState({
-        withProduct: 'With Product',
-        withoutProduct: 'Without Product',
-    });
+    // Combined View Settings
+    const [combinedLegendLabels, setCombinedLegendLabels] = useState({});
     const [combinedXAxisLabel, setCombinedXAxisLabel] = useState('');
-    const [combinedYAxisLabel, setCombinedYAxisLabel] = useState('Frequency (%)');
-    const [distributionColors, setDistributionColors] = useState({
-        withProduct: '#3B82F6',
-        withoutProduct: '#EF4444',
-    });
-    const [barColors, setBarColors] = useState({
-        withProduct: '#EF4444',
-        withoutProduct: '#3B82F6',
-    });
+    const [combinedYAxisLabel, setCombinedYAxisLabel] = useState('');
+    const [combinedXAxisMin, setCombinedXAxisMin] = useState('');
+    const [combinedXAxisMax, setCombinedXAxisMax] = useState('');
+    const [combinedYAxisMin, setCombinedYAxisMin] = useState('');
+    const [combinedYAxisMax, setCombinedYAxisMax] = useState('');
 
-    const [singleLegendLabel, setSingleLegendLabel] = useState('Frequency');
+    const [columnColorMap, setColumnColorMap] = useState({});
+
+    // Single View Settings
+    const [singleColumn, setSingleColumn] = useState('');
+    const [singleLegendLabel, setSingleLegendLabel] = useState('Value');
     const [singleXAxisLabel, setSingleXAxisLabel] = useState('');
-    const [singleYAxisLabel, setSingleYAxisLabel] = useState('Frequency');
+    const [singleYAxisLabel, setSingleYAxisLabel] = useState('');
+    const [singleXAxisMin, setSingleXAxisMin] = useState('');
+    const [singleXAxisMax, setSingleXAxisMax] = useState('');
+    const [singleYAxisMin, setSingleYAxisMin] = useState('');
+    const [singleYAxisMax, setSingleYAxisMax] = useState('');
+
+    // Separate View Settings
+    const [separateColumn, setSeparateColumn] = useState('');
     const [separateLegendLabels, setSeparateLegendLabels] = useState({
-        withProduct: 'With Product',
-        withoutProduct: 'Without Product',
+        withProduct: 'With Product', withoutProduct: 'Without Product',
     });
     const [separateXAxisLabel, setSeparateXAxisLabel] = useState('');
-    const [separateYAxisLabel, setSeparateYAxisLabel] = useState('Frequency');
+    const [separateYAxisLabel, setSeparateYAxisLabel] = useState('');
+    const [separateXAxisMin, setSeparateXAxisMin] = useState('');
+    const [separateXAxisMax, setSeparateXAxisMax] = useState('');
+    const [separateYAxisMin, setSeparateYAxisMin] = useState('');
+    const [separateYAxisMax, setSeparateYAxisMax] = useState('');
 
+    // Chart Feature Settings
     const [showGrid, setShowGrid] = useState(true);
     const [showDataPoints, setShowDataPoints] = useState(false);
     const [showNumberOfPoints, setShowNumberOfPoints] = useState(true);
     const [showAreaChart, setShowAreaChart] = useState(true);
-    const [areaOpacity, setAreaOpacity] = useState(0.6);
+    const [areaOpacity, setAreaOpacity] = useState(0.75);
     const [binCount, setBinCount] = useState(20);
     const [showStatistics, setShowStatistics] = useState(false);
     const [showOutliers, setShowOutliers] = useState(false);
 
+    // Filter Settings
     const [filterColumn, setFilterColumn] = useState('');
     const [filterMin, setFilterMin] = useState('');
     const [filterMax, setFilterMax] = useState('');
-    const [combinedXColumns, setCombinedXColumns] = useState([]);
-const [combinedYColumns, setCombinedYColumns] = useState([]);
 
+    // Refs
     const combinedChartRef = useRef(null);
     const withoutProductChartRef = useRef(null);
     const withProductChartRef = useRef(null);
-    const pageRef = useRef(null)
+    const pageRef = useRef(null);
 
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+
+    // ========================================================================
+    // Helpers
+    // ========================================================================
     const generateFileName = (visualizationName) => {
         const parts = [];
         if (clientName) parts.push(clientName.replace(/\s+/g, '_'));
@@ -118,140 +138,32 @@ const [combinedYColumns, setCombinedYColumns] = useState([]);
         return parts.join('-');
     };
 
-    const SuperimposedBar = (props) => {
-        if (!showNumberOfPoints) return null;
-
-        const { x, y, width, height, payload } = props;
-        const withoutCount = payload?.withoutProductCount || 0;
-        const withCount = payload?.withProductCount || 0;
-
-        if (withoutCount === 0 && withCount === 0) return null;
-
-        const allData = combinedDistributionPercent || [];
-        const maxCountInDataset = Math.max(
-            ...allData.map(d => Math.max(d.withoutProductCount || 0, d.withProductCount || 0)),
-            1
-        );
-
-        const withoutHeight = (withoutCount / maxCountInDataset) * height;
-        const withHeight = (withCount / maxCountInDataset) * height;
-
-        return (
-            <g>
-                {withoutCount > 0 && (
-                    <rect
-                        x={x}
-                        y={y + height - withoutHeight}
-                        width={width}
-                        height={withoutHeight}
-                        fill={barColors.withoutProduct}
-                        fillOpacity={0.6}
-                        rx={4}
-                        ry={4}
-                    />
-                )}
-                {withCount > 0 && (
-                    <rect
-                        x={x}
-                        y={y + height - withHeight}
-                        width={width}
-                        height={withHeight}
-                        fill={barColors.withProduct}
-                        fillOpacity={0.6}
-                        rx={4}
-                        ry={4}
-                    />
-                )}
-            </g>
-        );
-    };
-
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-
-useEffect(() => {
-    if (availableColumns.length > 0) {
-        setSelectedColumn(availableColumns[0]);
-        setCombinedXColumns([availableColumns[0]]);  
-        setCombinedYColumns([availableColumns[0]]);  
-    }
-}, [availableColumns]);
-
+    // Assign color pairs to columns as they are added
     useEffect(() => {
-        const syncOpenChartState = () => {
-            const saved = localStorage.getItem('showDistributionChartTypeHelp');
-            setSingleViewSelectOpen(saved);
-        }
+        const newMap = { ...columnColorMap };
+        let idx = Object.keys(columnColorMap).length;
+        selectedColumns.forEach(col => {
+            if (!newMap[col]) {
+                newMap[col] = COLOR_PAIRS[idx % COLOR_PAIRS.length];
+                idx++;
+            }
+        });
+        setColumnColorMap(newMap);
+    }, [selectedColumns]);
 
-        window.addEventListener('showDistributionChartTypeHelpChanged', syncOpenChartState);
-        return () => window.removeEventListener('showDistributionChartTypeHelpChanged', syncOpenChartState);
-    }, [])
-
+    // Initialize single/separate columns
     useEffect(() => {
-        const syncDataFilterMax = () => {
-            const saved = localStorage.getItem('dataFilterMax');
-            setFilterMax(saved || '');
-        }
+        if (availableColumns.length > 0 && !singleColumn) setSingleColumn(availableColumns[0]);
+        if (availableColumns.length > 0 && !separateColumn) setSeparateColumn(availableColumns[0]);
+    }, [availableColumns, singleColumn, separateColumn]);
 
-        window.addEventListener('dataFilterMaxChanged', syncDataFilterMax);
-        return () => window.removeEventListener('dataFilterMaxChanged', syncDataFilterMax);
-    }, [])
-
-    useEffect(() => {
-        const syncDataFilterMin = () => {
-            const saved = localStorage.getItem('dataFilterMin');
-            setFilterMin(saved || '');
-        }
-
-        window.addEventListener('dataFilterMinChanged', syncDataFilterMin);
-        return () => window.removeEventListener('dataFilterMinChanged', syncDataFilterMin);
-    }, [])
-
-    useEffect(() => {
-        const syncSelectedColumnName = () => {
-            const saved = localStorage.getItem('selectedDistributionColumn');
-            setSelectedColumn(saved || '');
-        }
-
-        window.addEventListener('distributionColumnChanged', syncSelectedColumnName);
-
-        return () => window.removeEventListener('distributionColumnChanged', syncSelectedColumnName);
-    }, [])
-
-    useEffect(() => {
-        const syncViewMode = () => {
-            const saved = localStorage.getItem('selectedDistributionViewMode');
-            setViewMode(saved);
-        }
-
-        window.addEventListener('distributionViewModeChanged', syncViewMode);
-
-        return () => window.removeEventListener('distributionViewModeChanged', syncViewMode);
-    }, [])
-
-    useEffect(() => {
-        const syncDataFilterColumn = () => {
-            const saved = localStorage.getItem('dataFilterColumn');
-            setFilterColumn(saved || '');
-
-        }
-
-        window.addEventListener('dataFilterColumnChanged', syncDataFilterColumn);
-        return () => window.removeEventListener('dataFilterColumnChanged', syncDataFilterColumn);
-    }, [])
-
-
-
+    // DateTime helpers
     const isDateTimeColumn = (allRows, columnName) => {
         if (!allRows || allRows.length === 0 || !columnName) return false;
-        const sampleValues = allRows
-            .slice(0, 10)
-            .map((row) => row?.[columnName])
-            .filter((val) => val != null);
+        const sampleValues = allRows.slice(0, 10).map(row => row?.[columnName]).filter(val => val != null);
         if (sampleValues.length === 0) return false;
         const dateTimeRegex = /^\d{4}-\d{2}-\d{2}([\sT]\d{2}:\d{2}:\d{2}(\.\d{3})?)?$/;
-        return sampleValues.every((val) => {
+        return sampleValues.every(val => {
             const str = String(val).trim();
             return dateTimeRegex.test(str) && !isNaN(Date.parse(str));
         });
@@ -281,10 +193,8 @@ useEffect(() => {
         if (!filterColumn) return withProductData || [];
         const minVal = columnIsDateTime ? (filterMin ? parseDateTimeFromInput(filterMin) : null) : (filterMin !== '' ? Number.parseFloat(filterMin) : null);
         const maxVal = columnIsDateTime ? (filterMax ? parseDateTimeFromInput(filterMax) : null) : (filterMax !== '' ? Number.parseFloat(filterMax) : null);
-
         if (minVal == null && maxVal == null) return withProductData || [];
-
-        return (withProductData || []).filter((row) => {
+        return (withProductData || []).filter(row => {
             const raw = row?.[filterColumn];
             if (raw == null) return false;
             const v = parseValue(raw, columnIsDateTime);
@@ -299,10 +209,8 @@ useEffect(() => {
         if (!filterColumn) return withoutProductData || [];
         const minVal = columnIsDateTime ? (filterMin ? parseDateTimeFromInput(filterMin) : null) : (filterMin !== '' ? Number.parseFloat(filterMin) : null);
         const maxVal = columnIsDateTime ? (filterMax ? parseDateTimeFromInput(filterMax) : null) : (filterMax !== '' ? Number.parseFloat(filterMax) : null);
-
         if (minVal == null && maxVal == null) return withoutProductData || [];
-
-        return (withoutProductData || []).filter((row) => {
+        return (withoutProductData || []).filter(row => {
             const raw = row?.[filterColumn];
             if (raw == null) return false;
             const v = parseValue(raw, columnIsDateTime);
@@ -313,1779 +221,633 @@ useEffect(() => {
         });
     }, [withoutProductData, filterColumn, filterMin, filterMax, columnIsDateTime]);
 
-    const resetLocalFilter = () => {
-        setFilterColumn('');
-        setFilterMin('');
-        setFilterMax('');
+    const resetLocalFilter = () => { setFilterColumn(''); setFilterMin(''); setFilterMax(''); };
+
+    // ========================================================================
+    // Core aggregation helper
+    // ========================================================================
+    const buildBinnedData = (rows, xCol, yCol, globalMin, globalMax, nBins, aggregation) => {
+        if (!rows.length || !xCol) return new Array(nBins).fill(null);
+        const binWidth = (globalMax - globalMin) / nBins;
+        const buckets = Array.from({ length: nBins }, () => []);
+        rows.forEach(row => {
+            const xVal = parseFloat(row[xCol]);
+            if (isNaN(xVal)) return;
+            let idx = Math.floor((xVal - globalMin) / binWidth);
+            if (idx >= nBins) idx = nBins - 1;
+            if (idx < 0) return;
+            if (yCol) {
+                const yVal = parseFloat(row[yCol]);
+                if (!isNaN(yVal)) buckets[idx].push(yVal);
+            } else {
+                buckets[idx].push(1);
+            }
+        });
+        return buckets.map(vals => {
+            if (!vals.length) return null;
+            if (!yCol || aggregation === 'frequency') return vals.length;
+            if (aggregation === 'sum') return vals.reduce((a, b) => a + b, 0);
+            return vals.reduce((a, b) => a + b, 0) / vals.length;
+        });
     };
 
-    useEffect(() => {
-        setCombinedXAxisLabel(combinedXColumns.length > 0 ? combinedXColumns.join(', ') : '');
-        setCombinedYAxisLabel(combinedYColumns.length > 0 ? combinedYColumns.join(', ') : 'Frequency (%)');
-        setSingleXAxisLabel(combinedXColumns.length > 0 ? combinedXColumns.join(', ') : '');
-        setSeparateXAxisLabel(combinedXColumns.length > 0 ? combinedXColumns.join(', ') : '');
-    }, [combinedXColumns, combinedYColumns]);
-
-    const calculateDistributionStats = (data) => {
+    // ========================================================================
+    // Statistics functions
+    // ========================================================================
+    const calculateDistributionStats = (data, column) => {
         if (!data || data.length === 0) return null;
-
-        const values = data.map(row => parseFloat(row[selectedColumn])).filter(val => !isNaN(val));
+        const values = data.map(row => parseFloat(row[column])).filter(val => !isNaN(val));
         if (values.length === 0) return null;
-
-        const mean = d3.mean(values);
-        const median = d3.median(values);
-        const std = d3.deviation(values);
-        const min = d3.min(values);
-        const max = d3.max(values);
-        const q1 = d3.quantile(values, 0.25);
-        const q3 = d3.quantile(values, 0.75);
-        const iqr = q3 - q1;
-
         return {
             count: values.length,
-            mean: mean.toFixed(2),
-            median: median.toFixed(2),
-            std: std.toFixed(2),
-            min: min.toFixed(2),
-            max: max.toFixed(2),
-            q1: q1.toFixed(2),
-            q3: q3.toFixed(2),
-            iqr: iqr.toFixed(2),
-            range: (max - min).toFixed(2)
+            mean: d3.mean(values).toFixed(2),
+            median: d3.median(values).toFixed(2),
+            std: d3.deviation(values).toFixed(2),
+            min: d3.min(values).toFixed(2),
+            max: d3.max(values).toFixed(2),
+            q1: d3.quantile(values, 0.25).toFixed(2),
+            q3: d3.quantile(values, 0.75).toFixed(2),
+            iqr: (d3.quantile(values, 0.75) - d3.quantile(values, 0.25)).toFixed(2),
+            range: (d3.max(values) - d3.min(values)).toFixed(2)
         };
     };
 
-    const calculateSkewness = (data) => {
+    const calculateSkewness = (data, column) => {
         if (!data || data.length === 0) return null;
-
-        const values = data.map(row => parseFloat(row[selectedColumn])).filter(val => !isNaN(val));
+        const values = data.map(row => parseFloat(row[column])).filter(val => !isNaN(val));
         if (values.length < 3) return null;
-
         const mean = d3.mean(values);
         const std = d3.deviation(values);
-
-        const skewness = values.reduce((sum, val) => {
-            return sum + Math.pow((val - mean) / std, 3);
-        }, 0) / values.length;
-
+        const skewness = values.reduce((sum, val) => sum + Math.pow((val - mean) / std, 3), 0) / values.length;
         return {
             value: skewness.toFixed(3),
-            interpretation: Math.abs(skewness) < 0.5 ? 'Symmetric' :
-                skewness > 0 ? 'Right-skewed' : 'Left-skewed'
+            interpretation: Math.abs(skewness) < 0.5 ? 'Symmetric' : skewness > 0 ? 'Right-skewed' : 'Left-skewed'
         };
     };
 
-    const calculateKurtosis = (data) => {
-        if (!data || data.length === 0) return null;
-
-        const values = data.map(row => parseFloat(row[selectedColumn])).filter(val => !isNaN(val));
-        if (values.length < 4) return null;
-
-        const mean = d3.mean(values);
-        const std = d3.deviation(values);
-
-        const kurtosis = values.reduce((sum, val) => {
-            return sum + Math.pow((val - mean) / std, 4);
-        }, 0) / values.length - 3;
-
-        return {
-            value: kurtosis.toFixed(3),
-            interpretation: Math.abs(kurtosis) < 0.5 ? 'Normal' :
-                kurtosis > 0 ? 'Heavy-tailed' : 'Light-tailed'
-        };
-    };
-
-    const detectOutliers = (data, threshold = 1.5) => {
+    const detectOutliers = (data, column, threshold = 1.5) => {
         if (!data || data.length === 0) return [];
-
-        const values = data.map(row => parseFloat(row[selectedColumn])).filter(val => !isNaN(val));
+        const values = data.map(row => parseFloat(row[column])).filter(v => !isNaN(v));
         if (values.length < 4) return [];
-
         const q1 = d3.quantile(values, 0.25);
         const q3 = d3.quantile(values, 0.75);
         const iqr = q3 - q1;
-        const lowerBound = q1 - threshold * iqr;
-        const upperBound = q3 + threshold * iqr;
-
-        return values.filter(val => val < lowerBound || val > upperBound);
+        return values.filter(v => v < q1 - threshold * iqr || v > q3 + threshold * iqr);
     };
 
-    const assessDataQuality = (data) => {
+    const assessDataQuality = (data, column) => {
         if (!data || data.length === 0) return null;
-
-        const values = data.map(row => parseFloat(row[selectedColumn])).filter(val => !isNaN(val));
-        const totalCount = data.length;
-        const validCount = values.length;
-        const outliers = detectOutliers(data);
-
-        const completeness = (validCount / totalCount) * 100;
-        const outlierPercentage = (outliers.length / validCount) * 100;
-
-        let quality = 'Excellent';
-        let score = 100;
-
-        if (completeness < 80) {
-            quality = 'Poor';
-            score -= 40;
-        } else if (completeness < 95) {
-            quality = 'Fair';
-            score -= 20;
-        }
-
-        if (outlierPercentage > 10) {
-            quality = 'Poor';
-            score -= 30;
-        } else if (outlierPercentage > 5) {
-            quality = 'Fair';
-            score -= 15;
-        }
-
-        return {
-            quality,
-            score: Math.max(0, score),
-            completeness: completeness.toFixed(1),
-            outlierPercentage: outlierPercentage.toFixed(1),
-            validCount,
-            totalCount
-        };
+        const values = data.map(row => parseFloat(row[column])).filter(v => !isNaN(v));
+        const completeness = (values.length / data.length) * 100;
+        const outliers = detectOutliers(data, column);
+        const outlierPct = (outliers.length / values.length) * 100;
+        let quality = 'Excellent'; let score = 100;
+        if (completeness < 80) { quality = 'Poor'; score -= 40; }
+        else if (completeness < 95) { quality = 'Fair'; score -= 20; }
+        if (outlierPct > 10) { quality = 'Poor'; score -= 30; }
+        else if (outlierPct > 5) { quality = 'Fair'; score -= 15; }
+        return { quality, score: Math.max(0, score), completeness: completeness.toFixed(1), outlierPercentage: outlierPct.toFixed(1) };
     };
 
-    const combinedMinMax = useMemo(() => {
-        if (!selectedColumn || !filteredWithProductData || !filteredWithoutProductData) {
-            return { min: 0, max: 0 };
-        }
-
-        const withProductValues = filteredWithProductData
-            .map(row => parseFloat(row[selectedColumn]))
-            .filter(value => !isNaN(value));
-
-        const withoutProductValues = filteredWithoutProductData
-            .map(row => parseFloat(row[selectedColumn]))
-            .filter(value => !isNaN(value));
-
-        const allValues = [...withProductValues, ...withoutProductValues];
-
-        if (allValues.length === 0) {
-            return { min: 0, max: 0 };
-        }
-
-        return {
-            min: Math.min(...allValues),
-            max: Math.max(...allValues)
-        };
-    }, [filteredWithProductData, filteredWithoutProductData, selectedColumn]);
-
-    const extractValues = (data, columns) => {
-        if (!data || !columns || columns.length === 0) return [];
-        return columns.flatMap(col => data.map(r => parseFloat(r[col])).filter(v => !isNaN(v)));
-    };
-
-    const multiCombinedMinMax = useMemo(() => {
-        if (!combinedXColumns.length) return { min: 0, max: 0 };
-        const all = [...extractValues(filteredWithProductData, combinedXColumns), ...extractValues(filteredWithoutProductData, combinedXColumns)];
-        if (all.length === 0) return { min: 0, max: 0 };
-        return { min: Math.min(...all), max: Math.max(...all) };
-    }, [filteredWithProductData, filteredWithoutProductData, combinedXColumns]);
-
-    const buildBins = (values, globalMin = null, globalMax = null) => {
-        if (!values || values.length === 0) return [];
-        const min = globalMin !== null ? globalMin : Math.min(...values);
-        const max = globalMax !== null ? globalMax : Math.max(...values);
-        if (min === max) return [{ binMiddle: min.toFixed(2), count: values.length, binRange: `${min.toFixed(2)} - ${min.toFixed(2)}` }];
-        const dynamicBinCount = Math.min(binCount, Math.ceil(Math.sqrt(values.length)));
-        const binWidth = (max - min) / dynamicBinCount;
-        const bins = Array(dynamicBinCount).fill(0);
-        values.forEach(v => { const i = Math.min(Math.floor((v - min) / binWidth), dynamicBinCount - 1); bins[i]++; });
-        return bins.map((count, i) => {
-            const binStart = min + i * binWidth;
-            const binEnd = i === dynamicBinCount - 1 ? max : binStart + binWidth;
-            const binMiddle = (binStart + binEnd) / 2;
-            return { binMiddle: binMiddle.toFixed(2), count, binRange: `${binStart.toFixed(2)} - ${binEnd.toFixed(2)}` };
-        }).filter(b => parseFloat(b.binMiddle) > 0);
-    };
-
-    const multiSeriesData = useMemo(() => {
-    if (!combinedXColumns.length || !combinedYColumns.length) return [];
-    const { min: gMin, max: gMax } = multiCombinedMinMax;
-    const refBins = buildBins([...extractValues(filteredWithProductData, combinedXColumns), ...extractValues(filteredWithoutProductData, combinedXColumns)], gMin, gMax);
-    if (refBins.length === 0) return [];
-    const rows = refBins.map(b => ({ binMiddle: b.binMiddle, binRange: b.binRange }));
-    combinedYColumns.forEach(col => {
-        const vWith = extractValues(filteredWithProductData, [col]);
-        const bWith = buildBins(vWith, gMin, gMax);
-        const totalWith = bWith.reduce((s, b) => s + b.count, 0) || 1;
-        bWith.forEach(b => { const row = rows.find(r => r.binMiddle === b.binMiddle); if (row) { row[`${col}_with_%`] = (b.count / totalWith) * 100; row[`${col}_with_count`] = b.count; } });
-        const vWithout = extractValues(filteredWithoutProductData, [col]);
-        const bWithout = buildBins(vWithout, gMin, gMax);
-        const totalWithout = bWithout.reduce((s, b) => s + b.count, 0) || 1;
-        bWithout.forEach(b => { const row = rows.find(r => r.binMiddle === b.binMiddle); if (row) { row[`${col}_without_%`] = (b.count / totalWithout) * 100; row[`${col}_without_count`] = b.count; } });
-    });
-    rows.forEach(row => { combinedYColumns.forEach(col => { if (row[`${col}_with_%`] == null) { row[`${col}_with_%`] = 0; row[`${col}_with_count`] = 0; } if (row[`${col}_without_%`] == null) { row[`${col}_without_%`] = 0; row[`${col}_without_count`] = 0; } }); });
-    return rows.filter(r => r.binMiddle !== '0' && r.binMiddle !== '0.00');
-}, [combinedXColumns, combinedYColumns, filteredWithProductData, filteredWithoutProductData, multiCombinedMinMax, binCount]);
-
-    const processDataForDistribution = (data, columnName, globalMin = null, globalMax = null) => {
-        if (!data || data.length === 0 || !columnName) return [];
-
-        const values = data
-            .map(row => parseFloat(row[columnName]))
-            .filter(value => !isNaN(value));
-
-        if (values.length === 0) return [];
-
-        const min = globalMin !== null ? globalMin : Math.min(...values);
-        const max = globalMax !== null ? globalMax : Math.max(...values);
-
-        if (min === max) {
-            return [{
-                binMiddle: min.toFixed(2),
-                count: values.length,
-                binRange: `${min.toFixed(2)} - ${min.toFixed(2)}`
-            }];
-        }
-
-        const dynamicBinCount = Math.min(binCount, Math.ceil(Math.sqrt(values.length)));
-        const binWidth = (max - min) / dynamicBinCount;
-        const bins = Array(dynamicBinCount).fill(0);
-
-        values.forEach(value => {
-            const binIndex = Math.min(
-                Math.floor((value - min) / binWidth),
-                dynamicBinCount - 1
-            );
-            bins[binIndex]++;
+    // ========================================================================
+    // Combined chart data
+    // ========================================================================
+    const combinedChartData = useMemo(() => {
+        if (selectedColumns.length === 0) return [];
+        let allXValues = [];
+        selectedColumns.forEach(column => {
+            filteredWithProductData.map(row => parseFloat(row[column])).filter(v => !isNaN(v)).forEach(v => allXValues.push(v));
+            filteredWithoutProductData.map(row => parseFloat(row[column])).filter(v => !isNaN(v)).forEach(v => allXValues.push(v));
         });
+        if (allXValues.length === 0) return [];
+        const globalMin = Math.min(...allXValues);
+        const globalMax = Math.max(...allXValues);
+        if (globalMin === globalMax) return [];
+        const binWidth = (globalMax - globalMin) / binCount;
+        const bins = Array.from({ length: binCount }, (_, i) => {
+            const start = globalMin + i * binWidth;
+            const end = i === binCount - 1 ? globalMax : globalMin + (i + 1) * binWidth;
+            return { binStart: start, binEnd: end, binMiddle: parseFloat(((start + end) / 2).toFixed(4)), data: {} };
+        });
+        selectedColumns.forEach(column => {
+            const withVals = buildBinnedData(filteredWithProductData, column, yAxisColumn, globalMin, globalMax, binCount, yAggregation);
+            const withoutVals = buildBinnedData(filteredWithoutProductData, column, yAxisColumn, globalMin, globalMax, binCount, yAggregation);
+            const withCounts = buildBinnedData(filteredWithProductData, column, null, globalMin, globalMax, binCount, 'frequency');
+            const withoutCounts = buildBinnedData(filteredWithoutProductData, column, null, globalMin, globalMax, binCount, 'frequency');
+            bins.forEach((bin, idx) => {
+                bin.data[`${column}_with`] = withVals[idx];
+                bin.data[`${column}_without`] = withoutVals[idx];
+                bin.data[`${column}_with_count`] = withCounts[idx] ?? 0;
+                bin.data[`${column}_without_count`] = withoutCounts[idx] ?? 0;
+            });
+        });
+        return bins;
+    }, [selectedColumns, filteredWithProductData, filteredWithoutProductData, binCount, yAxisColumn, yAggregation]);
 
-        return bins.map((count, index) => {
-            const binStart = min + index * binWidth;
-            const binEnd = index === dynamicBinCount - 1 ? max : binStart + binWidth;
-            const binMiddle = (binStart + binEnd) / 2;
-            const actualBinEnd = binEnd > binStart ? binEnd : binStart + binWidth;
-            const actualBinMiddle = binMiddle > 0 ? binMiddle : (binStart + actualBinEnd) / 2;
-
-            return {
-                binMiddle: actualBinMiddle.toFixed(2),
-                count,
-                binRange: `${binStart.toFixed(2)} - ${actualBinEnd.toFixed(2)}`
-            };
-        }).filter(bin => parseFloat(bin.binMiddle) > 0);
+    // ========================================================================
+    // Single / Separate view bins
+    // ========================================================================
+    const buildViewBins = (rows, xCol, yCol, aggregation, nBins) => {
+        if (!rows.length || !xCol) return [];
+        const xValues = rows.map(row => parseFloat(row[xCol])).filter(v => !isNaN(v));
+        if (!xValues.length) return [];
+        const globalMin = Math.min(...xValues);
+        const globalMax = Math.max(...xValues);
+        if (globalMin === globalMax) return [];
+        const binWidth = (globalMax - globalMin) / nBins;
+        const bins = Array.from({ length: nBins }, (_, i) => {
+            const start = globalMin + i * binWidth;
+            const end = i === nBins - 1 ? globalMax : globalMin + (i + 1) * binWidth;
+            return { binStart: start, binEnd: end, binMiddle: parseFloat(((start + end) / 2).toFixed(4)), yVals: [], count: 0 };
+        });
+        rows.forEach(row => {
+            const xVal = parseFloat(row[xCol]);
+            if (isNaN(xVal)) return;
+            let idx = Math.floor((xVal - globalMin) / binWidth);
+            if (idx >= nBins) idx = nBins - 1;
+            if (idx < 0) return;
+            bins[idx].count++;
+            if (yCol) { const yVal = parseFloat(row[yCol]); if (!isNaN(yVal)) bins[idx].yVals.push(yVal); }
+        });
+        return bins.map(bin => {
+            let yValue;
+            if (!yCol || aggregation === 'frequency') yValue = bin.count;
+            else if (aggregation === 'sum') yValue = bin.yVals.length ? bin.yVals.reduce((a, b) => a + b, 0) : null;
+            else yValue = bin.yVals.length ? bin.yVals.reduce((a, b) => a + b, 0) / bin.yVals.length : null;
+            return { binStart: bin.binStart, binEnd: bin.binEnd, binMiddle: bin.binMiddle, value: yValue, count: bin.count };
+        });
     };
 
-    const withProductDistribution = useMemo(() => {
-        return processDataForDistribution(filteredWithProductData, selectedColumn, combinedMinMax.min, combinedMinMax.max);
-    }, [filteredWithProductData, selectedColumn, combinedMinMax]);
+    const withProductDistribution = useMemo(() =>
+        buildViewBins(filteredWithProductData, separateColumn, separateYAxisColumn, yAggregation, binCount),
+        [filteredWithProductData, separateColumn, separateYAxisColumn, yAggregation, binCount]);
 
-    const withoutProductDistribution = useMemo(() => {
-        return processDataForDistribution(filteredWithoutProductData, selectedColumn, combinedMinMax.min, combinedMinMax.max);
-    }, [filteredWithoutProductData, selectedColumn, combinedMinMax]);
+    const withoutProductDistribution = useMemo(() =>
+        buildViewBins(filteredWithoutProductData, separateColumn, separateYAxisColumn, yAggregation, binCount),
+        [filteredWithoutProductData, separateColumn, separateYAxisColumn, yAggregation, binCount]);
 
-    const totalWithProduct = useMemo(() => withProductDistribution.reduce((sum, bin) => sum + bin.count, 0), [withProductDistribution]);
-    const totalWithoutProduct = useMemo(() => withoutProductDistribution.reduce((sum, bin) => sum + bin.count, 0), [withoutProductDistribution]);
+    const singleDistribution = useMemo(() => {
+        const data = singleViewType === 'withProduct' ? filteredWithProductData : filteredWithoutProductData;
+        return buildViewBins(data, singleColumn, singleYAxisColumn, yAggregation, binCount);
+    }, [filteredWithProductData, filteredWithoutProductData, singleColumn, singleYAxisColumn, singleViewType, yAggregation, binCount]);
 
-    const withProductStats = useMemo(() => {
-        return calculateDistributionStats(filteredWithProductData);
-    }, [filteredWithProductData, selectedColumn, filterColumn, filterMin, filterMax]);
+    const withProductStats = useMemo(() => calculateDistributionStats(filteredWithProductData, separateColumn), [filteredWithProductData, separateColumn]);
+    const withoutProductStats = useMemo(() => calculateDistributionStats(filteredWithoutProductData, separateColumn), [filteredWithoutProductData, separateColumn]);
+    const withProductSkewness = useMemo(() => calculateSkewness(filteredWithProductData, separateColumn), [filteredWithProductData, separateColumn]);
+    const withoutProductSkewness = useMemo(() => calculateSkewness(filteredWithoutProductData, separateColumn), [filteredWithoutProductData, separateColumn]);
+    const withProductQuality = useMemo(() => assessDataQuality(filteredWithProductData, separateColumn), [filteredWithProductData, separateColumn]);
+    const withoutProductQuality = useMemo(() => assessDataQuality(filteredWithoutProductData, separateColumn), [filteredWithoutProductData, separateColumn]);
 
-    const withoutProductStats = useMemo(() => {
-        return calculateDistributionStats(filteredWithoutProductData);
-    }, [filteredWithoutProductData, selectedColumn, filterColumn, filterMin, filterMax]);
+    const getDefaultYLabel = (yCol, agg) => {
+        if (!yCol) return 'Frequency (count)';
+        if (agg === 'frequency') return 'Frequency (count)';
+        if (agg === 'sum') return `Sum of ${yCol}`;
+        return `Mean of ${yCol}`;
+    };
 
-    const withProductSkewness = useMemo(() => {
-        return calculateSkewness(filteredWithProductData);
-    }, [filteredWithProductData, selectedColumn, filterColumn, filterMin, filterMax]);
-
-    const withoutProductSkewness = useMemo(() => {
-        return calculateSkewness(filteredWithoutProductData);
-    }, [filteredWithoutProductData, selectedColumn, filterColumn, filterMin, filterMax]);
-
-    const withProductQuality = useMemo(() => {
-        return assessDataQuality(filteredWithProductData);
-    }, [filteredWithProductData, selectedColumn, filterColumn, filterMin, filterMax]);
-
-    const withoutProductQuality = useMemo(() => {
-        return assessDataQuality(filteredWithoutProductData);
-    }, [filteredWithoutProductData, selectedColumn, filterColumn, filterMin, filterMax]);
-
-    const combinedInsights = useMemo(() => {
-        const allData = [...(filteredWithProductData || []), ...(filteredWithoutProductData || [])];
-        return {
-            stats: calculateDistributionStats(allData),
-            skewness: calculateSkewness(allData),
-            kurtosis: calculateKurtosis(allData),
-            outliers: detectOutliers(allData),
-            quality: assessDataQuality(allData)
-        };
-    }, [filteredWithProductData, filteredWithoutProductData, selectedColumn, filterColumn, filterMin, filterMax]);
-
-    const combinedDistributionPercent = useMemo(() => {
-        if (!withProductDistribution.length || !withoutProductDistribution.length) return [];
-
-        const maxLength = Math.max(withProductDistribution.length, withoutProductDistribution.length);
-
-        return Array.from({ length: maxLength }, (_, index) => {
-            const withProductBin = withProductDistribution[index];
-            const withoutProductBin = withoutProductDistribution[index];
-
-            if (!withProductBin && !withoutProductBin) return null;
-
-            const withPct = totalWithProduct && withProductBin ? (withProductBin.count / totalWithProduct) * 100 : 0;
-            const withoutPct = totalWithoutProduct && withoutProductBin ? (withoutProductBin.count / totalWithoutProduct) * 100 : 0;
-
-            const validBin = withProductBin || withoutProductBin;
-
-            return {
-                binMiddle: validBin.binMiddle,
-                withProductPercent: withPct,
-                withoutProductPercent: withoutPct,
-                withProductCount: withProductBin ? withProductBin.count : 0,
-                withoutProductCount: withoutProductBin ? withoutProductBin.count : 0,
-                totalCount: (withProductBin ? withProductBin.count : 0) + (withoutProductBin ? withoutProductBin.count : 0),
-                binRange: validBin.binRange,
-            };
-        }).filter(bin => bin !== null && bin.binMiddle !== '0' && bin.binMiddle !== '0.00');
-    }, [withProductDistribution, withoutProductDistribution, totalWithProduct, totalWithoutProduct]);
-
+    // ========================================================================
+    // Watermark
+    // ========================================================================
     const WatermarkContent = () => (
         <div style={{
-            position: 'absolute',
-            top: isMobile ? '5px' : '0px',
-            right: isMobile ? '10px' : '50px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: isMobile ? '4px' : '6px',
-            background: 'rgba(255, 255, 255, 0.95)',
-            padding: isMobile ? '2px 6px' : '4px 10px',
-            borderRadius: '4px',
-            border: '1px solid rgba(0, 0, 0, 0.1)',
-            fontSize: isMobile ? '8px' : '10px',
-            color: '#666',
-            fontFamily: 'Arial, sans-serif',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            zIndex: 1000,
-            pointerEvents: 'none'
+            position: 'absolute', top: isMobile ? '5px' : '0px', right: isMobile ? '10px' : '50px',
+            display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '6px',
+            background: 'rgba(255,255,255,0.95)', padding: isMobile ? '2px 6px' : '4px 10px',
+            borderRadius: '4px', border: '1px solid rgba(0,0,0,0.1)',
+            fontSize: isMobile ? '8px' : '10px', color: '#666', fontFamily: 'Arial, sans-serif',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)', zIndex: 1000, pointerEvents: 'none'
         }}>
-            <div style={{
-                width: isMobile ? '16px' : '22px',
-                height: isMobile ? '16px' : '22px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-            }}>
-                <img
-                    src={logo}
-                    alt="Abhitech Logo"
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain',
-                        borderRadius: '50%',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
-                    }}
-                />
+            <div style={{ width: isMobile ? '16px' : '22px', height: isMobile ? '16px' : '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <img src={logo} alt="Abhitech Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
             </div>
             <div>
                 <div style={{ fontSize: isMobile ? '6px' : '8px', lineHeight: '1' }}>Powered by</div>
-                <div style={{
-                    fontSize: isMobile ? '7px' : '9px',
-                    fontWeight: 'bold',
-                    color: '#1976d2',
-                    lineHeight: '1.1'
-                }}>
-                    Abhitech's AbhiStat
-                </div>
+                <div style={{ fontSize: isMobile ? '7px' : '9px', fontWeight: 'bold', color: '#1976d2', lineHeight: '1.1' }}>Abhitech's AbhiStat</div>
             </div>
         </div>
     );
 
+    // ========================================================================
+    // Download functions
+    // ========================================================================
     const downloadChartAsPNG = (chartRef, title) => {
-        if (!chartRef.current) return;
-
-        const chartContainer = chartRef.current;
-        const svgElement = chartContainer.querySelector('svg');
+        if (!chartRef?.current) return;
+        const svgElement = chartRef.current.querySelector('svg');
         if (!svgElement) return;
-
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-
         const svgRect = svgElement.getBoundingClientRect();
         const scaleFactor = 2;
         canvas.width = svgRect.width * scaleFactor;
         canvas.height = (svgRect.height + 50) * scaleFactor;
-
-        const convertImageToDataURL = (imgSrc) => {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    resolve(canvas.toDataURL('image/png'));
-                };
-                img.onerror = () => resolve(null);
-                img.src = imgSrc;
-            });
-        };
-
-        convertImageToDataURL(logo).then((logoDataURL) => {
+        const convertImageToDataURL = (imgSrc) => new Promise(resolve => {
+            const img = new Image(); img.crossOrigin = 'anonymous';
+            img.onload = () => { const c = document.createElement('canvas'); const cx = c.getContext('2d'); c.width = img.width; c.height = img.height; cx.drawImage(img, 0, 0); resolve(c.toDataURL('image/png')); };
+            img.onerror = () => resolve(null); img.src = imgSrc;
+        });
+        convertImageToDataURL(logo).then(logoDataURL => {
             const svgClone = svgElement.cloneNode(true);
-
             if (logoDataURL) {
-                const watermarkGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                watermarkGroup.setAttribute("transform", `translate(${svgRect.width - 170}, 10)`);
-                const bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                bgRect.setAttribute("x", "0");
-                bgRect.setAttribute("y", "0");
-                bgRect.setAttribute("width", "160");
-                bgRect.setAttribute("height", "36");
-                bgRect.setAttribute("fill", "rgba(255,255,255,0.95)");
-                bgRect.setAttribute("stroke", "rgba(0,0,0,0.1)");
-                bgRect.setAttribute("stroke-width", "1");
-                bgRect.setAttribute("rx", "4");
-
-                const logoImg = document.createElementNS("http://www.w3.org/2000/svg", "image");
-                logoImg.setAttributeNS('http://www.w3.org/1999/xlink', 'href', logoDataURL);
-                logoImg.setAttribute("x", "8");
-                logoImg.setAttribute("y", "6");
-                logoImg.setAttribute("width", "24");
-                logoImg.setAttribute("height", "24");
-                logoImg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-
-                const poweredByText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                poweredByText.setAttribute("x", "40");
-                poweredByText.setAttribute("y", "18");
-                poweredByText.setAttribute("fill", "#666");
-                poweredByText.setAttribute("font-size", "10");
-                poweredByText.setAttribute("font-family", "Arial, sans-serif");
-                poweredByText.textContent = "Powered by";
-
-                const brandText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                brandText.setAttribute("x", "40");
-                brandText.setAttribute("y", "30");
-                brandText.setAttribute("fill", "#1976d2");
-                brandText.setAttribute("font-size", "11");
-                brandText.setAttribute("font-weight", "bold");
-                brandText.setAttribute("font-family", "Arial, sans-serif");
-                brandText.textContent = "Abhitech's AbhiStat";
-
-                watermarkGroup.appendChild(bgRect);
-                watermarkGroup.appendChild(logoImg);
-                watermarkGroup.appendChild(poweredByText);
-                watermarkGroup.appendChild(brandText);
-                svgClone.appendChild(watermarkGroup);
+                const wg = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                wg.setAttribute("transform", `translate(${svgRect.width - 170}, 10)`);
+                const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                bg.setAttribute("x", "0"); bg.setAttribute("y", "0"); bg.setAttribute("width", "160"); bg.setAttribute("height", "36");
+                bg.setAttribute("fill", "rgba(255,255,255,0.95)"); bg.setAttribute("stroke", "rgba(0,0,0,0.1)"); bg.setAttribute("stroke-width", "1"); bg.setAttribute("rx", "4");
+                const li = document.createElementNS("http://www.w3.org/2000/svg", "image");
+                li.setAttributeNS('http://www.w3.org/1999/xlink', 'href', logoDataURL);
+                li.setAttribute("x", "8"); li.setAttribute("y", "6"); li.setAttribute("width", "24"); li.setAttribute("height", "24"); li.setAttribute("preserveAspectRatio", "xMidYMid meet");
+                const t1 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                t1.setAttribute("x", "40"); t1.setAttribute("y", "18"); t1.setAttribute("fill", "#666"); t1.setAttribute("font-size", "10"); t1.setAttribute("font-family", "Arial, sans-serif"); t1.textContent = "Powered by";
+                const t2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                t2.setAttribute("x", "40"); t2.setAttribute("y", "30"); t2.setAttribute("fill", "#1976d2"); t2.setAttribute("font-size", "11"); t2.setAttribute("font-weight", "bold"); t2.setAttribute("font-family", "Arial, sans-serif"); t2.textContent = "Abhitech's AbhiStat";
+                wg.appendChild(bg); wg.appendChild(li); wg.appendChild(t1); wg.appendChild(t2); svgClone.appendChild(wg);
             }
-
             const svgData = new XMLSerializer().serializeToString(svgClone);
             const img = new Image();
-
             img.onload = () => {
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.fillStyle = 'black';
-                ctx.font = `${16 * scaleFactor}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.fillText(`${title} (${combinedYColumns.join(', ')})`, canvas.width / 2, 30 * scaleFactor);
-
+                ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'black'; ctx.font = `${16 * scaleFactor}px Arial`; ctx.textAlign = 'center';
+                ctx.fillText(title, canvas.width / 2, 30 * scaleFactor);
                 ctx.drawImage(img, 0, 50 * scaleFactor, svgRect.width * scaleFactor, svgRect.height * scaleFactor);
-
-                if (!logoDataURL) {
-                    const watermarkX = canvas.width - 160 * scaleFactor - 10 * scaleFactor;
-                    const watermarkY = 10 * scaleFactor;
-
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                    ctx.fillRect(watermarkX, watermarkY, 160 * scaleFactor, 36 * scaleFactor);
-                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-                    ctx.lineWidth = 1 * scaleFactor;
-                    ctx.strokeRect(watermarkX, watermarkY, 160 * scaleFactor, 36 * scaleFactor);
-
-                    ctx.fillStyle = '#666';
-                    ctx.font = `${10 * scaleFactor}px Arial`;
-                    ctx.fillText('Powered by', watermarkX + 8 * scaleFactor, watermarkY + 18 * scaleFactor);
-
-                    ctx.fillStyle = '#1976d2';
-                    ctx.font = `bold ${11 * scaleFactor}px Arial`;
-                    ctx.fillText("Abhitech's AbhiStat", watermarkX + 8 * scaleFactor, watermarkY + 30 * scaleFactor);
-                }
-
-                const downloadLink = document.createElement('a');
-                const fileName = generateFileName(`DistributionCurve_${combinedYColumns.join('_')}`);
-                downloadLink.download = `${fileName}.png`;
-                downloadLink.href = canvas.toDataURL('image/png');
-                downloadLink.click();
+                const dl = document.createElement('a'); dl.download = `${generateFileName(title)}.png`; dl.href = canvas.toDataURL('image/png'); dl.click();
             };
-
-            img.onerror = () => {
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.fillStyle = 'black';
-                ctx.font = `${16 * scaleFactor}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.fillText(`${title} (${combinedYColumns.join(', ')})`, canvas.width / 2, 30 * scaleFactor);
-
-                ctx.drawImage(svgElement, 0, 50 * scaleFactor, svgRect.width * scaleFactor, svgRect.height * scaleFactor);
-
-                const watermarkX = canvas.width - 160 * scaleFactor - 10 * scaleFactor;
-                const watermarkY = 10 * scaleFactor;
-
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                ctx.fillRect(watermarkX, watermarkY, 160 * scaleFactor, 36 * scaleFactor);
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-                ctx.lineWidth = 1 * scaleFactor;
-                ctx.strokeRect(watermarkX, watermarkY, 160 * scaleFactor, 36 * scaleFactor);
-
-                ctx.fillStyle = '#666';
-                ctx.font = `${10 * scaleFactor}px Arial`;
-                ctx.fillText('Powered by', watermarkX + 8 * scaleFactor, watermarkY + 18 * scaleFactor);
-
-                ctx.fillStyle = '#1976d2';
-                ctx.font = `bold ${11 * scaleFactor}px Arial`;
-                ctx.fillText("Abhitech's AbhiStat", watermarkX + 8 * scaleFactor, watermarkY + 30 * scaleFactor);
-
-                const downloadLink = document.createElement('a');
-                const fileName = generateFileName(`DistributionCurve_${combinedYColumns.join('_')}`);
-                downloadLink.download = `${fileName}.png`;
-                downloadLink.href = canvas.toDataURL('image/png');
-                downloadLink.click();
-            };
-
             img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
         });
     };
 
+    const downloadPageAsPNG = async () => {
+        if (!pageRef.current) return;
+        const o1 = showSummaryCards; const o2 = showInsights;
+        setShowSummaryCards(true); setShowInsights(true);
+        await new Promise(r => setTimeout(r, 400));
+        const canvas = await html2canvas(pageRef.current, { useCORS: true, backgroundColor: '#fff', scale: 2, logging: false, windowWidth: pageRef.current.scrollWidth, windowHeight: pageRef.current.scrollHeight });
+        setShowSummaryCards(o1); setShowInsights(o2);
+        const link = document.createElement('a'); link.download = `${generateFileName('DistributionCurve_Page')}.png`; link.href = canvas.toDataURL('image/png'); link.click();
+    };
+
+    // ========================================================================
+    // Summary Cards
+    // ========================================================================
+    const combinedStats = useMemo(() => {
+        if (selectedColumns.length === 0) return null;
+        const firstColumn = selectedColumns[0];
+        const allData = [...filteredWithProductData, ...filteredWithoutProductData];
+        const values = allData.map(row => parseFloat(row[firstColumn])).filter(v => !isNaN(v));
+        if (values.length === 0) return null;
+        return {
+            count: values.length,
+            mean: d3.mean(values).toFixed(2),
+            std: d3.deviation(values).toFixed(2),
+            skewness: (() => {
+                if (values.length < 3) return null;
+                const m = d3.mean(values); const s = d3.deviation(values);
+                const sk = values.reduce((sum, val) => sum + Math.pow((val - m) / s, 3), 0) / values.length;
+                return { value: sk.toFixed(3), interpretation: Math.abs(sk) < 0.5 ? 'Symmetric' : sk > 0 ? 'Right-skewed' : 'Left-skewed' };
+            })(),
+            kurtosis: (() => {
+                if (values.length < 4) return null;
+                const m = d3.mean(values); const s = d3.deviation(values);
+                const ku = values.reduce((sum, val) => sum + Math.pow((val - m) / s, 4), 0) / values.length - 3;
+                return { value: ku.toFixed(3), interpretation: Math.abs(ku) < 0.5 ? 'Normal' : ku > 0 ? 'Heavy-tailed' : 'Light-tailed' };
+            })(),
+            outliers: (() => {
+                if (values.length < 4) return [];
+                const q1 = d3.quantile(values, 0.25); const q3 = d3.quantile(values, 0.75);
+                const iqr = q3 - q1;
+                return values.filter(v => v < q1 - 1.5 * iqr || v > q3 + 1.5 * iqr);
+            })(),
+            quality: assessDataQuality(allData, firstColumn),
+        };
+    }, [selectedColumns, filteredWithProductData, filteredWithoutProductData]);
+
     const SummaryCards = () => (
         <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
-            <Box
-                sx={{
-                    p: 2,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    borderBottom: showSummaryCards ? '1px solid' : 'none',
-                    borderColor: 'divider',
-                    '&:hover': { bgcolor: 'action.hover' }
-                }}
-                onClick={() => setShowSummaryCards(!showSummaryCards)}
-            >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AnalyticsIcon color="primary" />
-                    <Typography variant="h6" sx={{ fontWeight: 500, color: 'primary.main' }}>
-                        Distribution Summary
-                    </Typography>
-                </Box>
-                <IconButton size="small" sx={{ transform: showSummaryCards ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}>
-                    <ExpandMoreIcon />
-                </IconButton>
+            <Box sx={{ p: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: showSummaryCards ? '1px solid' : 'none', borderColor: 'divider', '&:hover': { bgcolor: 'action.hover' } }} onClick={() => setShowSummaryCards(!showSummaryCards)}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AnalyticsIcon color="primary" /><Typography variant="h6" sx={{ fontWeight: 500, color: 'primary.main' }}>Distribution Summary</Typography></Box>
+                <IconButton size="small" sx={{ transform: showSummaryCards ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}><ExpandMoreIcon /></IconButton>
             </Box>
-            <Collapse in={showSummaryCards} timeout={300} easing="ease-in-out">
+            <Collapse in={showSummaryCards} timeout={300}>
                 <CardContent sx={{ p: 3 }}>
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6} md={3}>
-                            <Card sx={{
-                                height: '100%',
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                color: 'white'
-                            }}>
-                                <CardContent sx={{ p: 2 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                        <AnalyticsIcon sx={{ mr: 1, fontSize: 20 }} />
-                                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                            Total Data Points
-                                        </Typography>
-                                    </Box>
-                                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                        {combinedInsights.stats ? combinedInsights.stats.count : 0}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                                        {filteredWithProductData?.length || 0} with product, {filteredWithoutProductData?.length || 0} without
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        <Grid item xs={12} sm={6} md={3}>
-                            <Card sx={{
-                                height: '100%',
-                                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                                color: 'white'
-                            }}>
-                                <CardContent sx={{ p: 2 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                        <TrendingUpIcon sx={{ mr: 1, fontSize: 20 }} />
-                                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                            Distribution Shape
-                                        </Typography>
-                                    </Box>
-                                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                        {combinedInsights.skewness ? combinedInsights.skewness.interpretation.split('-')[0] : 'N/A'}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                                        {combinedInsights.skewness ? combinedInsights.skewness.value : 'N/A'} skewness
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        <Grid item xs={12} sm={6} md={3}>
-                            <Card sx={{
-                                height: '100%',
-                                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                                color: 'white'
-                            }}>
-                                <CardContent sx={{ p: 2 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                        <BarChartIcon sx={{ mr: 1, fontSize: 20 }} />
-                                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                            Tail Behavior
-                                        </Typography>
-                                    </Box>
-                                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                        {combinedInsights.kurtosis ? combinedInsights.kurtosis.interpretation.split('-')[0] : 'N/A'}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                                        {combinedInsights.kurtosis ? combinedInsights.kurtosis.value : 'N/A'} kurtosis
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        <Grid item xs={12} sm={6} md={3}>
-                            <Card sx={{
-                                height: '100%',
-                                background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                                color: 'white'
-                            }}>
-                                <CardContent sx={{ p: 2 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                        <InfoIcon sx={{ mr: 1, fontSize: 20 }} />
-                                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                            Data Quality
-                                        </Typography>
-                                    </Box>
-                                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-                                        {combinedInsights.quality ? combinedInsights.quality.score : 'N/A'}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                                        {combinedInsights.quality ? combinedInsights.quality.quality : 'N/A'} quality score
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
+                        {[
+                            { label: 'Total Data Points', value: combinedStats?.count || 0, sub: `${filteredWithProductData?.length || 0} with, ${filteredWithoutProductData?.length || 0} without`, icon: <AnalyticsIcon sx={{ mr: 1, fontSize: 20 }} />, bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+                            { label: 'Distribution Shape', value: combinedStats?.skewness?.interpretation?.split('-')[0] || 'N/A', sub: `${combinedStats?.skewness?.value || 'N/A'} skewness`, icon: <TrendingUpIcon sx={{ mr: 1, fontSize: 20 }} />, bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+                            { label: 'Tail Behavior', value: combinedStats?.kurtosis?.interpretation?.split('-')[0] || 'N/A', sub: `${combinedStats?.kurtosis?.value || 'N/A'} kurtosis`, icon: <BarChartIcon sx={{ mr: 1, fontSize: 20 }} />, bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+                            { label: 'Data Quality', value: combinedStats?.quality?.score || 'N/A', sub: `${combinedStats?.quality?.quality || 'N/A'} quality score`, icon: <InfoIcon sx={{ mr: 1, fontSize: 20 }} />, bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+                        ].map((card, i) => (
+                            <Grid item xs={12} sm={6} md={3} key={i}>
+                                <Card sx={{ height: '100%', background: card.bg, color: 'white' }}>
+                                    <CardContent sx={{ p: 2 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>{card.icon}<Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{card.label}</Typography></Box>
+                                        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>{card.value}</Typography>
+                                        <Typography variant="caption" sx={{ opacity: 0.8 }}>{card.sub}</Typography>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
                     </Grid>
                 </CardContent>
             </Collapse>
         </Card>
     );
 
-    const InsightsPanel = () => (
-        <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2, border: '1px solid', borderColor: 'primary.light' }}>
-            <Box
-                sx={{
-                    p: 2,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    borderBottom: showInsights ? '1px solid' : 'none',
-                    borderColor: 'divider',
-                    '&:hover': { bgcolor: 'action.hover' }
-                }}
-                onClick={() => setShowInsights(!showInsights)}
-            >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AnalyticsIcon color="primary" />
-                    <Typography variant="h6" sx={{ fontWeight: 500, color: 'primary.main' }}>
-                        Distribution Analysis
-                    </Typography>
+    const InsightsPanel = () => {
+        const allOutliers = detectOutliers([...filteredWithProductData, ...filteredWithoutProductData], separateColumn);
+        return (
+            <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2, border: '1px solid', borderColor: 'primary.light' }}>
+                <Box sx={{ p: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: showInsights ? '1px solid' : 'none', borderColor: 'divider', '&:hover': { bgcolor: 'action.hover' } }} onClick={() => setShowInsights(!showInsights)}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AnalyticsIcon color="primary" /><Typography variant="h6" sx={{ fontWeight: 500, color: 'primary.main' }}>Distribution Analysis</Typography></Box>
+                    <IconButton size="small" sx={{ transform: showInsights ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}><ExpandMoreIcon /></IconButton>
                 </Box>
-                <IconButton size="small" sx={{ transform: showInsights ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}>
-                    <ExpandMoreIcon />
-                </IconButton>
-            </Box>
-            <Collapse in={showInsights} timeout={300} easing="ease-in-out">
-                <CardContent sx={{ p: 3 }}>
-                    <Grid container spacing={3}>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'success.main' }}>
-                                With Product Analysis
-                            </Typography>
-                            <List dense>
-                                <ListItem>
-                                    <ListItemIcon>
-                                        <TrendingUpIcon color="success" />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary="Mean"
-                                        secondary={withProductStats ? withProductStats.mean : 'N/A'}
-                                    />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemIcon>
-                                        <BarChartIcon color="success" />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary="Standard Deviation"
-                                        secondary={withProductStats ? withProductStats.std : 'N/A'}
-                                    />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemIcon>
-                                        <InfoIcon color="success" />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary="Skewness"
-                                        secondary={withProductSkewness ? `${withProductSkewness.value} (${withProductSkewness.interpretation})` : 'N/A'}
-                                    />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemIcon>
-                                        <AnalyticsIcon color="success" />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary="Data Quality"
-                                        secondary={withProductQuality ? `${withProductQuality.quality} (${withProductQuality.score}/100)` : 'N/A'}
-                                    />
-                                </ListItem>
-                            </List>
+                <Collapse in={showInsights} timeout={300}>
+                    <CardContent sx={{ p: 3 }}>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} md={6}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'success.main' }}>With Product Analysis</Typography>
+                                <List dense>
+                                    <ListItem><ListItemIcon><TrendingUpIcon color="success" /></ListItemIcon><ListItemText primary="Mean" secondary={withProductStats?.mean || 'N/A'} /></ListItem>
+                                    <ListItem><ListItemIcon><BarChartIcon color="success" /></ListItemIcon><ListItemText primary="Standard Deviation" secondary={withProductStats?.std || 'N/A'} /></ListItem>
+                                    <ListItem><ListItemIcon><InfoIcon color="success" /></ListItemIcon><ListItemText primary="Skewness" secondary={withProductSkewness ? `${withProductSkewness.value} (${withProductSkewness.interpretation})` : 'N/A'} /></ListItem>
+                                    <ListItem><ListItemIcon><AnalyticsIcon color="success" /></ListItemIcon><ListItemText primary="Data Quality" secondary={withProductQuality ? `${withProductQuality.quality} (${withProductQuality.score}/100)` : 'N/A'} /></ListItem>
+                                </List>
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'error.main' }}>Without Product Analysis</Typography>
+                                <List dense>
+                                    <ListItem><ListItemIcon><TrendingUpIcon color="error" /></ListItemIcon><ListItemText primary="Mean" secondary={withoutProductStats?.mean || 'N/A'} /></ListItem>
+                                    <ListItem><ListItemIcon><BarChartIcon color="error" /></ListItemIcon><ListItemText primary="Standard Deviation" secondary={withoutProductStats?.std || 'N/A'} /></ListItem>
+                                    <ListItem><ListItemIcon><InfoIcon color="error" /></ListItemIcon><ListItemText primary="Skewness" secondary={withoutProductSkewness ? `${withoutProductSkewness.value} (${withoutProductSkewness.interpretation})` : 'N/A'} /></ListItem>
+                                    <ListItem><ListItemIcon><AnalyticsIcon color="error" /></ListItemIcon><ListItemText primary="Data Quality" secondary={withoutProductQuality ? `${withoutProductQuality.quality} (${withoutProductQuality.score}/100)` : 'N/A'} /></ListItem>
+                                </List>
+                            </Grid>
                         </Grid>
+                        {allOutliers.length > 0 && (
+                            <Box sx={{ mt: 2, p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'warning.dark' }}>⚠️ Outlier Detection</Typography>
+                                <Typography variant="body2" sx={{ color: 'warning.dark' }}>{allOutliers.length} outliers detected using IQR method (1.5 × IQR threshold)</Typography>
+                            </Box>
+                        )}
+                    </CardContent>
+                </Collapse>
+            </Card>
+        );
+    };
 
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'error.main' }}>
-                                Without Product Analysis
-                            </Typography>
-                            <List dense>
-                                <ListItem>
-                                    <ListItemIcon>
-                                        <TrendingUpIcon color="error" />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary="Mean"
-                                        secondary={withoutProductStats ? withoutProductStats.mean : 'N/A'}
-                                    />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemIcon>
-                                        <BarChartIcon color="error" />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary="Standard Deviation"
-                                        secondary={withoutProductStats ? withoutProductStats.std : 'N/A'}
-                                    />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemIcon>
-                                        <InfoIcon color="error" />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary="Skewness"
-                                        secondary={withoutProductSkewness ? `${withoutProductSkewness.value} (${withoutProductSkewness.interpretation})` : 'N/A'}
-                                    />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemIcon>
-                                        <AnalyticsIcon color="error" />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary="Data Quality"
-                                        secondary={withoutProductQuality ? `${withoutProductQuality.quality} (${withoutProductQuality.score}/100)` : 'N/A'}
-                                    />
-                                </ListItem>
-                            </List>
-                        </Grid>
-                    </Grid>
-
-                    {combinedInsights.outliers && combinedInsights.outliers.length > 0 && (
-                        <Box sx={{ mt: 2, p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'warning.dark' }}>
-                                ⚠️ Outlier Detection
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: 'warning.dark' }}>
-                                {combinedInsights.outliers.length} outliers detected using IQR method (1.5 × IQR threshold)
-                            </Typography>
-                        </Box>
-                    )}
-                </CardContent>
-            </Collapse>
-        </Card>
-    );
-
-    const [draftSettings, setDraftSettings] = useState(null)
-
+    // ========================================================================
+    // Settings Modal
+    // ========================================================================
+    const [draftSettings, setDraftSettings] = useState(null);
     const openSettingsModal = () => {
         setDraftSettings({
-            showGrid,
-            showStatistics,
-            showOutliers,
-            showDataPoints,
-            areaOpacity,
-            binCount,
-            combinedLegendLabels: { ...combinedLegendLabels },
-            combinedXAxisLabel,
-            combinedYAxisLabel,
-            distributionColors: { ...distributionColors },
-            barColors: { ...barColors },
-            singleLegendLabel,
-            singleXAxisLabel,
-            singleYAxisLabel,
-            separateLegendLabels: { ...separateLegendLabels },
-            separateXAxisLabel,
-            separateYAxisLabel,
-        })
-        setSettingsModalOpen(true)
-    }
-
-    const handleSettingsModalClose = () => {
-        setSettingsModalOpen(false)
-        setDraftSettings(null)
-    }
-
+            showGrid, showStatistics, showOutliers, showDataPoints, areaOpacity, binCount,
+            combinedLegendLabels: { ...combinedLegendLabels }, combinedXAxisLabel, combinedYAxisLabel,
+            combinedXAxisMin, combinedXAxisMax, combinedYAxisMin, combinedYAxisMax,
+            distributionColors: { withProduct: SINGLE_COLORS.withProduct.area, withoutProduct: SINGLE_COLORS.withoutProduct.area },
+            barColors: { withProduct: SINGLE_COLORS.withProduct.bar, withoutProduct: SINGLE_COLORS.withoutProduct.bar },
+            singleLegendLabel, singleXAxisLabel, singleYAxisLabel, singleXAxisMin, singleXAxisMax, singleYAxisMin, singleYAxisMax,
+            separateLegendLabels: { ...separateLegendLabels }, separateXAxisLabel, separateYAxisLabel,
+            separateXAxisMin, separateXAxisMax, separateYAxisMin, separateYAxisMax,
+        });
+        setSettingsModalOpen(true);
+    };
+    const handleSettingsModalClose = () => { setSettingsModalOpen(false); setDraftSettings(null); };
     const handleSettingsSave = () => {
-        if (!draftSettings) return
-        setShowGrid(draftSettings.showGrid)
-        setShowStatistics(draftSettings.showStatistics)
-        setShowOutliers(draftSettings.showOutliers)
-        setShowDataPoints(draftSettings.showDataPoints)
-        setAreaOpacity(draftSettings.areaOpacity)
-        setBinCount(draftSettings.binCount)
-        setCombinedLegendLabels({ ...draftSettings.combinedLegendLabels })
-        setCombinedXAxisLabel(draftSettings.combinedXAxisLabel)
-        setCombinedYAxisLabel(draftSettings.combinedYAxisLabel)
-        setDistributionColors({ ...draftSettings.distributionColors })
-        setBarColors({ ...draftSettings.barColors })
-        setSingleLegendLabel(draftSettings.singleLegendLabel)
-        setSingleXAxisLabel(draftSettings.singleXAxisLabel)
-        setSingleYAxisLabel(draftSettings.singleYAxisLabel)
-        setSeparateLegendLabels({ ...draftSettings.separateLegendLabels })
-        setSeparateXAxisLabel(draftSettings.separateXAxisLabel)
-        setSeparateYAxisLabel(draftSettings.separateYAxisLabel)
-        setSettingsModalOpen(false)
-        setDraftSettings(null)
-    }
+        if (!draftSettings) return;
+        setShowGrid(draftSettings.showGrid); setShowDataPoints(draftSettings.showDataPoints);
+        setAreaOpacity(draftSettings.areaOpacity); setBinCount(draftSettings.binCount);
+        setCombinedLegendLabels({ ...draftSettings.combinedLegendLabels });
+        setCombinedXAxisLabel(draftSettings.combinedXAxisLabel); setCombinedYAxisLabel(draftSettings.combinedYAxisLabel);
+        setCombinedXAxisMin(draftSettings.combinedXAxisMin); setCombinedXAxisMax(draftSettings.combinedXAxisMax);
+        setCombinedYAxisMin(draftSettings.combinedYAxisMin); setCombinedYAxisMax(draftSettings.combinedYAxisMax);
+        setSingleLegendLabel(draftSettings.singleLegendLabel);
+        setSingleXAxisLabel(draftSettings.singleXAxisLabel); setSingleYAxisLabel(draftSettings.singleYAxisLabel);
+        setSingleXAxisMin(draftSettings.singleXAxisMin); setSingleXAxisMax(draftSettings.singleXAxisMax);
+        setSingleYAxisMin(draftSettings.singleYAxisMin); setSingleYAxisMax(draftSettings.singleYAxisMax);
+        setSeparateLegendLabels({ ...draftSettings.separateLegendLabels });
+        setSeparateXAxisLabel(draftSettings.separateXAxisLabel); setSeparateYAxisLabel(draftSettings.separateYAxisLabel);
+        setSeparateXAxisMin(draftSettings.separateXAxisMin); setSeparateXAxisMax(draftSettings.separateXAxisMax);
+        setSeparateYAxisMin(draftSettings.separateYAxisMin); setSeparateYAxisMax(draftSettings.separateYAxisMax);
+        setSettingsModalOpen(false); setDraftSettings(null);
+    };
 
-    const CustomSlider = ({ value, onChange, min, max, step, label, formatValue }) => {
-        const [tempValue, setTempValue] = useState(value);
-        const [isDragging, setIsDragging] = useState(false);
-
-        const handleMouseDown = () => setIsDragging(true);
-        const handleMouseUp = () => {
-            setIsDragging(false);
-            onChange(tempValue);
-        };
-
-        const handleChange = (newValue) => {
-            setTempValue(newValue);
-        };
-
-        useEffect(() => {
-            if (!isDragging) {
-                setTempValue(value);
-            }
-        }, [value, isDragging]);
-
+    // ========================================================================
+    // Axis Control Panel
+    // ========================================================================
+    const AxisControlPanel = ({ title, xLabel, setXLabel, yLabel, setYLabel, xMin, setXMin, xMax, setXMax, yMin, setYMin, yMax, setYMax, dataMin, dataMax }) => {
+        const [showAdvanced, setShowAdvanced] = useState(false);
+        const columnName = viewMode === 'separate' ? separateColumn : singleColumn;
         return (
-            <Box sx={{ width: '100%' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>
-                        {label}
-                    </Typography>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            fontWeight: 600,
-                            color: '#1976d2',
-                            backgroundColor: '#f5f5f5',
-                            padding: '2px 8px',
-                            borderRadius: '12px',
-                            fontSize: '0.8rem'
-                        }}
-                    >
-                        {formatValue ? formatValue(tempValue) : tempValue}
-                    </Typography>
+            <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'grey.200' }}>
+                <Box sx={{ p: 1.5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', '&:hover': { bgcolor: 'action.hover' } }} onClick={() => setShowAdvanced(!showAdvanced)}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><SettingsIcon fontSize="small" color="primary" /><Typography variant="subtitle2" sx={{ fontWeight: 500 }}>{title} Axis Settings</Typography></Box>
+                    <IconButton size="small" sx={{ transform: showAdvanced ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}><ExpandMoreIcon /></IconButton>
                 </Box>
-                <Box
-                    sx={{
-                        position: 'relative',
-                        height: '6px',
-                        backgroundColor: '#e0e0e0',
-                        borderRadius: '3px',
-                        cursor: 'pointer'
-                    }}
-                    onMouseDown={handleMouseDown}
-                    onMouseUp={handleMouseUp}
-                >
-                    <Box
-                        sx={{
-                            position: 'absolute',
-                            left: 0,
-                            top: 0,
-                            height: '100%',
-                            backgroundColor: '#1976d2',
-                            borderRadius: '3px',
-                            width: `${((tempValue - min) / (max - min)) * 100}%`,
-                            transition: isDragging ? 'none' : 'width 0.2s ease'
-                        }}
-                    />
-                    <input
-                        type="range"
-                        min={min}
-                        max={max}
-                        step={step}
-                        value={tempValue}
-                        onChange={(e) => handleChange(Number(e.target.value))}
-                        style={{
-                            position: 'absolute',
-                            top: '-8px',
-                            left: 0,
-                            width: '100%',
-                            height: '22px',
-                            opacity: 0,
-                            cursor: 'pointer'
-                        }}
-                        onMouseDown={handleMouseDown}
-                        onMouseUp={handleMouseUp}
-                    />
-                </Box>
-            </Box>
+                <Collapse in={showAdvanced}><Divider />
+                    <CardContent sx={{ p: 2 }}>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}><TextField label="X-Axis Label" value={xLabel} onChange={(e) => setXLabel(e.target.value)} fullWidth size="small" placeholder={`e.g., ${columnName || 'Variable'}`} /></Grid>
+                            <Grid item xs={12} sm={6}><TextField label="Y-Axis Label" value={yLabel} onChange={(e) => setYLabel(e.target.value)} fullWidth size="small" placeholder="e.g., Mean of Parameter" /></Grid>
+                            <Grid item xs={12}>
+                                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>X-Axis Range (Optional)</Typography>
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                    <TextField label={`Min (Data: ${dataMin?.toFixed(2) || 'N/A'})`} type="number" value={xMin} onChange={(e) => setXMin(e.target.value)} size="small" placeholder="Auto" sx={{ flex: 1 }} />
+                                    <TextField label={`Max (Data: ${dataMax?.toFixed(2) || 'N/A'})`} type="number" value={xMax} onChange={(e) => setXMax(e.target.value)} size="small" placeholder="Auto" sx={{ flex: 1 }} />
+                                </Box>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>Y-Axis Range (Optional)</Typography>
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                    <TextField label="Y-Axis Min" type="number" value={yMin} onChange={(e) => setYMin(e.target.value)} size="small" placeholder="Auto" sx={{ flex: 1 }} />
+                                    <TextField label="Y-Axis Max" type="number" value={yMax} onChange={(e) => setYMax(e.target.value)} size="small" placeholder="Auto" sx={{ flex: 1 }} />
+                                </Box>
+                            </Grid>
+                        </Grid>
+                    </CardContent>
+                </Collapse>
+            </Card>
         );
     };
 
-    const SettingsModal = () => {
-        const featureSections = [
-            <Box key="chart-features">
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
-                    Chart Features
-                </Typography>
-                <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={!!draftSettings?.showGrid}
-                                    onChange={e => setDraftSettings(ds => ({ ...ds, showGrid: e.target.checked }))}
-                                />
-                            }
-                            label="Show Grid"
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={!!draftSettings?.showStatistics}
-                                    onChange={e => setDraftSettings(ds => ({ ...ds, showStatistics: e.target.checked }))}
-                                />
-                            }
-                            label="Show Statistics"
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={!!draftSettings?.showOutliers}
-                                    onChange={e => setDraftSettings(ds => ({ ...ds, showOutliers: e.target.checked }))}
-                                />
-                            }
-                            label="Highlight Outliers"
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={!!draftSettings?.showDataPoints}
-                                    onChange={e => setDraftSettings(ds => ({ ...ds, showDataPoints: e.target.checked }))}
-                                />
-                            }
-                            label="Show Data Points"
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <CustomSlider
-                            value={draftSettings?.areaOpacity ?? 0.6}
-                            onChange={(value) => setDraftSettings(ds => ({ ...ds, areaOpacity: value }))}
-                            min={0}
-                            max={1}
-                            step={0.1}
-                            label="Area Opacity"
-                            formatValue={(val) => `${Math.round(val * 100)}%`}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <CustomSlider
-                            value={draftSettings?.binCount ?? 20}
-                            onChange={(value) => setDraftSettings(ds => ({ ...ds, binCount: value }))}
-                            min={5}
-                            max={50}
-                            step={5}
-                            label="Bin Count"
-                            formatValue={(val) => `${val}`}
-                        />
-                    </Grid>
-                </Grid>
-            </Box>,
-            <Box key="combined-labels">
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
-                    Combined View Labels
-                </Typography>
-                <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                        <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                                With Product Legend
-                            </Typography>
-                            <DebouncedTextField
-                                value={draftSettings?.combinedLegendLabels?.withProduct || ''}
-                                onChange={e => setDraftSettings(ds => ({ ...ds, combinedLegendLabels: { ...ds.combinedLegendLabels, withProduct: e.target.value } }))}
-                                size="small"
-                                fullWidth
-                                placeholder="Enter legend label"
-                            />
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                                Without Product Legend
-                            </Typography>
-                            <DebouncedTextField
-                                value={draftSettings?.combinedLegendLabels?.withoutProduct || ''}
-                                onChange={e => setDraftSettings(ds => ({ ...ds, combinedLegendLabels: { ...ds.combinedLegendLabels, withoutProduct: e.target.value } }))}
-                                size="small"
-                                fullWidth
-                                placeholder="Enter legend label"
-                            />
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                                X Axis Label
-                            </Typography>
-                            <DebouncedTextField
-                                value={draftSettings?.combinedXAxisLabel || ''}
-                                onChange={e => setDraftSettings(ds => ({ ...ds, combinedXAxisLabel: e.target.value }))}
-                                size="small"
-                                fullWidth
-                                placeholder="Enter X axis label"
-                            />
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                                Y Axis Label
-                            </Typography>
-                            <DebouncedTextField
-                                value={draftSettings?.combinedYAxisLabel || ''}
-                                onChange={e => setDraftSettings(ds => ({ ...ds, combinedYAxisLabel: e.target.value }))}
-                                size="small"
-                                fullWidth
-                                placeholder="Enter Y axis label"
-                            />
-                        </Box>
-                    </Grid>
-                </Grid>
-            </Box>,
-            <Box key="separate-labels">
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
-                    Separate View Labels
-                </Typography>
-                <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                        <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                                With Product Legend
-                            </Typography>
-                            <DebouncedTextField
-                                value={draftSettings?.separateLegendLabels?.withProduct || ''}
-                                onChange={e => setDraftSettings(ds => ({ ...ds, separateLegendLabels: { ...ds.separateLegendLabels, withProduct: e.target.value } }))}
-                                size="small"
-                                fullWidth
-                                placeholder="Enter legend label"
-                            />
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                                Without Product Legend
-                            </Typography>
-                            <DebouncedTextField
-                                value={draftSettings?.separateLegendLabels?.withoutProduct || ''}
-                                onChange={e => setDraftSettings(ds => ({ ...ds, separateLegendLabels: { ...ds.separateLegendLabels, withoutProduct: e.target.value } }))}
-                                size="small"
-                                fullWidth
-                                placeholder="Enter legend label"
-                            />
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                                X Axis Label
-                            </Typography>
-                            <DebouncedTextField
-                                value={draftSettings?.separateXAxisLabel || ''}
-                                onChange={e => setDraftSettings(ds => ({ ...ds, separateXAxisLabel: e.target.value }))}
-                                size="small"
-                                fullWidth
-                                placeholder="Enter X axis label"
-                            />
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                                Y Axis Label
-                            </Typography>
-                            <DebouncedTextField
-                                value={draftSettings?.separateYAxisLabel || ''}
-                                onChange={e => setDraftSettings(ds => ({ ...ds, separateYAxisLabel: e.target.value }))}
-                                size="small"
-                                fullWidth
-                                placeholder="Enter Y axis label"
-                            />
-                        </Box>
-                    </Grid>
-                </Grid>
-            </Box>,
-            <Box key="single-labels">
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
-                    Single View Labels
-                </Typography>
-                <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4}>
-                        <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                                Legend Label
-                            </Typography>
-                            <DebouncedTextField
-                                value={draftSettings?.singleLegendLabel || ''}
-                                onChange={e => setDraftSettings(ds => ({ ...ds, singleLegendLabel: e.target.value }))}
-                                size="small"
-                                fullWidth
-                                placeholder="Enter legend label"
-                            />
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                        <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                                X Axis Label
-                            </Typography>
-                            <DebouncedTextField
-                                value={draftSettings?.singleXAxisLabel || ''}
-                                onChange={e => setDraftSettings(ds => ({ ...ds, singleXAxisLabel: e.target.value }))}
-                                size="small"
-                                fullWidth
-                                placeholder="Enter X axis label"
-                            />
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                        <Box>
-                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
-                                Y Axis Label
-                            </Typography>
-                            <DebouncedTextField
-                                value={draftSettings?.singleYAxisLabel || ''}
-                                onChange={e => setDraftSettings(ds => ({ ...ds, singleYAxisLabel: e.target.value }))}
-                                size="small"
-                                fullWidth
-                                placeholder="Enter Y axis label"
-                            />
-                        </Box>
-                    </Grid>
-                </Grid>
-            </Box>
-        ];
+    // ========================================================================
+    // Color Legend Block — shown above combined chart
+    // ========================================================================
+    const ColorLegendBlock = ({ columns }) => (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
+            {columns.map(col => {
+                const pair = columnColorMap[col] || COLOR_PAIRS[0];
+                return (
+                    <Box key={col} sx={{
+                        display: 'flex', alignItems: 'center', gap: 0.75,
+                        bgcolor: 'grey.100', px: 1.5, py: 0.75, borderRadius: 2,
+                        border: '1px solid', borderColor: 'grey.300'
+                    }}>
+                        <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: pair.with, flexShrink: 0, boxShadow: '0 0 0 2px rgba(0,0,0,0.1)' }} />
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: pair.with }}>{col} (With)</Typography>
+                        <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: pair.without, flexShrink: 0, ml: 0.5, boxShadow: '0 0 0 2px rgba(0,0,0,0.1)' }} />
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>(Without)</Typography>
+                    </Box>
+                );
+            })}
+        </Box>
+    );
 
-        const colorPairs = [
-            {
-                key: 'withProduct',
-                value: draftSettings?.distributionColors?.withProduct || '#3B82F6',
-                onChange: (color) => setDraftSettings(ds => ({ ...ds, distributionColors: { ...ds.distributionColors, withProduct: color } })),
-                label: 'With Product Area Color'
-            },
-            {
-                key: 'withoutProduct',
-                value: draftSettings?.distributionColors?.withoutProduct || '#EF4444',
-                onChange: (color) => setDraftSettings(ds => ({ ...ds, distributionColors: { ...ds.distributionColors, withoutProduct: color } })),
-                label: 'Without Product Area Color'
-            },
-            {
-                key: 'withProductBar',
-                value: draftSettings?.barColors?.withProduct || '#EF4444',
-                onChange: (color) => setDraftSettings(ds => ({ ...ds, barColors: { ...ds.barColors, withProduct: color } })),
-                label: 'With Product Bar Color'
-            },
-            {
-                key: 'withoutProductBar',
-                value: draftSettings?.barColors?.withoutProduct || '#3B82F6',
-                onChange: (color) => setDraftSettings(ds => ({ ...ds, barColors: { ...ds.barColors, withoutProduct: color } })),
-                label: 'Without Product Bar Color'
-            }
-        ];
-
-        return (
-            <ChartSettingsModal
-                open={settingsModalOpen}
-                onClose={handleSettingsModalClose}
-                onApply={handleSettingsSave}
-                onReset={() => setDraftSettings(null)}
-                settings={null}
-                draftSettings={draftSettings}
-                setDraftSettings={setDraftSettings}
-                colorPairs={colorPairs}
-                colorOptions={['#3B82F6', '#EF4444', '#2196f3', '#ff9800', '#9c27b0', '#00bcd4', '#e91e63', '#607d8b', '#ffc107', '#3f51b5', '#6B7280', '#9CA3AF', '#4B5563', '#D1D5DB', '#374151', '#111827']}
-                featureSections={featureSections}
-                colorSection={true}
-                title="Chart Settings"
-                description="Customize your distribution curve appearance"
-                minHeight={600}
-                maxWidth="md"
-            />
-        );
-    };
-
+    // ========================================================================
+    // Combined Chart Render
+    // ========================================================================
     const renderCombinedChart = () => {
-        const isMulti = combinedXColumns.length > 1 || combinedYColumns.length > 1;
-        const chartData = isMulti ? multiSeriesData : combinedDistributionPercent;
-        if (!chartData || chartData.length === 0) { return <Alert severity="info">No data available</Alert>; }
+        if (!combinedChartData.length || selectedColumns.length === 0) {
+            return <Alert severity="info" sx={{ width: '100%' }}>Please select at least one column to display the combined chart.</Alert>;
+        }
+        const xDomain = combinedXAxisMin !== '' || combinedXAxisMax !== ''
+            ? [parseFloat(combinedXAxisMin) || 'auto', parseFloat(combinedXAxisMax) || 'auto'] : ['auto', 'auto'];
+        const yDomain = combinedYAxisMin !== '' || combinedYAxisMax !== ''
+            ? [parseFloat(combinedYAxisMin) || 'auto', parseFloat(combinedYAxisMax) || 'auto'] : ['auto', 'auto'];
+        const defaultYLabel = getDefaultYLabel(yAxisColumn, yAggregation);
+        const areas = [];
+        const bars = [];
 
-        const areaSeries = [];
-        const barSeries = [];
-        const legendPayload = [];
+        selectedColumns.forEach(column => {
+            const pair = columnColorMap[column] || COLOR_PAIRS[0];
 
-        if (isMulti) {
-            combinedYColumns.forEach((col, index) => {
-                const color = SERIES_COLORS[index % SERIES_COLORS.length];
-                areaSeries.push(
-                    <Area
-                        key={`${col}_with`}
-                        yAxisId="left"
-                        type="monotone"
-                        dataKey={`${col}_with_%`}
-                        stackId={`with_${index}`}
-                        stroke={color}
-                        fill={color}
-                        fillOpacity={areaOpacity}
-                        name={`${col} (With Product)`}
-                        dot={showDataPoints ? { r: 3, fill: color } : false}
-                        hide={!showAreaChart}
-                    />,
-                    <Area
-                        key={`${col}_without`}
-                        yAxisId="left"
-                        type="monotone"
-                        dataKey={`${col}_without_%`}
-                        stackId={`without_${index}`}
-                        stroke={color}
-                        fill={color}
-                        fillOpacity={areaOpacity}
-                        name={`${col} (Without Product)`}
-                        dot={showDataPoints ? { r: 3, fill: color } : false}
-                        hide={!showAreaChart}
-                    />
-                );
-                if (showNumberOfPoints) {
-                    barSeries.push(
-                        <Bar
-                            key={`${col}_count`}
-                            yAxisId="right"
-                            dataKey={`${col}_with_count`}
-                            fill="transparent"
-                            name={`${col} Count (With Product)`}
-                            isAnimationActive={false}
-                            barSize={20}
-                        />,
-                        <Bar
-                            key={`${col}_count_without`}
-                            yAxisId="right"
-                            dataKey={`${col}_without_count`}
-                            fill="transparent"
-                            name={`${col} Count (Without Product)`}
-                            isAnimationActive={false}
-                            barSize={20}
-                        />
-                    );
-                }
-                legendPayload.push(
-                    { value: `${col} (With Product)`, type: 'square', color: color, id: `${col}_with` },
-                    { value: `${col} (Without Product)`, type: 'square', color: color, id: `${col}_without` }
-                );
-            });
-        } else {
-            areaSeries.push(
-                <Area
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="withoutProductPercent"
-                    stackId="1"
-                    stroke={distributionColors.withoutProduct}
-                    fill={distributionColors.withoutProduct}
-                    fillOpacity={areaOpacity}
-                    name={combinedLegendLabels.withoutProduct}
-                    dot={showDataPoints ? { r: 3, fill: distributionColors.withoutProduct } : false}
-                    hide={!showAreaChart}
-                />,
-                <Area
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="withProductPercent"
-                    stackId="2"
-                    stroke={distributionColors.withProduct}
-                    fill={distributionColors.withProduct}
-                    fillOpacity={areaOpacity}
-                    name={combinedLegendLabels.withProduct}
-                    dot={showDataPoints ? { r: 3, fill: distributionColors.withProduct } : false}
-                    hide={!showAreaChart}
+            // WITH product — deep/saturated color, solid filled area
+            areas.push(
+                <Area key={`${column}_with`} yAxisId="left" type="monotone"
+                    dataKey={`data.${column}_with`}
+                    stroke={pair.with} strokeWidth={2.5}
+                    fill={pair.with} fillOpacity={areaOpacity}
+                    name={`${column} — With Product`}
+                    dot={showDataPoints ? { r: 3, fill: pair.with, stroke: '#fff', strokeWidth: 1 } : false}
+                    hide={!showAreaChart} connectNulls
+                />
+            );
+            // WITHOUT product — light/pastel version of same hue, solid filled area
+            areas.push(
+                <Area key={`${column}_without`} yAxisId="left" type="monotone"
+                    dataKey={`data.${column}_without`}
+                    stroke={pair.without} strokeWidth={2.5}
+                    fill={pair.without} fillOpacity={areaOpacity}
+                    name={`${column} — Without Product`}
+                    dot={showDataPoints ? { r: 3, fill: pair.without, stroke: '#fff', strokeWidth: 1 } : false}
+                    hide={!showAreaChart} connectNulls
                 />
             );
             if (showNumberOfPoints) {
-                barSeries.push(
-                    <Bar
-                        yAxisId="right"
-                        dataKey="withoutProductCount"
-                        fill="transparent"
-                        name="Number of Points"
-                        hide={!showNumberOfPoints}
-                        isAnimationActive={false}
-                        barSize={30}
-                        shape={SuperimposedBar}
-                    />
-                );
+                bars.push(<Bar key={`${column}_with_bar`} yAxisId="right" dataKey={`data.${column}_with_count`} fill={pair.with} fillOpacity={0.65} name={`Count — ${column} With`} barSize={6} radius={[2, 2, 0, 0]} />);
+                bars.push(<Bar key={`${column}_without_bar`} yAxisId="right" dataKey={`data.${column}_without_count`} fill={pair.without} fillOpacity={0.65} name={`Count — ${column} Without`} barSize={6} radius={[2, 2, 0, 0]} />);
             }
-            legendPayload.push(
-                ...(showAreaChart ? [
-                    { value: combinedLegendLabels.withoutProduct, type: 'square', color: distributionColors.withoutProduct, id: 'withoutProductPercent' },
-                    { value: combinedLegendLabels.withProduct, type: 'square', color: distributionColors.withProduct, id: 'withProductPercent' },
-                ] : []),
-                ...(showNumberOfPoints ? [
-                    { value: 'Number of Points (Without Product)', type: 'square', color: barColors.withoutProduct, id: 'withoutProductCount' },
-                    { value: 'Number of Points (With Product)', type: 'square', color: barColors.withProduct, id: 'withProductCount' },
-                ] : [])
-            );
-        }
+        });
+
         return (
             <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
                 <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-                    <Box sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        mb: 3,
-                        flexDirection: { xs: "column", sm: "row" },
-                        gap: 2
-                    }}>
-                        <Typography
-                            variant="h6"
-                            sx={{
-                                fontWeight: 600,
-                                color: "primary.main",
-                                fontSize: { xs: "1.1rem", sm: "1.25rem", md: "1.5rem" },
-                                textAlign: { xs: "center", sm: "left" }
-                            }}
-                        >
-                            Combined Distribution Curves
-                        </Typography>
-
-                        <Box sx={{
-                            display: "flex",
-                            gap: 1,
-                            alignItems: "center",
-                            flexWrap: "wrap",
-                            justifyContent: { xs: "center", sm: "flex-end" }
-                        }}>
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={showNumberOfPoints}
-                                        onChange={(e) => setShowNumberOfPoints(e.target.checked)}
-                                        size="small"
-                                    />
-                                }
-                                label="Number of Points"
-                                sx={{ mr: 1 }}
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={showAreaChart}
-                                        onChange={(e) => setShowAreaChart(e.target.checked)}
-                                        size="small"
-                                    />
-                                }
-                                label="Show Area Chart"
-                                sx={{ mr: 1 }}
-                            />
-
-                            <MuiTooltip title="Chart Settings">
-                                <Button
-                                    id='settings-button'
-                                    variant="outlined"
-                                    color="primary"
-                                    onClick={openSettingsModal}
-                                    startIcon={<SettingsIcon />}
-                                    size="small"
-                                    sx={{
-                                        textTransform: 'none',
-                                        height: 32,
-                                        border: "1px solid",
-                                        borderColor: "primary.main",
-                                        "&:hover": {
-                                            backgroundColor: "primary.light",
-                                            color: "white"
-                                        }
-                                    }}
-                                >
-                                    Settings
-                                </Button>
-                            </MuiTooltip>
-
-                            <SaveVisualizationButton
-
-                                elementId="visualization-content"
-                                fileNamePrefix="distribution_curve"
-                                variableNames={isMulti ? combinedYColumns.join('_') : selectedColumn}
-                            />
-
-                            <MuiTooltip title="Download as PNG">
-                                <Button
-                                    id='download-visualization-btn'
-                                    variant="outlined"
-                                    color="primary"
-                                    onClick={() => downloadChartAsPNG(combinedChartRef, 'Combined_Distribution')}
-                                    startIcon={<DownloadIcon />}
-                                    size="small"
-                                    sx={{
-                                        textTransform: 'none',
-                                        height: 32,
-                                        border: "1px solid",
-                                        borderColor: "primary.main",
-                                        "&:hover": {
-                                            backgroundColor: "primary.light",
-                                            color: "white"
-                                        }
-                                    }}
-                                >
-                                    Download PNG
-                                </Button>
-                            </MuiTooltip>
-                        </Box>
-                    </Box>
-
-                    <Box sx={{ mb: 3 }}>
-                        <Alert severity="info" sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            borderRadius: 2,
-                            fontSize: { xs: "0.8rem", sm: "0.875rem" }
-                        }}>
+                    <Box sx={{ mb: 2 }}>
+                        <Alert severity="info" sx={{ display: "flex", alignItems: "center", gap: 1, borderRadius: 2 }}>
                             <PanToolIcon fontSize="small" />
                             <Typography variant="body2">
-                                Interactive distribution curves with customizable bins, colors, and statistical analysis.
+                                Each column uses a <strong>deep color</strong> for "With Product" and a <strong>matching light color</strong> for "Without Product" — fully solid fills, easy to distinguish.
+                                {yAxisColumn ? ` Y-axis: ${defaultYLabel}.` : ' Y-axis: frequency count.'}
                             </Typography>
                         </Alert>
                     </Box>
 
-                    <Card sx={{ borderRadius: 2, boxShadow: 1, overflow: 'hidden', border: '1px solid', borderColor: 'grey.300' }}>
-                        <CardContent sx={{ p: 0 }}>
-                            <div ref={combinedChartRef} className="abhitech-plot-area" style={{
-                                width: '100%',
-                                height: isMobile ? 280 : isTablet ? 320 : 350,
-                                position: 'relative'
-                            }}>
-                                <ResponsiveContainer width="100%" height="100%" key={`combined-${showNumberOfPoints}`}>
-                                    <ComposedChart
-                                        data={chartData}
-                                        margin={{
-                                            top: 10,
-                                            right: isMobile ? 50 : 60,
-                                            left: isMobile ? 10 : 20,
-                                            bottom: isMobile ? 60 : 70
-                                        }}
-                                        barCategoryGap="10%"
-                                        barGap={-30}
-                                        maxBarSize={30}
-                                    >
-                                        {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-                                        <XAxis
-                                            dataKey="binMiddle"
-                                            label={{
-                                                value: combinedXAxisLabel,
-                                                position: 'insideBottom',
-                                                offset: isMobile ? -40 : -30,
-                                                style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                            }}
-                                            tick={{ fontSize: isMobile ? 10 : 12 }}
-                                        />
-                                        <YAxis
-                                            yAxisId="left"
-                                            label={{
-                                                value: combinedYAxisLabel,
-                                                angle: -90,
-                                                position: 'insideLeft',
-                                                offset: -5,
-                                                style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                            }}
-                                            tickFormatter={v => `${v.toFixed(1)}%`}
-                                            tick={{ fontSize: isMobile ? 10 : 12 }}
-                                        />
-                                        {showNumberOfPoints ? (
-                                            <YAxis
-                                                yAxisId="right"
-                                                orientation="right"
-                                                label={{
-                                                    value: 'Number of Points',
-                                                    angle: 90,
-                                                    position: 'insideRight',
-                                                    offset: -5,
-                                                    style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                                }}
-                                                tick={{ fontSize: isMobile ? 10 : 12 }}
-                                            />
-                                        ) : (
-                                            <YAxis
-                                                yAxisId="right"
-                                                orientation="right"
-                                                tick={false}
-                                                tickLine={false}
-                                                axisLine={false}
-                                                width={0}
-                                            />
-                                        )}
-                                        <Tooltip
-                                            content={({ active, payload, label }) => {
-                                                if (!active || !payload || !payload.length) return null;
+                    <ColorLegendBlock columns={selectedColumns} />
 
-                                                const data = payload[0]?.payload;
-                                                if (!data) return null;
-
-                                                return (
-                                                    <div style={{
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                        border: '1px solid #ccc',
-                                                        borderRadius: '4px',
-                                                        padding: '8px',
-                                                        fontSize: isMobile ? '12px' : '14px',
-                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                                                    }}>
-                                                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-                                                            {combinedXAxisLabel}: {label}
-                                                        </div>
-
-                                                        {payload.map((entry, index) => (
-                                                            <div key={index} style={{ color: entry.color }}>
-                                                                {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}{entry.dataKey.includes('%') ? '%' : entry.dataKey.includes('count') ? ' points' : ''}
-                                                            </div>
-                                                        ))}
-
-                                                        <div style={{ marginTop: '4px', fontSize: '11px', color: '#666' }}>
-                                                            Range: {data.binRange}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }}
-                                        />
-                                        <Legend
-                                            verticalAlign="top"
-                                            height={36}
-                                            align="left"
-                                            wrapperStyle={{ fontSize: isMobile ? '12px' : '14px' }}
-                                            payload={legendPayload}
-                                        />
-                                        {areaSeries}
-                                        {barSeries}
-                                    </ComposedChart>
-                                </ResponsiveContainer>
-                                <WatermarkContent />
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <div ref={combinedChartRef} className="abhitech-plot-area" style={{ width: '100%', height: isMobile ? 280 : isTablet ? 320 : 390, position: 'relative' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={combinedChartData} margin={{ top: 10, right: 70, left: 20, bottom: 40 }}>
+                                {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />}
+                                <XAxis dataKey="binMiddle"
+                                    label={{ value: combinedXAxisLabel || 'X Value', position: 'insideBottom', offset: -20, style: { fontSize: '13px', fill: '#555' } }}
+                                    domain={xDomain} type="number" tick={{ fontSize: isMobile ? 10 : 12 }} />
+                                <YAxis yAxisId="left"
+                                    label={{ value: combinedYAxisLabel || defaultYLabel, angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: '13px', fill: '#555' } }}
+                                    domain={yDomain} tick={{ fontSize: isMobile ? 10 : 12 }} />
+                                <YAxis yAxisId="right" orientation="right"
+                                    label={{ value: 'Count', angle: 90, position: 'insideRight', offset: -5, style: { fontSize: '13px', fill: '#555' } }}
+                                    tick={{ fontSize: isMobile ? 10 : 12 }} />
+                                <Tooltip formatter={(value, name) => typeof value === 'number' ? [value.toFixed(3), name] : [value, name]} />
+                                <Legend wrapperStyle={{ fontSize: isMobile ? '10px' : '12px', paddingTop: '8px' }} />
+                                {areas}
+                                {bars}
+                            </ComposedChart>
+                        </ResponsiveContainer>
+                        <WatermarkContent />
+                    </div>
                 </CardContent>
             </Card>
         );
     };
 
-    const renderDistributionChart = (data, title, color, chartRef, legendLabel = 'Frequency', xAxisLabel = null, yAxisLabel = 'Frequency', barColor = '#3B82F6') => {
+    // ========================================================================
+    // Single / Separate distribution chart — solid fills, no dashes
+    // ========================================================================
+    const renderDistributionChart = (
+        data, title, areaColor, barColor, chartRef,
+        legendLabel = 'Value', xAxisLabel = null, yAxisLabel = '',
+        xMin = '', xMax = '', yMin = '', yMax = '', activeYCol = ''
+    ) => {
         if (!data || data.length === 0) {
-            return (
-                <Alert severity="info" sx={{ width: '100%', mx: { xs: 1, sm: 0 } }}>
-                    No data available for visualization
-                </Alert>
-            );
+            return <Alert severity="info" sx={{ width: '100%', mx: { xs: 1, sm: 0 } }}>No data available for visualization</Alert>;
         }
-
-        const effectiveXAxisLabel = xAxisLabel || selectedColumn;
-        const effectiveYAxisLabel = yAxisLabel;
+        const effectiveXAxisLabel = xAxisLabel || (viewMode === 'separate' ? separateColumn : singleColumn);
+        const effectiveYAxisLabel = yAxisLabel || getDefaultYLabel(activeYCol, yAggregation);
+        const xAxisDomain = xMin !== '' || xMax !== '' ? [parseFloat(xMin) || 'auto', parseFloat(xMax) || 'auto'] : ['auto', 'auto'];
+        const yAxisDomain = yMin !== '' || yMax !== '' ? [parseFloat(yMin) || 'auto', parseFloat(yMax) || 'auto'] : ['auto', 'auto'];
 
         return (
             <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
                 <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
-                        <Typography
-                            variant="h6"
-                            sx={{
-                                fontWeight: 500,
-                                color: "primary.main",
-                                fontSize: { xs: "1rem", md: "1.25rem" },
-                            }}
-                        >
-                            {title}
-                        </Typography>
-
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, flexWrap: "wrap", gap: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            {/* Colored swatch next to title for instant recognition */}
+                            <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: areaColor, flexShrink: 0, boxShadow: `0 0 0 3px ${areaColor}33` }} />
+                            <Typography variant="h6" sx={{ fontWeight: 700, color: areaColor, fontSize: { xs: "1rem", md: "1.2rem" } }}>{title}</Typography>
+                        </Box>
                         <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
                             <MuiTooltip title="Chart Settings">
-                                <Button
-                                    variant="outlined"
-                                    color="primary"
-                                    onClick={openSettingsModal}
-                                    startIcon={<SettingsIcon />}
-                                    size="small"
-                                    sx={{
-                                        textTransform: 'none',
-                                        height: 32,
-                                        border: "1px solid",
-                                        borderColor: "primary.main",
-                                        "&:hover": {
-                                            backgroundColor: "primary.light",
-                                            color: "white"
-                                        }
-                                    }}
-                                >
-                                    Settings
-                                </Button>
+                                <Button variant="outlined" color="primary" onClick={openSettingsModal} startIcon={<SettingsIcon />} size="small" sx={{ textTransform: 'none', height: 32 }}>Settings</Button>
                             </MuiTooltip>
-
-                            <SaveVisualizationButton
-                                elementId="visualization-content"
-                                fileNamePrefix="distribution_curve"
-                            />
-
+                            <SaveVisualizationButton elementId="visualization-content" fileNamePrefix="distribution_curve" />
                             <MuiTooltip title="Download as PNG">
-                                <Button
-                                    variant="outlined"
-                                    color="primary"
-                                    onClick={() => downloadChartAsPNG(chartRef, title)}
-                                    startIcon={<DownloadIcon />}
-                                    size="small"
-                                    sx={{
-                                        textTransform: 'none',
-                                        height: 32,
-                                        border: "1px solid",
-                                        borderColor: "primary.main",
-                                        "&:hover": {
-                                            backgroundColor: "primary.light",
-                                            color: "white"
-                                        }
-                                    }}
-                                >
-                                    Download PNG
-                                </Button>
+                                <Button variant="outlined" color="primary" onClick={() => downloadChartAsPNG(chartRef, title)} startIcon={<DownloadIcon />} size="small" sx={{ textTransform: 'none', height: 32 }}>Download PNG</Button>
                             </MuiTooltip>
                         </Box>
                     </Box>
 
-                    <Box sx={{ mb: 2 }}>
-                        <Alert severity="info" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <PanToolIcon fontSize="small" />
-                            <Typography variant="body2" sx={{ fontSize: { xs: "0.75rem", md: "0.875rem" } }}>
-                                Interactive distribution curve with customizable bins, colors, and statistical analysis.
-                            </Typography>
-                        </Alert>
-                    </Box>
-
-                    <div ref={chartRef} className="abhitech-plot-area" style={{
-                        width: '100%',
-                        height: isMobile ? 280 : isTablet ? 320 : 350,
-                        position: 'relative'
-                    }}>
-                        <ResponsiveContainer width="100%" height="100%" key={`distribution-${showNumberOfPoints}`}>
-                            <ComposedChart
-                                data={data}
-                                margin={{
-                                    top: 10,
-                                    right: isMobile ? 50 : 60,
-                                    left: isMobile ? 10 : 20,
-                                    bottom: isMobile ? 50 : 40
-                                }}
-                            >
-                                {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-                                <XAxis
-                                    dataKey="binMiddle"
-                                    label={{
-                                        value: effectiveXAxisLabel,
-                                        position: 'insideBottom',
-                                        offset: isMobile ? -30 : -20,
-                                        style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                    }}
-                                    tick={{ fontSize: isMobile ? 10 : 12 }}
-                                />
-                                <YAxis
-                                    yAxisId="left"
-                                    label={{
-                                        value: effectiveYAxisLabel,
-                                        angle: -90,
-                                        position: 'insideLeft',
-                                        offset: -5,
-                                        style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                    }}
-                                    tick={{ fontSize: isMobile ? 10 : 12 }}
-                                />
-                                <YAxis
-                                    yAxisId="right"
-                                    orientation="right"
-                                    label={{
-                                        value: 'Number of Points',
-                                        angle: 90,
-                                        position: 'insideRight',
-                                        offset: -5,
-                                        style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                    }}
-                                    tick={{ fontSize: isMobile ? 10 : 12 }}
-                                />
+                    <div ref={chartRef} className="abhitech-plot-area" style={{ width: '100%', height: isMobile ? 280 : isTablet ? 320 : 370, position: 'relative' }}>
+                        <ResponsiveContainer width="100%" height="100%" key={`dist-${xMin}-${xMax}-${yMin}-${yMax}-${activeYCol}-${yAggregation}`}>
+                            <ComposedChart data={data} margin={{ top: 10, right: isMobile ? 55 : 70, left: isMobile ? 10 : 20, bottom: isMobile ? 50 : 40 }}>
+                                {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />}
+                                <XAxis dataKey="binMiddle"
+                                    label={{ value: effectiveXAxisLabel, position: 'insideBottom', offset: isMobile ? -30 : -20, style: { fontSize: isMobile ? '12px' : '13px', fill: '#555' } }}
+                                    tick={{ fontSize: isMobile ? 10 : 12 }} domain={xAxisDomain} type="number" />
+                                <YAxis yAxisId="left"
+                                    label={{ value: effectiveYAxisLabel, angle: -90, position: 'insideLeft', offset: -5, style: { fontSize: isMobile ? '12px' : '13px', fill: '#555' } }}
+                                    tick={{ fontSize: isMobile ? 10 : 12 }} domain={yAxisDomain} />
+                                <YAxis yAxisId="right" orientation="right"
+                                    label={{ value: 'Count', angle: 90, position: 'insideRight', offset: -5, style: { fontSize: isMobile ? '12px' : '13px', fill: '#555' } }}
+                                    tick={{ fontSize: isMobile ? 10 : 12 }} />
                                 <Tooltip
                                     formatter={(value, name) => {
-                                        if (name === 'count') {
-                                            return [value, 'Number of Points'];
-                                        }
-                                        return [value, legendLabel];
+                                        if (name === 'Count') return [value, 'Count'];
+                                        return [typeof value === 'number' ? value.toFixed(3) : value, legendLabel];
                                     }}
                                     labelFormatter={(label) => `${effectiveXAxisLabel}: ${label}`}
-                                    contentStyle={{ fontSize: isMobile ? '12px' : '14px' }}
+                                    contentStyle={{ fontSize: isMobile ? '12px' : '13px' }}
                                 />
-                                <Legend
-                                    verticalAlign="top"
-                                    height={36}
-                                    align="left"
-                                    wrapperStyle={{ fontSize: isMobile ? '12px' : '14px' }}
-                                />
-                                <Area
-                                    yAxisId="left"
-                                    type="monotone"
-                                    dataKey="count"
-                                    stroke={color}
-                                    fill={color}
-                                    fillOpacity={areaOpacity}
+                                <Legend verticalAlign="top" height={36} align="left" wrapperStyle={{ fontSize: isMobile ? '12px' : '13px' }} />
+                                {/* Solid filled area — no dashes */}
+                                <Area yAxisId="left" type="monotone" dataKey="value"
+                                    stroke={areaColor} strokeWidth={2.5}
+                                    fill={areaColor} fillOpacity={areaOpacity}
                                     name={legendLabel}
-                                    dot={showDataPoints ? { r: 3, fill: color } : false}
-                                    hide={!showAreaChart}
+                                    dot={showDataPoints ? { r: 3.5, fill: areaColor, stroke: '#fff', strokeWidth: 1.5 } : false}
+                                    hide={!showAreaChart} connectNulls
                                 />
-                                <Bar
-                                    yAxisId="right"
-                                    dataKey="count"
-                                    fill={barColor}
-                                    fillOpacity={0.5}
-                                    name="Number of Points"
-                                    radius={[4, 4, 0, 0]}
+                                {/* Bar with its complementary color for contrast */}
+                                <Bar yAxisId="right" dataKey="count"
+                                    fill={barColor} fillOpacity={0.8}
+                                    name="Count" radius={[3, 3, 0, 0]}
                                 />
                             </ComposedChart>
                         </ResponsiveContainer>
@@ -2096,839 +858,237 @@ useEffect(() => {
         );
     };
 
-    const renderSeparateCharts = () => (
-        <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
-            <Grid item xs={12} lg={6}>
-                <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
-                    <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
-                            <Typography
-                                variant="h6"
-                                sx={{
-                                    fontWeight: 500,
-                                    color: "primary.main",
-                                    fontSize: { xs: "1rem", md: "1.25rem" },
-                                }}
-                            >
-                                Without Product Distribution
-                            </Typography>
-
-                            <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
-                                <FormControlLabel
-                                    control={
-                                        <Switch
-                                            checked={showNumberOfPoints}
-                                            onChange={(e) => setShowNumberOfPoints(e.target.checked)}
-                                            size="small"
-                                        />
-                                    }
-                                    label="Number of Points"
-                                    sx={{ mr: 1 }}
-                                />
-
-                                <MuiTooltip title="Chart Settings">
-                                    <Button
-                                        variant="outlined"
-                                        color="primary"
-                                        onClick={openSettingsModal}
-                                        startIcon={<SettingsIcon />}
-                                        size="small"
-                                        sx={{ 
-                                            textTransform: 'none',
-                                            height: 32,
-                                            border: "1px solid",
-                                            borderColor: "primary.main",
-                                            "&:hover": {
-                                                backgroundColor: "primary.light",
-                                                color: "white"
-                                            }
-                                        }}
-                                    >
-                                        Settings
-                                    </Button>
-                                </MuiTooltip>
-
-                                <SaveVisualizationButton 
-                                    elementId="visualization-content" 
-                                    fileNamePrefix="distribution_curve_individual"
-                                    variableNames={selectedColumn}
-                                />
-
-                                <MuiTooltip title="Download as PNG">
-                                    <Button
-                                        variant="outlined"
-                                        color="primary"
-                                        onClick={() => downloadChartAsPNG(withoutProductChartRef, 'Without_Product_Distribution')}
-                                        startIcon={<DownloadIcon />}
-                                        size="small"
-                                        sx={{ 
-                                            textTransform: 'none',
-                                            height: 32,
-                                            border: "1px solid",
-                                            borderColor: "primary.main",
-                                            "&:hover": {
-                                                backgroundColor: "primary.light",
-                                                color: "white"
-                                            }
-                                        }}
-                                    >
-                                        Download PNG
-                                    </Button>
-                                </MuiTooltip>
-                            </Box>
-                        </Box>
-
-                        <Box sx={{ mb: 2 }}>
-                            <Alert severity="info" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                <PanToolIcon fontSize="small" />
-                                <Typography variant="body2" sx={{ fontSize: { xs: "0.75rem", md: "0.875rem" } }}>
-                                    Interactive distribution curve with customizable bins, colors, and statistical analysis.
-                                </Typography>
-                            </Alert>
-                        </Box>
-
-                        <div ref={withoutProductChartRef} style={{
-                            width: '100%',
-                            height: isMobile ? 280 : isTablet ? 320 : 350,
-                            position: 'relative'
-                        }}>
-                            <ResponsiveContainer width="100%" height="100%" key={`without-${showNumberOfPoints}`}>
-                                <ComposedChart
-                                    data={withoutProductDistribution}
-                                    margin={{
-                                        top: 10,
-                                        right: isMobile ? 50 : 60,
-                                        left: isMobile ? 10 : 20,
-                                        bottom: isMobile ? 50 : 40
-                                    }}
-                                >
-                                    {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-                                    <XAxis
-                                        dataKey="binMiddle"
-                                        label={{
-                                            value: separateXAxisLabel,
-                                            position: 'insideBottom',
-                                            offset: isMobile ? -30 : -20,
-                                            style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                        }}
-                                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                                    />
-                                    <YAxis
-                                        yAxisId="left"
-                                        label={{
-                                            value: separateYAxisLabel,
-                                            angle: -90,
-                                            position: 'insideLeft',
-                                            offset: -5,
-                                            style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                        }}
-                                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                                    />
-                                    {showNumberOfPoints ? (
-                                        <YAxis
-                                            yAxisId="right"
-                                            orientation="right"
-                                            label={{
-                                                value: 'Number of Points',
-                                                angle: 90,
-                                                position: 'insideRight',
-                                                offset: -5,
-                                                style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                            }}
-                                            tick={{ fontSize: isMobile ? 10 : 12 }}
-                                        />
-                                    ) : (
-                                        <YAxis
-                                            yAxisId="right"
-                                            orientation="right"
-                                            tick={false}
-                                            tickLine={false}
-                                            axisLine={false}
-                                            width={0}
-                                        />
-                                    )}
-                                    <Tooltip
-                                        formatter={(value, name) => {
-                                            if (name === 'count') {
-                                                return [value, 'Number of Points'];
-                                            }
-                                            return [value, separateLegendLabels.withoutProduct];
-                                        }}
-                                        labelFormatter={(label) => `${separateXAxisLabel}: ${label}`}
-                                        contentStyle={{ fontSize: isMobile ? '12px' : '14px' }}
-                                    />
-                                    <Legend
-                                        verticalAlign="top"
-                                        height={36}
-                                        align="left"
-                                        wrapperStyle={{ fontSize: isMobile ? '12px' : '14px' }}
-                                    />
-                                    <Area
-                                        yAxisId="left"
-                                        type="monotone"
-                                        dataKey="count"
-                                        stroke={distributionColors.withoutProduct}
-                                        fill={distributionColors.withoutProduct}
-                                        fillOpacity={areaOpacity}
-                                        name={separateLegendLabels.withoutProduct}
-                                        dot={showDataPoints ? { r: 3, fill: distributionColors.withoutProduct } : false}
-                                        hide={!showAreaChart}
-                                    />
-                                    <Bar
-                                        yAxisId="right"
-                                        dataKey="count"
-                                        fill={barColors.withoutProduct}
-                                        fillOpacity={showNumberOfPoints ? 0.4 : 0}
-                                        name="Number of Points"
-                                        radius={[4, 4, 0, 0]}
-                                        barSize={20}
-                                        hide={!showNumberOfPoints}
-                                    />
-                                </ComposedChart>
-                            </ResponsiveContainer>
-                            <WatermarkContent />
-                        </div>
-                    </CardContent>
-                </Card>
-            </Grid>
-            <Grid item xs={12} lg={6}>
-                <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
-                    <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
-                            <Typography
-                                variant="h6"
-                                sx={{
-                                    fontWeight: 500,
-                                    color: "primary.main",
-                                    fontSize: { xs: "1rem", md: "1.25rem" },
-                                }}
-                            >
-                                With Product Distribution
-                            </Typography>
-
-                            <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
-                                <FormControlLabel
-                                    control={
-                                        <Switch
-                                            checked={showNumberOfPoints}
-                                            onChange={(e) => setShowNumberOfPoints(e.target.checked)}
-                                            size="small"
-                                        />
-                                    }
-                                    label="Number of Points"
-                                    sx={{ mr: 1 }}
-                                />
-                                
-                                <MuiTooltip title="Chart Settings">
-                                    <Button
-                                        variant="outlined"
-                                        color="primary"
-                                        onClick={openSettingsModal}
-                                        startIcon={<SettingsIcon />}
-                                        size="small"
-                                        sx={{ 
-                                            textTransform: 'none',
-                                            height: 32,
-                                            border: "1px solid",
-                                            borderColor: "primary.main",
-                                            "&:hover": {
-                                                backgroundColor: "primary.light",
-                                                color: "white"
-                                            }
-                                        }}
-                                    >
-                                        Settings
-                                    </Button>
-                                </MuiTooltip>
-
-                                <SaveVisualizationButton 
-                                    elementId="visualization-content" 
-                                    fileNamePrefix="distribution_curve_individual"
-                                    variableNames={selectedColumn}
-                                />
-
-                                <MuiTooltip title="Download as PNG">
-                                    <Button
-                                        variant="outlined"
-                                        color="primary"
-                                        onClick={() => downloadChartAsPNG(withProductChartRef, 'With_Product_Distribution')}
-                                        startIcon={<DownloadIcon />}
-                                        size="small"
-                                        sx={{ 
-                                            textTransform: 'none',
-                                            height: 32,
-                                            border: "1px solid",
-                                            borderColor: "primary.main",
-                                            "&:hover": {
-                                                backgroundColor: "primary.light",
-                                                color: "white"
-                                            }
-                                        }}
-                                    >
-                                        Download PNG
-                                    </Button>
-                                </MuiTooltip>
-                            </Box>
-                        </Box>
-
-                        <Box sx={{ mb: 2 }}>
-                            <Alert severity="info" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                <PanToolIcon fontSize="small" />
-                                <Typography variant="body2" sx={{ fontSize: { xs: "0.75rem", md: "0.875rem" } }}>
-                                    Interactive distribution curve with customizable bins, colors, and statistical analysis.
-                                </Typography>
-                            </Alert>
-                        </Box>
-
-                        <div ref={withProductChartRef} style={{
-                            width: '100%',
-                            height: isMobile ? 280 : isTablet ? 320 : 350,
-                            position: 'relative'
-                        }}>
-                            <ResponsiveContainer width="100%" height="100%" key={`with-${showNumberOfPoints}`}>
-                                <ComposedChart
-                                    data={withProductDistribution}
-                                    margin={{
-                                        top: 10,
-                                        right: isMobile ? 50 : 60,
-                                        left: isMobile ? 10 : 20,
-                                        bottom: isMobile ? 50 : 40
-                                    }}
-                                >
-                                    {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-                                    <XAxis
-                                        dataKey="binMiddle"
-                                        label={{
-                                            value: separateXAxisLabel,
-                                            position: 'insideBottom',
-                                            offset: isMobile ? -30 : -20,
-                                            style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                        }}
-                                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                                    />
-                                    <YAxis
-                                        yAxisId="left"
-                                        label={{
-                                            value: separateYAxisLabel,
-                                            angle: -90,
-                                            position: 'insideLeft',
-                                            offset: -5,
-                                            style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                        }}
-                                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                                    />
-                                    {showNumberOfPoints ? (
-                                        <YAxis
-                                            yAxisId="right"
-                                            orientation="right"
-                                            label={{
-                                                value: 'Number of Points',
-                                                angle: 90,
-                                                position: 'insideRight',
-                                                offset: -5,
-                                                style: { fontSize: isMobile ? '12px' : '14px', fill: '#666' }
-                                            }}
-                                            tick={{ fontSize: isMobile ? 10 : 12 }}
-                                        />
-                                    ) : (
-                                        <YAxis
-                                            yAxisId="right"
-                                            orientation="right"
-                                            tick={false}
-                                            tickLine={false}
-                                            axisLine={false}
-                                            width={0}
-                                        />
-                                    )}
-                                    <Tooltip
-                                        formatter={(value, name) => {
-                                            if (name === 'count') {
-                                                return [value, 'Number of Points'];
-                                            }
-                                            return [value, separateLegendLabels.withProduct];
-                                        }}
-                                        labelFormatter={(label) => `${separateXAxisLabel}: ${label}`}
-                                        contentStyle={{ fontSize: isMobile ? '12px' : '14px' }}
-                                    />
-                                    <Legend
-                                        verticalAlign="top"
-                                        height={36}
-                                        align="left"
-                                        wrapperStyle={{ fontSize: isMobile ? '12px' : '14px' }}
-                                    />
-                                    <Area
-                                        yAxisId="left"
-                                        type="monotone"
-                                        dataKey="count"
-                                        stroke={distributionColors.withProduct}
-                                        fill={distributionColors.withProduct}
-                                        fillOpacity={areaOpacity}
-                                        name={separateLegendLabels.withProduct}
-                                        dot={showDataPoints ? { r: 3, fill: distributionColors.withProduct } : false}
-                                        hide={!showAreaChart}
-                                    />
-                                    <Bar
-                                        yAxisId="right"
-                                        dataKey="count"
-                                        fill={barColors.withProduct}
-                                        fillOpacity={showNumberOfPoints ? 0.4 : 0}
-                                        name="Number of Points"
-                                        radius={[4, 4, 0, 0]}
-                                        barSize={20}
-                                        hide={!showNumberOfPoints}
-                                    />
-                                </ComposedChart>
-                            </ResponsiveContainer>
-                            <WatermarkContent />
-                        </div>
-                    </CardContent>
-                </Card>
-            </Grid>
-        </Grid>
-    );
-
-
-
-    const renderSingleChart = () => {
-        const isWithProduct = singleViewType === 'withProduct';
-        const data = isWithProduct ? withProductDistribution : withoutProductDistribution;
-        const title = isWithProduct ? 'With Product Distribution' : 'Without Product Distribution';
-        const color = isWithProduct ? distributionColors.withProduct : distributionColors.withoutProduct;
-        const barColor = isWithProduct ? barColors.withProduct : barColors.withoutProduct;
-        const chartRef = isWithProduct ? withProductChartRef : withoutProductChartRef;
-
-        // 🔥 SERIES CONFIG (EXTENSIBLE)
-        const seriesConfig = [
-            {
-                key: "count",
-                label: singleLegendLabel,
-                axis: "left",
-                type: "area",
-                color: color,
-                show: showAreaChart && data?.some(d => d.count !== undefined)
-            },
-            {
-                key: "count",
-                label: "Number of Points",
-                axis: "right",
-                type: "bar",
-                color: barColor,
-                show: showNumberOfPoints && data?.some(d => d.count !== undefined)
-            },
-            // // 👉 Future metrics (just enable when data exists)
-             {
-                 key: "premium",
-                 label: "Premium",
-                 axis: "right",
-                 type: "line",
-                 color: "#82ca9d",
-                 show: data?.some(d => d.premium !== undefined)
-             }
-        ];
-
-        if (!data || data.length === 0) {
-            return (
-                <Alert severity="info" sx={{ width: '100%', mx: { xs: 1, sm: 0 } }}>
-                    No data available for visualization
-                </Alert>
-            );
-        }
-
-        // ✅ Ensure at least left axis always exists
-        const axes = ["left", ...new Set(seriesConfig.filter(s => s.show).map(s => s.axis).filter(a => a !== "left"))];
+    // ========================================================================
+    // Separate Charts Render
+    // ========================================================================
+    const renderSeparateCharts = () => {
+        const withValues = filteredWithProductData.map(row => parseFloat(row[separateColumn])).filter(v => !isNaN(v));
+        const withoutValues = filteredWithoutProductData.map(row => parseFloat(row[separateColumn])).filter(v => !isNaN(v));
+        const all = [...withValues, ...withoutValues];
+        const globalMinMax = all.length ? { min: Math.min(...all), max: Math.max(...all) } : { min: 0, max: 0 };
 
         return (
-            <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
-                <CardContent sx={{ p: { xs: 2, md: 4 } }}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
-                        <Typography
-                            variant="h6"
-                            sx={{
-                                fontWeight: 500,
-                                color: "primary.main",
-                                fontSize: { xs: "1rem", md: "1.25rem" },
-                            }}
-                        >
-                            {title}
-                        </Typography>
-
-                        <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={showNumberOfPoints}
-                                        onChange={(e) => setShowNumberOfPoints(e.target.checked)}
-                                        size="small"
-                                    />
-                                }
-                                label="Number of Points"
-                                sx={{ mr: 1 }}
-                            />
-
-                            <MuiTooltip title="Chart Settings">
-                                <Button
-                                    variant="outlined"
-                                    color="primary"
-                                    onClick={openSettingsModal}
-                                    startIcon={<SettingsIcon />}
-                                    size="small"
-                                >
-                                    Settings
-                                </Button>
-                            </MuiTooltip>
-
-                            <SaveVisualizationButton
-                                elementId="visualization-content"
-                                fileNamePrefix="distribution_curve"
-                            />
-
-                            <MuiTooltip title="Download as PNG">
-                                <Button
-                                    variant="outlined"
-                                    color="primary"
-                                    onClick={() => downloadChartAsPNG(chartRef, title.replace(/\s+/g, '_'))}
-                                    startIcon={<DownloadIcon />}
-                                    size="small"
-                                >
-                                    Download PNG
-                                </Button>
-                            </MuiTooltip>
-                        </Box>
-                    </Box>
-
-                    <Box sx={{ mb: 2 }}>
-                        <Alert severity="info" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <PanToolIcon fontSize="small" />
-                            <Typography variant="body2">
-                                Interactive distribution curve with multi-metric support.
-                            </Typography>
-                        </Alert>
-                    </Box>
-
-                    <div
-                        ref={chartRef}
-                        className="abhitech-plot-area"
-                        style={{
-                            width: '100%',
-                            height: isMobile ? 280 : isTablet ? 320 : 350,
-                            position: 'relative'
-                        }}
-                    >
-                        <ResponsiveContainer width="100%" height="100%">
-                            <ComposedChart data={data}>
-
-                                {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-
-                                <XAxis dataKey="binMiddle" />
-
-                                {/* 🔥 DYNAMIC AXES */}
-                                {axes.map(axis => (
-                                    <YAxis
-                                        key={axis}
-                                        yAxisId={axis}
-                                        orientation={axis === "right" ? "right" : "left"}
-                                    />
-                                ))}
-
-                                <Tooltip
-                                    formatter={(value, name) => [value, name]}
-                                    labelFormatter={(label) => `${singleXAxisLabel}: ${label}`}
-                                />
-
-                                <Legend />
-
-                                {/* 🔥 DYNAMIC SERIES */}
-                                {seriesConfig.map(series => {
-                                    if (!series.show) return null;
-
-                                    if (series.type === "area") {
-                                        return (
-                                            <Area
-                                                key={series.label}
-                                                yAxisId={series.axis}
-                                                type="monotone"
-                                                dataKey={series.key}
-                                                stroke={series.color}
-                                                fill={series.color}
-                                                fillOpacity={areaOpacity}
-                                                name={series.label}
-                                                dot={showDataPoints ? { r: 3 } : false}
-                                            />
-                                        );
-                                    }
-
-                                    if (series.type === "bar") {
-                                        return (
-                                            <Bar
-                                                key={series.label}
-                                                yAxisId={series.axis}
-                                                dataKey={series.key}
-                                                fill={series.color}
-                                                fillOpacity={0.5}
-                                                name={series.label}
-                                                barSize={20}
-                                            />
-                                        );
-                                    }
-
-                                    if (series.type === "line") {
-                                        return (
-                                            <Line
-                                                key={series.label}
-                                                yAxisId={series.axis}
-                                                type="monotone"
-                                                dataKey={series.key}
-                                                stroke={series.color}
-                                                name={series.label}
-                                            />
-                                        );
-                                    }
-
-                                    return null;
-                                })}
-
-                            </ComposedChart>
-                        </ResponsiveContainer>
-
-                        <WatermarkContent />
-                    </div>
-                </CardContent>
-            </Card>
+            <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
+                <Grid item xs={12} lg={6}>
+                    <AxisControlPanel title="Without Product"
+                        xLabel={separateXAxisLabel} setXLabel={setSeparateXAxisLabel}
+                        yLabel={separateYAxisLabel} setYLabel={setSeparateYAxisLabel}
+                        xMin={separateXAxisMin} setXMin={setSeparateXAxisMin}
+                        xMax={separateXAxisMax} setXMax={setSeparateXAxisMax}
+                        yMin={separateYAxisMin} setYMin={setSeparateYAxisMin}
+                        yMax={separateYAxisMax} setYMax={setSeparateYAxisMax}
+                        dataMin={globalMinMax.min} dataMax={globalMinMax.max} />
+                    {renderDistributionChart(
+                        withoutProductDistribution, 'Without Product Distribution',
+                        SINGLE_COLORS.withoutProduct.area, SINGLE_COLORS.withoutProduct.bar,
+                        withoutProductChartRef, separateLegendLabels.withoutProduct,
+                        separateXAxisLabel, separateYAxisLabel,
+                        separateXAxisMin, separateXAxisMax, separateYAxisMin, separateYAxisMax,
+                        separateYAxisColumn
+                    )}
+                </Grid>
+                <Grid item xs={12} lg={6}>
+                    <AxisControlPanel title="With Product"
+                        xLabel={separateXAxisLabel} setXLabel={setSeparateXAxisLabel}
+                        yLabel={separateYAxisLabel} setYLabel={setSeparateYAxisLabel}
+                        xMin={separateXAxisMin} setXMin={setSeparateXAxisMin}
+                        xMax={separateXAxisMax} setXMax={setSeparateXAxisMax}
+                        yMin={separateYAxisMin} setYMin={setSeparateYAxisMin}
+                        yMax={separateYAxisMax} setYMax={setSeparateYAxisMax}
+                        dataMin={globalMinMax.min} dataMax={globalMinMax.max} />
+                    {renderDistributionChart(
+                        withProductDistribution, 'With Product Distribution',
+                        SINGLE_COLORS.withProduct.area, SINGLE_COLORS.withProduct.bar,
+                        withProductChartRef, separateLegendLabels.withProduct,
+                        separateXAxisLabel, separateYAxisLabel,
+                        separateXAxisMin, separateXAxisMax, separateYAxisMin, separateYAxisMax,
+                        separateYAxisColumn
+                    )}
+                </Grid>
+            </Grid>
         );
     };
 
+    // ========================================================================
+    // Single Chart Render
+    // ========================================================================
+    const renderSingleChart = () => {
+        const isWithProduct = singleViewType === 'withProduct';
+        const title = `${isWithProduct ? 'With Product' : 'Without Product'} Distribution`;
+        const areaColor = isWithProduct ? SINGLE_COLORS.withProduct.area : SINGLE_COLORS.withoutProduct.area;
+        const barColor = isWithProduct ? SINGLE_COLORS.withProduct.bar : SINGLE_COLORS.withoutProduct.bar;
+        const chartRef = isWithProduct ? withProductChartRef : withoutProductChartRef;
+        const data = isWithProduct ? filteredWithProductData : filteredWithoutProductData;
+        const values = data.map(row => parseFloat(row[singleColumn])).filter(v => !isNaN(v));
+        const globalMinMax = values.length ? { min: Math.min(...values), max: Math.max(...values) } : { min: 0, max: 0 };
 
+        return (
+            <>
+                <AxisControlPanel title="Single View"
+                    xLabel={singleXAxisLabel} setXLabel={setSingleXAxisLabel}
+                    yLabel={singleYAxisLabel} setYLabel={setSingleYAxisLabel}
+                    xMin={singleXAxisMin} setXMin={setSingleXAxisMin}
+                    xMax={singleXAxisMax} setXMax={setSingleXAxisMax}
+                    yMin={singleYAxisMin} setYMin={setSingleYAxisMin}
+                    yMax={singleYAxisMax} setYMax={setSingleYAxisMax}
+                    dataMin={globalMinMax.min} dataMax={globalMinMax.max} />
+                {renderDistributionChart(
+                    singleDistribution, title,
+                    areaColor, barColor, chartRef,
+                    singleLegendLabel, singleXAxisLabel, singleYAxisLabel,
+                    singleXAxisMin, singleXAxisMax, singleYAxisMin, singleYAxisMax,
+                    singleYAxisColumn
+                )}
+            </>
+        );
+    };
 
-    const downloadPageAsPNG = async () => {
-        if (!pageRef.current) return
-
-        const originalShowSummaryCards = showSummaryCards
-        const originalShowInsights = showInsights
-
-        setShowSummaryCards(true)
-        setShowInsights(true)
-
-        await new Promise(resolve => setTimeout(resolve, 400))
-
-        const element = pageRef.current
-        const canvas = await html2canvas(element, {
-            useCORS: true,
-            backgroundColor: '#fff',
-            scale: 2,
-            logging: false,
-            windowWidth: element.scrollWidth,
-            windowHeight: element.scrollHeight,
-        })
-
-        setShowSummaryCards(originalShowSummaryCards)
-        setShowInsights(originalShowInsights)
-
-        const link = document.createElement('a')
-        const fileName = generateFileName(`DistributionCurve_Page_${selectedColumn}`)
-        link.download = `${fileName}.png`
-        link.href = canvas.toDataURL('image/png')
-        link.click()
-    }
-
-    return (
-        <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
-            <SettingsModal />
-
-            <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, sm: 4 } }}>
-                <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'primary.main' }}>
-                        X-Axis Columns
-                    </Typography>
+    // ========================================================================
+    // Y-axis column selector UI
+    // ========================================================================
+    const renderYColumnSelector = () => {
+        const yCol = viewMode === 'combined' ? yAxisColumn : viewMode === 'single' ? singleYAxisColumn : separateYAxisColumn;
+        const setYCol = viewMode === 'combined' ? setYAxisColumn : viewMode === 'single' ? setSingleYAxisColumn : setSeparateYAxisColumn;
+        return (
+            <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={5} md={4}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'secondary.main' }}>Y-Axis Parameter (optional)</Typography>
                     <Autocomplete
-                        multiple
-                        id='distribution-x-columns-select'
-                        options={availableColumns}
-                        value={combinedXColumns}
-                        onChange={(event, newValue) => {
-                            setCombinedXColumns(newValue || []);
-                        }}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Select X-Axis Columns"
-                                variant="outlined"
-                                fullWidth
-                                size="small"
-                            />
-                        )}
-                        renderTags={(value, getTagProps) =>
-                            value.map((option, index) => (
-                                <Chip variant="outlined" label={option} {...getTagProps({ index })} />
-                            ))
-                        }
-                        disableClearable
-                        autoHighlight
-                        openOnFocus
-                        size="small"
+                        options={['', ...availableColumns]} value={yCol} onChange={(e, v) => setYCol(v || '')}
+                        renderInput={(params) => <TextField {...params} label="Select Y-axis column" placeholder="Default: Frequency count" size="small" />}
+                        getOptionLabel={(o) => o === '' ? 'Frequency (count)' : o} size="small"
                     />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'secondary.main' }}>
-                        Y-Axis Columns
-                    </Typography>
-                    <Autocomplete
-                        multiple
-                        id='distribution-y-columns-select'
-                        options={availableColumns}
-                        value={combinedYColumns}
-                        onChange={(event, newValue) => {
-                            setCombinedYColumns(newValue || []);
-                        }}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Select Y-Axis Columns"
-                                variant="outlined"
-                                fullWidth
-                                size="small"
-                            />
-                        )}
-                        renderTags={(value, getTagProps) =>
-                            value.map((option, index) => (
-                                <Chip variant="outlined" label={option} {...getTagProps({ index })} />
-                            ))
-                        }
-                        disableClearable
-                        autoHighlight
-                        openOnFocus
-                        size="small"
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'secondary.main' }}>
-                        View Mode
-                    </Typography>
-                    <ToggleButtonGroup
-                        value={viewMode}
-                        exclusive
-                        onChange={(event, newMode) => {
-                            if (newMode !== null) {
-                                setViewMode(newMode);
-                            }
-                        }}
-                        aria-label="view mode"
-                        fullWidth
-                        size="small"
-                        orientation="horizontal"
-                        sx={{
-                            height: "48px",
-                            "& .MuiToggleButton-root": {
-                                fontSize: "0.875rem",
-                                textTransform: "none",
-                                border: "1px solid",
-                                borderColor: "primary.main",
-                                "&.Mui-selected": {
-                                    backgroundColor: "primary.main",
-                                    color: "white",
-                                    "&:hover": {
-                                        backgroundColor: "primary.dark",
-                                    }
-                                }
-                            }
-                        }}
-                    >
-                        <ToggleButton value="combined" aria-label="combined view">
-                            Combined
-                        </ToggleButton>
-                        <ToggleButton id='view-mode-separate' value="separate" aria-label="separate view">
-                            Separate
-                        </ToggleButton>
-                        <ToggleButton id='view-mode-single' value="single" aria-label="single view">
-                            Single
-                        </ToggleButton>
+                <Grid item xs={12} sm={4} md={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'secondary.main' }}>Aggregation</Typography>
+                    <ToggleButtonGroup value={yAggregation} exclusive onChange={(e, v) => v && setYAggregation(v)} fullWidth size="small" disabled={!yCol}>
+                        <ToggleButton value="mean">Mean</ToggleButton>
+                        <ToggleButton value="sum">Sum</ToggleButton>
+                        <ToggleButton value="frequency">Count</ToggleButton>
                     </ToggleButtonGroup>
                 </Grid>
+                {yCol && (
+                    <Grid item xs={12} sm={3} md={5}>
+                        <Alert severity="success" sx={{ py: 0.5 }}>
+                            <Typography variant="caption">Plotting <strong>{yAggregation}</strong> of <strong>{yCol}</strong> per X bin</Typography>
+                        </Alert>
+                    </Grid>
+                )}
+            </Grid>
+        );
+    };
+
+    // ========================================================================
+    // Main Render
+    // ========================================================================
+    return (
+        <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+            <ChartSettingsModal open={settingsModalOpen} onClose={handleSettingsModalClose} onSave={handleSettingsSave} draftSettings={draftSettings} setDraftSettings={setDraftSettings} />
+
+            {/* View Mode and Column Selection */}
+            <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, sm: 4 } }}>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'secondary.main' }}>View Mode</Typography>
+                    <ToggleButtonGroup value={viewMode} exclusive onChange={(e, newMode) => newMode && setViewMode(newMode)} fullWidth size="small">
+                        <ToggleButton value="combined">Combined</ToggleButton>
+                        <ToggleButton value="separate">Separate</ToggleButton>
+                        <ToggleButton value="single">Single</ToggleButton>
+                    </ToggleButtonGroup>
+                </Grid>
+
+                {viewMode === 'combined' && (
+                    <Grid item xs={12} sm={12} md={9}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'primary.main' }}>Select X Columns (Multiple)</Typography>
+                        <Autocomplete
+                            multiple options={availableColumns} value={selectedColumns}
+                            onChange={(event, newValue) => setSelectedColumns(newValue)}
+                            renderInput={(params) => <TextField {...params} label="Choose X-axis columns to compare" placeholder="Select columns..." size="small" />}
+                            renderTags={(value, getTagProps) =>
+                                value.map((option, index) => (
+                                    <Chip label={option} {...getTagProps({ index })} size="small"
+                                        sx={{ bgcolor: columnColorMap[option]?.with || '#2563EB', color: 'white', fontWeight: 'bold' }} />
+                                ))
+                            }
+                            size="small"
+                        />
+                    </Grid>
+                )}
+
                 {viewMode === 'single' && (
-                    <Grid item xs={12} sm={6} md={4}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'success.main' }}>
-                            Chart Type
-                        </Typography>
-                        <FormControl fullWidth size="small">
-                            <InputLabel id="single-view-select-label">Chart Type</InputLabel>
-                            <Select
-                                open={singleViewSelectOpen}
-                                labelId="single-view-select-label"
-                                value={singleViewType}
-                                label="Chart Type"
-                                onChange={(event) => setSingleViewType(event.target.value)}
-                            >
-                                <MenuItem value="withProduct">With Product</MenuItem>
-                                <MenuItem value="withoutProduct">Without Product</MenuItem>
-                            </Select>
-                        </FormControl>
+                    <>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'primary.main' }}>X-Axis Column</Typography>
+                            <Autocomplete options={availableColumns} value={singleColumn} onChange={(e, v) => setSingleColumn(v || '')} renderInput={(params) => <TextField {...params} size="small" />} />
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'info.main' }}>Dataset</Typography>
+                            <ToggleButtonGroup value={singleViewType} exclusive onChange={(e, v) => v && setSingleViewType(v)} fullWidth size="small">
+                                <ToggleButton value="withProduct">With Product</ToggleButton>
+                                <ToggleButton value="withoutProduct">Without Product</ToggleButton>
+                            </ToggleButtonGroup>
+                        </Grid>
+                    </>
+                )}
+
+                {viewMode === 'separate' && (
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'primary.main' }}>X-Axis Column</Typography>
+                        <Autocomplete options={availableColumns} value={separateColumn} onChange={(e, v) => setSeparateColumn(v || '')} renderInput={(params) => <TextField {...params} size="small" />} />
                     </Grid>
                 )}
             </Grid>
 
+            {/* Y-Axis Column Selector */}
+            <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, border: '1px solid', borderColor: 'primary.light' }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>Y-Axis Configuration</Typography>
+                    {renderYColumnSelector()}
+                </CardContent>
+            </Card>
+
+            {/* Distribution Settings */}
             <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
                 <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
-                        Data Filter
-                    </Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Distribution Settings</Typography>
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12} md={6}>
+                            <Box sx={{ px: 1 }}>
+                                <Typography variant="body2" gutterBottom>Number of Bins: {binCount}</Typography>
+                                <Slider value={binCount} onChange={(e, val) => setBinCount(val)} min={5} max={50} step={1} valueLabelDisplay="auto"
+                                    marks={[{ value: 5, label: '5' }, { value: 20, label: '20' }, { value: 35, label: '35' }, { value: 50, label: '50' }]} />
+                            </Box>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormControlLabel control={<Switch checked={showAreaChart} onChange={(e) => setShowAreaChart(e.target.checked)} />} label="Show Area Chart" />
+                            <FormControlLabel control={<Switch checked={showNumberOfPoints} onChange={(e) => setShowNumberOfPoints(e.target.checked)} />} label="Show Count Bars" />
+                            <FormControlLabel control={<Switch checked={showDataPoints} onChange={(e) => setShowDataPoints(e.target.checked)} />} label="Show Data Points" />
+                            <FormControlLabel control={<Switch checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />} label="Show Grid" />
+                        </Grid>
+                    </Grid>
+                </CardContent>
+            </Card>
+
+            {/* Data Filter Card */}
+            <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Data Filter</Typography>
                     <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="center">
                         <Grid item xs={12} sm={6} md={3}>
-                            <Autocomplete
-                                id='data-filter-column-select'
-                                options={availableColumns}
-                                value={filterColumn}
-                                onChange={(event, newValue) => setFilterColumn(newValue || '')}
-                                renderInput={(params) => (
-                                    <TextField
-                                        id='data-filter-column-select'
-                                        {...params}
-                                        label="Filter Column"
-                                        variant="outlined"
-                                        fullWidth
-                                        size="small"
-                                    />
-                                )}
-                                disableClearable={true}
-                                size="small"
-                            />
+                            <Autocomplete options={availableColumns} value={filterColumn} onChange={(event, newValue) => setFilterColumn(newValue || '')}
+                                renderInput={(params) => <TextField {...params} label="Filter Column" variant="outlined" fullWidth size="small" />}
+                                disableClearable={false} size="small" />
                         </Grid>
                         <Grid item xs={6} sm={3} md={2.5}>
-                            <TextField
-                                type={columnIsDateTime ? 'datetime-local' : 'number'}
-                                label={columnIsDateTime ? 'Min (datetime)' : 'Min'}
-                                value={filterMin}
-                                onChange={(e) => setFilterMin(e.target.value)}
-                                disabled={!filterColumn}
-                                variant="outlined"
-                                fullWidth
-                                size="small"
-                            />
+                            <TextField type={columnIsDateTime ? 'datetime-local' : 'number'} label={columnIsDateTime ? 'Min (datetime)' : 'Min'}
+                                value={filterMin} onChange={(e) => setFilterMin(e.target.value)} disabled={!filterColumn} variant="outlined" fullWidth size="small" />
                         </Grid>
                         <Grid item xs={6} sm={3} md={2.5}>
-                            <TextField
-                                type={columnIsDateTime ? 'datetime-local' : 'number'}
-                                label={columnIsDateTime ? 'Max (datetime)' : 'Max'}
-                                value={filterMax}
-                                onChange={(e) => setFilterMax(e.target.value)}
-                                disabled={!filterColumn}
-                                variant="outlined"
-                                fullWidth
-                                size="small"
-                            />
+                            <TextField type={columnIsDateTime ? 'datetime-local' : 'number'} label={columnIsDateTime ? 'Max (datetime)' : 'Max'}
+                                value={filterMax} onChange={(e) => setFilterMax(e.target.value)} disabled={!filterColumn} variant="outlined" fullWidth size="small" />
                         </Grid>
                         <Grid item xs={12} sm={12} md={4}>
-                            <Button
-                                id='clear-data-filter-btn'
-                                onClick={resetLocalFilter}
-                                variant="outlined"
-                                size="small"
-                                sx={{
-                                    textTransform: 'none',
-                                    width: { xs: '100%', md: 'auto' },
-                                    minWidth: '120px'
-                                }}
-                            >
-                                Reset Filter
-                            </Button>
+                            <Button onClick={resetLocalFilter} variant="outlined" size="small"
+                                sx={{ textTransform: 'none', width: { xs: '100%', md: 'auto' }, minWidth: '120px' }}>Reset Filter</Button>
                         </Grid>
                     </Grid>
                 </CardContent>
@@ -2937,31 +1097,17 @@ useEffect(() => {
             <div ref={pageRef}>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
                     <MuiTooltip title="Download entire page as PNG">
-                        <Button
-                            id='download-visualization-btn'
-                            color="primary"
-                            onClick={downloadPageAsPNG}
-                            variant="outlined"
-                            size="small"
-                            startIcon={<DownloadIcon />}
-                            sx={{ textTransform: 'none', fontWeight: 500 }}
-                        >
-                            Download Page
-                        </Button>
+                        <Button color="primary" onClick={downloadPageAsPNG} variant="outlined" size="small"
+                            startIcon={<DownloadIcon />} sx={{ textTransform: 'none', fontWeight: 500 }}>Download Page</Button>
                     </MuiTooltip>
                 </Box>
 
-                {(combinedXColumns.length > 0 || combinedYColumns.length > 0) && (
-                    <Box>
-                        {viewMode === 'combined' && renderCombinedChart()}
-                        {viewMode === 'separate' && renderSeparateCharts()}
-                        {viewMode === 'single' && renderSingleChart()}
+                {viewMode === 'combined' && renderCombinedChart()}
+                {viewMode === 'separate' && renderSeparateCharts()}
+                {viewMode === 'single' && renderSingleChart()}
 
-                        {/* Analysis Sections - Below the charts */}
-                        <SummaryCards />
-                        <InsightsPanel />
-                    </Box>
-                )}
+                {viewMode === 'combined' && selectedColumns.length > 0 && <SummaryCards />}
+                {(viewMode === 'separate' || viewMode === 'single') && <InsightsPanel />}
             </div>
         </Box>
     );

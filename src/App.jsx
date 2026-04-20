@@ -7,6 +7,7 @@ import ProtectedRoute from './ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import FullExcelFile from './pages/FullExcelFile';
+import AIReportsPage from './pages/AIReportsPage';
 
 const Login = lazy(() => import('./pages/Login'));
 const Landing = lazy(() => import('./pages/Landing'));
@@ -47,6 +48,7 @@ function App() {
           <Route path="/visualize-data" element={<VisualizeData />} />
           <Route path="/manual" element={<UserManual />} />
           <Route path="*" element={<NotFound />} />
+          <Route path='/ai-report' element={<AIReportsPage/>}/>
         </Routes>
       </Suspense>
       <Footer />
