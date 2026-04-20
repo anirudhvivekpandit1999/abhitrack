@@ -856,7 +856,7 @@ const FullExcelFile = () => {
       {/* Start date input */}
       <input
         type="date"
-        value={rr.startRange}
+        value={rr.startDisplay || ""}
         onChange={e => {
           const dateVal = e.target.value; // "YYYY-MM-DD"
           // Find the row index in the preview data that matches this date
