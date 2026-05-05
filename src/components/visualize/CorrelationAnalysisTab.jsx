@@ -42,6 +42,7 @@ import SaveVisualizationButton from '../SaveVisualizationButton'
 import ImageIcon from '@mui/icons-material/Image';
 import ChartSettingsModal from '../ChartSettingsModal';
 import * as d3 from 'd3';
+import { isDateColumn, parseValueForPlot } from '../../utils/dateUtils';
 
 const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProductData, clientName = '', plantName = '', productName = '' }) => {
     const [selectedVariable, setSelectedVariable] = useState('');
@@ -93,17 +94,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
             setSelectedVariable(availableColumns[0]);
         }
     }, [availableColumns]);
-
-    useEffect(() => {
-        const syncBaseColumnName = () => {
-            const saved = localStorage.getItem('correlationColumn');
-            if (saved && availableColumns.includes(saved)) {
-                setSelectedVariable(saved);
-            }
-        }
-        window.addEventListener('correlationColumnChanged', syncBaseColumnName);
-        return () => window.removeEventListener('correlationColumnChanged', syncBaseColumnName);
-    },[])
     
     const calculateCorrelation = (xValues, yValues) => {
         if (!xValues || !yValues || xValues.length !== yValues.length || xValues.length < 2) return 0;
@@ -123,39 +113,40 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
     
     const correlationData = useMemo(() => {
         if (!selectedVariable) return { withProduct: [], withoutProduct: [], topWithProduct: [], topWithoutProduct: [] };
-        
+        const all = [...(withProductData || []), ...(withoutProductData || [])];
+        const baseIsDate = isDateColumn(all, selectedVariable);
         const otherColumns = availableColumns.filter(col => col !== selectedVariable);
         const dataWithProduct = [];
         const dataWithoutProduct = [];
-        
         const baseValuesWith = [];
         const baseValuesWithout = [];
-        
+
         (withProductData || []).forEach(row => {
-            const val = parseFloat(row[selectedVariable]);
-            if (!isNaN(val)) baseValuesWith.push(val);
+            const val = parseValueForPlot(row[selectedVariable], baseIsDate);
+            if (val != null) baseValuesWith.push(val);
         });
-        
+
         (withoutProductData || []).forEach(row => {
-            const val = parseFloat(row[selectedVariable]);
-            if (!isNaN(val)) baseValuesWithout.push(val);
+            const val = parseValueForPlot(row[selectedVariable], baseIsDate);
+            if (val != null) baseValuesWithout.push(val);
         });
-        
+
         otherColumns.forEach(column => {
+            const otherIsDate = isDateColumn(all, column);
             const withProductPairs = [];
             (withProductData || []).forEach(row => {
-                const baseVal = parseFloat(row[selectedVariable]);
-                const otherVal = parseFloat(row[column]);
-                if (!isNaN(baseVal) && !isNaN(otherVal)) {
+                const baseVal = parseValueForPlot(row[selectedVariable], baseIsDate);
+                const otherVal = parseValueForPlot(row[column], otherIsDate);
+                if (baseVal != null && otherVal != null) {
                     withProductPairs.push({ base: baseVal, other: otherVal });
                 }
             });
-            
+
             const withoutProductPairs = [];
             (withoutProductData || []).forEach(row => {
-                const baseVal = parseFloat(row[selectedVariable]);
-                const otherVal = parseFloat(row[column]);
-                if (!isNaN(baseVal) && !isNaN(otherVal)) {
+                const baseVal = parseValueForPlot(row[selectedVariable], baseIsDate);
+                const otherVal = parseValueForPlot(row[column], otherIsDate);
+                if (baseVal != null && otherVal != null) {
                     withoutProductPairs.push({ base: baseVal, other: otherVal });
                 }
             });
@@ -203,20 +194,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
         return Number.isFinite(totalAbsCorrelation) ? totalAbsCorrelation : 0;
     };
     
-useEffect(() => {
-    const handler = (e) => {
-        const vars = e?.detail || [];
-        // if you want to replace:
-        setSelectedBarChartVariables(vars);
-
-        // Or if you prefer merging with existing selection:
-        // setSelectedBarChartVariables(prev => Array.from(new Set([...(prev||[]), ...vars])));
-    };
-    window.addEventListener('selectedBarChartVariablesChanged', handler);
-    return () => window.removeEventListener('selectedBarChartVariablesChanged', handler);
-}, []);
-
-
     const totalImpactWithProduct = useMemo(() => calculateImpact(correlationData.withProduct), [correlationData.withProduct]);
     const totalImpactWithoutProduct = useMemo(() => calculateImpact(correlationData.withoutProduct), [correlationData.withoutProduct]);
     const totalImpactTopWith = useMemo(() => calculateImpact(correlationData.topWithProduct), [correlationData.topWithProduct]);
@@ -1003,7 +980,6 @@ useEffect(() => {
                                 Select Base Variable
                             </Typography>
                             <Autocomplete
-                                id='correlation-column-select'
                                 options={availableColumns}
                                 value={selectedVariable}
                                 onChange={(event, newValue) => {
@@ -1149,7 +1125,6 @@ useEffect(() => {
                         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                             <MuiTooltip title="Bar Chart Settings">
                                 <Button
-                                    id='bar-chart-settings-btn'
                                     variant="outlined"
                                     color="primary"
                                     onClick={() => setShowBarChartSettings(true)}
@@ -1179,7 +1154,6 @@ useEffect(() => {
 
                             <MuiTooltip title="Download Bar Chart as PNG">
                                 <Button
-                                    id='bar-chart-download-btn'
                                     variant="outlined"
                                     color="primary"
                                     onClick={downloadBarChartAsPNG}

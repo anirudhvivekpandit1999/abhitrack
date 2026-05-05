@@ -305,6 +305,25 @@ const STYLES = `
   /* ── Divider ── */
   .xf-divider { height: 1.5px; background: var(--ink-20); margin: 4px 0; }
 
+  /* ── Highlight styles for date range selection ── */
+  .row-highlight-pre {
+    background-color: rgba(76, 175, 80, 0.2) !important;
+    transition: background-color 0.2s ease;
+  }
+  .row-highlight-pre:hover {
+    background-color: rgba(76, 175, 80, 0.35) !important;
+  }
+  .row-highlight-post {
+    background-color: rgba(33, 150, 243, 0.2) !important;
+    transition: background-color 0.2s ease;
+  }
+  .row-highlight-post:hover {
+    background-color: rgba(33, 150, 243, 0.35) !important;
+  }
+  .xf-table tbody tr {
+    transition: background-color 0.2s ease;
+  }
+
   /* ── Keyframes ── */
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -362,7 +381,7 @@ const FullExcelFile = () => {
   const [isListening, setIsListening] = useState(false);
   const [lastCommand, setLastCommand] = useState("");
   const [voiceFeedback, setVoiceFeedback] = useState("");
-  const [assistantCollapsed, setAssistantCollapsed] = useState(false);
+  const [assistantCollapsed, setAssistantCollapsed] = useState(true);
   const [recentFiles, setRecentFiles] = useState([]);
   const [awaitingFileVoiceInput, setAwaitingFileVoiceInput] = useState(false);
   const [lastVoiceFileCommand, setLastVoiceFileCommand] = useState("");
@@ -546,27 +565,27 @@ const FullExcelFile = () => {
   }
 
   const refreshColumnsFromSession = () => {
-  try {
-    const stored = sessionStorage.getItem("availableColumns");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length)
-        setColumnNames(prev => Array.from(new Set([...(prev || []), ...parsed])));
-    }
-  } catch (e) {}
-
-  try {
-    const pending = sessionStorage.getItem("pendingColumnsToAdd");
-    if (pending) {
-      const parsed = JSON.parse(pending);
-      if (Array.isArray(parsed) && parsed.length) {
-        const names = parsed.map(p => p.name).filter(Boolean);
-        if (names.length)
-          setColumnNames(prev => Array.from(new Set([...(prev || []), ...names])));
+    try {
+      const stored = sessionStorage.getItem("availableColumns");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length)
+          setColumnNames(prev => Array.from(new Set([...(prev || []), ...parsed])));
       }
-    }
-  } catch (e) {}
-};
+    } catch (e) {}
+
+    try {
+      const pending = sessionStorage.getItem("pendingColumnsToAdd");
+      if (pending) {
+        const parsed = JSON.parse(pending);
+        if (Array.isArray(parsed) && parsed.length) {
+          const names = parsed.map(p => p.name).filter(Boolean);
+          if (names.length)
+            setColumnNames(prev => Array.from(new Set([...(prev || []), ...names])));
+        }
+      }
+    } catch (e) {}
+  };
 
   useEffect(()=>{if(showAddPanel)refreshColumnsFromSession();},[showAddPanel,copyFromSheet,selectedSheet,excelData]);
 
@@ -616,64 +635,52 @@ const FullExcelFile = () => {
     formData.append("file", file);
 
     if (sheet) {
-        formData.append("sheet", sheet);
+      formData.append("sheet", sheet);
     }
 
     try {
-        const result = await apiClient.post("/process-file", formData);
+      const result = await apiClient.post("/process-file", formData);
 
-        
+      const sheetNames = result?.file_info?.sheets || [];
+      const sheetsDataObj = result?.file_info?.sheets_data || {};
 
-        // ✅ Extract from your backend structure
-        const sheetNames = result?.file_info?.sheets || [];
-        const sheetsDataObj = result?.file_info?.sheets_data || {};
+      if (!sheetNames.length) {
+        throw new Error("No sheets found in response");
+      }
 
-        if (!sheetNames.length) {
-            throw new Error("No sheets found in response");
-        }
+      const formattedSheets = sheetNames.map(name => ({
+        sheetName: name,
+        sheetData: sheetsDataObj[name]?.data || []
+      }));
 
-        // ✅ Convert backend → UI format
-        const formattedSheets = sheetNames.map(name => ({
-            sheetName: name,
-            sheetData: sheetsDataObj[name]?.data || []
-        }));
+      setExcelData(formattedSheets);
+      setSheetNames(sheetNames);
 
-        // ✅ Store everything
-        setExcelData(formattedSheets);
-        setSheetNames(sheetNames);
+      const firstSheet = sheetNames[0];
+      setSelectedSheet(firstSheet);
 
-        // ✅ Default selection
-        const firstSheet = sheetNames[0];
-        setSelectedSheet(firstSheet);
+      const firstSheetData = sheetsDataObj[firstSheet]?.data || [];
+      setSelectedSheetData(firstSheetData);
 
-        const firstSheetData = sheetsDataObj[firstSheet]?.data || [];
+      setCols(
+        sheetsDataObj[firstSheet]?.columns ||
+        (firstSheetData.length ? Object.keys(firstSheetData[0]) : [])
+      );
 
-        // ✅ THIS drives your table
-        setSelectedSheetData(firstSheetData);
-
-        // ✅ Columns
-        setCols(
-            sheetsDataObj[firstSheet]?.columns ||
-            (firstSheetData.length ? Object.keys(firstSheetData[0]) : [])
-        );
-
-        // Optional debug
-        console.log("Loaded sheets:", sheetNames);
-        console.log("First sheet rows:", firstSheetData.length);
+      console.log("Loaded sheets:", sheetNames);
+      console.log("First sheet rows:", firstSheetData.length);
 
     } catch (error) {
-        console.error("Upload Error:", error);
-
-        const message =
-            error?.error ||
-            error?.message ||
-            "Server error. Please try again.";
-
-        setError(message);
+      console.error("Upload Error:", error);
+      const message =
+        error?.error ||
+        error?.message ||
+        "Server error. Please try again.";
+      setError(message);
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
-}, [apiClient]);
+  }, [apiClient]);
 
   const normalizeSheetName=(name)=>{ if(!name)return"";return name.trim().slice(0,31);};
   const parseRange=(a,b)=>{let start,end;if(typeof b!=="undefined"){start=parseInt(a,10);end=parseInt(b,10);}else if(typeof a==="string"){const parts=a.split("-").map(s=>s.trim());if(parts.length!==2)return null;start=parseInt(parts[0],10);end=parseInt(parts[1],10);}else return null;if(Number.isNaN(start)||Number.isNaN(end))return null;const s=Math.max(1,Math.min(start,end));const e=Math.max(1,Math.max(start,end));return[s-1,e-1];};
@@ -756,7 +763,40 @@ const FullExcelFile = () => {
   const findHeaderMatch=(text,headers=previewHeaders)=>{if(!text)return null;const cleaned=normalize(text);const source=Array.isArray(headers)?headers:[];let found=source.find(h=>normalize(h)===cleaned||h.toLowerCase()===text.toLowerCase());if(found)return found;found=source.find(h=>cleaned.includes(normalize(h))||normalize(h).includes(cleaned));if(found)return found;const tokens=cleaned.split(/\s+/).filter(Boolean);for(const t of tokens){const f=source.find(h=>normalize(h).includes(t)||t.includes(normalize(h)));if(f)return f;}for(const col of columnNames){if(normalize(col)===cleaned)return col;}return null;};
 
   const getPreviewRowDate=(rowIndex)=>{const row=previewSheetWithPending.sheetData&&previewSheetWithPending.sheetData[rowIndex];if(!row)return"";const dateKey=previewHeaders.find(h=>h.toLowerCase().includes("date"))||previewHeaders.find(h=>h.toLowerCase().includes("time"))||previewHeaders[0];return formatDate(row[dateKey]);};
-  const handlePreviewRowClick=(rowIndex)=>{if(!activeTarget)return;const{idx,field}=activeTarget;const dateStr=getPreviewRowDate(rowIndex);setRowRanges(prev=>prev.map((r,i)=>{if(i!==idx)return r;if(field==="startRange")return{...r,startRange:String(rowIndex+1),startDisplay:dateStr||""};if(field==="endRange")return{...r,endRange:String(rowIndex+1),endDisplay:dateStr||""};return r;}));setActiveTarget(null);};
+
+  const getRowHighlightClass = (rowIndex) => {
+    const currentRowNum = rowIndex + 1;
+    if (rowRanges[0] && rowRanges[0].startRange && rowRanges[0].endRange) {
+      const preStart = parseInt(rowRanges[0].startRange, 10);
+      const preEnd = parseInt(rowRanges[0].endRange, 10);
+      if (currentRowNum >= preStart && currentRowNum <= preEnd) {
+        return 'row-highlight-pre';
+      }
+    }
+    if (rowRanges[1] && rowRanges[1].startRange && rowRanges[1].endRange) {
+      const postStart = parseInt(rowRanges[1].startRange, 10);
+      const postEnd = parseInt(rowRanges[1].endRange, 10);
+      if (currentRowNum >= postStart && currentRowNum <= postEnd) {
+        return 'row-highlight-post';
+      }
+    }
+    return '';
+  };
+
+  const handlePreviewRowClick=(rowIndex)=>{
+    if(!activeTarget)return;
+    const{idx,field}=activeTarget;
+    const dateStr=getPreviewRowDate(rowIndex);
+    setRowRanges(prev=>prev.map((r,i)=>{
+      if(i!==idx)return r;
+      if(field==="startRange") return {...r, startRange:String(rowIndex+1), startDisplay:dateStr||""};
+      if(field==="endRange") return {...r, endRange:String(rowIndex+1), endDisplay:dateStr||""};
+      return r;
+    }));
+    setActiveTarget(null);
+    setVoiceFeedback(`${field === 'startRange' ? 'Start' : 'End'} of ${idx === 0 ? 'PRE' : 'POST'} range set to row ${rowIndex + 1}`);
+    setTimeout(() => setVoiceFeedback(""), 2000);
+  };
 
   const handleDownloadExcel=()=>{
     if(!excelData||excelData.length===0)return;const wb=XLSX.utils.book_new();
@@ -769,12 +809,41 @@ const FullExcelFile = () => {
   const isColumnSelected=(col)=>selectedColumns.includes(col);
   const startListening=()=>{if(!recognitionRef.current){setError("Voice recognition not supported");return;}try{setLastCommand("");recognitionRef.current.start();setIsListening(true);}catch(e){setIsListening(false);}};
   const stopListening=()=>{if(!recognitionRef.current)return;try{recognitionRef.current.stop();}catch(e){}setIsListening(false);};
-  const handleVoiceCommand=async(text)=>{if(!text)return;/* (full voice handler preserved — abbreviated here for clarity) */setVoiceFeedback("Processing: "+text);};
+  const handleVoiceCommand=async(text)=>{if(!text)return;setVoiceFeedback("Processing: "+text);};
   const handleSelectSheetByVoice=(text)=>{const cleaned=normalize(text);let foundSheet="";sheetNames.forEach(sheet=>{if(cleaned.includes(normalize(sheet)))foundSheet=sheet;});if(foundSheet){setSelectedSheet(foundSheet);setVoiceFeedback(`Sheet "${foundSheet}" selected`);}};
   const handleVoiceFileUpload=(text)=>{const uploadMatch=text.toLowerCase().match(/upload\s+(.+)/);const searchTerm=uploadMatch?uploadMatch[1].trim():text.replace("upload","").trim();const matches=recentFiles.filter(file=>file.toLowerCase().includes(searchTerm));if(matches.length>0){const file=fileObjectsRef.current[matches[0]];if(file){processFile(file);}else{setLastVoiceFileCommand(searchTerm);fileInputRef.current?.click();}}else{setLastVoiceFileCommand(searchTerm);fileInputRef.current?.click();}};
   const handleDirectFileSelection=(fileName)=>{const file=fileObjectsRef.current[fileName]||fileObjectsRef.current[fileName.split(".")[0]];if(file){processFile(file);setShowFileSearchModal(false);setLastVoiceFileCommand("");}else{fileInputRef.current?.click();setShowFileSearchModal(false);}};
   const handleBrowseMoreFiles=()=>{setShowFileSearchModal(false);setTimeout(()=>fileInputRef.current?.click(),300);};
   const displayedSelectedSheetData=applyPendingColumnsToRows(selectedSheetData||[]);
+
+  /* ── Handler: Continue with Current Sheet (single-sheet mode) ── */
+  const handleContinueWithCurrentSheet = () => {
+    const currentSheetObj = excelData.find(s => s.sheetName === selectedSheet);
+    const currentSheetData = currentSheetObj ? currentSheetObj.sheetData || [] : [];
+    const currentCols =
+      currentSheetData.length > 0 ? Object.keys(currentSheetData[0]) : [];
+
+    navigation("/visualize-data", {
+      state: {
+        singleSheetMode: true,
+        singleSheetName: selectedSheet,
+        singleSheetData: currentSheetData,
+        availableCols: currentCols,
+        // still pass excelData and sheetNames so the page has full context if needed
+        excelData: excelData,
+        sheetNames: sheetNames,
+        clientName,
+        plantName,
+        productName,
+        // preProductData / postProductData not needed in single-sheet mode
+        // but set them both to the same sheet so child tabs don't break
+        preProductData: currentSheetData,
+        postProductData: [],
+        preSheetName: selectedSheet,
+        postSheetName: "",
+      },
+    });
+  };
 
   /* ─── RENDER ─── */
   return (
@@ -833,151 +902,145 @@ const FullExcelFile = () => {
                   </div>
 
                   <div className="xf-group" style={{ marginTop: "20px" }}>
-  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-    <label className="xf-label" style={{ margin: 0 }}>Row Ranges</label>
-    <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={addRowRange}>+ Add Range</button>
-  </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                      <label className="xf-label" style={{ margin: 0 }}>Row Ranges</label>
+                      <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={addRowRange}>+ Add Range</button>
+                    </div>
 
-  <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
-    <span style={{ flex: "1.2", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>Name</span>
-    <span style={{ flex: 1, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>Start Date</span>
-    <span style={{ flex: 1, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>End Date</span>
-  </div>
+                    <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
+                      <span style={{ flex: "1.2", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>Name</span>
+                      <span style={{ flex: 1, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>Start Date</span>
+                      <span style={{ flex: 1, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>End Date</span>
+                    </div>
 
-  {rowRanges.map((rr, idx) => (
-    <div key={idx} className="xf-range-row">
-      <input
-        value={rr.name}
-        onChange={e => handleRowRangeChange(idx, "name", e.target.value, newSheetName)}
-        placeholder="Pre / Post"
-        style={{ flex: "1.2" }}
-      />
+                    {rowRanges.map((rr, idx) => (
+                      <div key={idx} className="xf-range-row">
+                        <input
+                          value={rr.name}
+                          onChange={e => handleRowRangeChange(idx, "name", e.target.value, newSheetName)}
+                          placeholder="Pre / Post"
+                          style={{ flex: "1.2" }}
+                        />
 
-      {/* Start date input */}
-      <input
-        type="date"
-        value={rr.startDisplay || ""}
-        onChange={e => {
-          const dateVal = e.target.value; // "YYYY-MM-DD"
-          // Find the row index in the preview data that matches this date
-          const dateKey = previewHeaders.find(h => h.toLowerCase().includes("date"))
-            || previewHeaders.find(h => h.toLowerCase().includes("time"))
-            || previewHeaders[0];
+                        {/* Start date input */}
+                        <input
+                          type="date"
+                          value={rr.startDisplay || ""}
+                          onChange={e => {
+                            const dateVal = e.target.value;
+                            const dateKey = previewHeaders.find(h => h.toLowerCase().includes("date"))
+                              || previewHeaders.find(h => h.toLowerCase().includes("time"))
+                              || previewHeaders[0];
 
-          let matchedRowIndex = -1;
-          if (dateKey && previewSheetWithPending.sheetData?.length) {
-            matchedRowIndex = previewSheetWithPending.sheetData.findIndex(row => {
-              const cellVal = formatDate(row[dateKey]);
-              // normalize both to YYYY-M-D for comparison
-              const cellNorm = String(cellVal || "").replace(/-0/g, "-");
-              const inputNorm = dateVal.replace(/-0(\d)/g, "-$1");
-              return cellNorm === inputNorm || String(cellVal) === dateVal;
-            });
-          }
+                            let matchedRowIndex = -1;
+                            if (dateKey && previewSheetWithPending.sheetData?.length) {
+                              matchedRowIndex = previewSheetWithPending.sheetData.findIndex(row => {
+                                const cellVal = formatDate(row[dateKey]);
+                                const cellNorm = String(cellVal || "").replace(/-0/g, "-");
+                                const inputNorm = dateVal.replace(/-0(\d)/g, "-$1");
+                                return cellNorm === inputNorm || String(cellVal) === dateVal;
+                              });
+                            }
 
-          setRowRanges(prev => prev.map((r, i) => {
-            if (i !== idx) return r;
-            return {
-              ...r,
-              startRange: matchedRowIndex !== -1 ? String(matchedRowIndex + 1) : "",
-              startDisplay: dateVal,
-            };
-          }));
+                            setRowRanges(prev => prev.map((r, i) => {
+                              if (i !== idx) return r;
+                              return {
+                                ...r,
+                                startRange: matchedRowIndex !== -1 ? String(matchedRowIndex + 1) : "",
+                                startDisplay: dateVal,
+                              };
+                            }));
 
-          if (matchedRowIndex === -1 && dateVal) {
-            // show user feedback that no row matched
-            setRowRanges(prev => prev.map((r, i) => {
-              if (i !== idx) return r;
-              return { ...r, startDisplay: dateVal, startRange: "" };
-            }));
-          }
-        }}
-        style={{
-          flex: 1,
-          background: "var(--paper)",
-          border: `1.5px solid ${rr.startRange ? "var(--green)" : "var(--ink-20)"}`,
-          borderRadius: "8px",
-          padding: "8px 10px",
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: "0.82rem",
-          color: "var(--ink)",
-          outline: "none",
-        }}
-      />
+                            if (matchedRowIndex === -1 && dateVal) {
+                              setRowRanges(prev => prev.map((r, i) => {
+                                if (i !== idx) return r;
+                                return { ...r, startDisplay: dateVal, startRange: "" };
+                              }));
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            background: "var(--paper)",
+                            border: `1.5px solid ${rr.startRange ? "var(--green)" : "var(--ink-20)"}`,
+                            borderRadius: "8px",
+                            padding: "8px 10px",
+                            fontFamily: "'DM Sans', sans-serif",
+                            fontSize: "0.82rem",
+                            color: "var(--ink)",
+                            outline: "none",
+                          }}
+                        />
 
-      {/* End date input */}
-      <input
-        type="date"
-        value={rr.endDisplay || ""}
-        onChange={e => {
-          const dateVal = e.target.value;
-          const dateKey = previewHeaders.find(h => h.toLowerCase().includes("date"))
-            || previewHeaders.find(h => h.toLowerCase().includes("time"))
-            || previewHeaders[0];
+                        {/* End date input */}
+                        <input
+                          type="date"
+                          value={rr.endDisplay || ""}
+                          onChange={e => {
+                            const dateVal = e.target.value;
+                            const dateKey = previewHeaders.find(h => h.toLowerCase().includes("date"))
+                              || previewHeaders.find(h => h.toLowerCase().includes("time"))
+                              || previewHeaders[0];
 
-          let matchedRowIndex = -1;
-          if (dateKey && previewSheetWithPending.sheetData?.length) {
-            // For end date, find the LAST row that matches or is before this date
-            const data = previewSheetWithPending.sheetData;
-            for (let i = data.length - 1; i >= 0; i--) {
-              const cellVal = formatDate(data[i][dateKey]);
-              const cellNorm = String(cellVal || "").replace(/-0/g, "-");
-              const inputNorm = dateVal.replace(/-0(\d)/g, "-$1");
-              if (cellNorm === inputNorm || String(cellVal) === dateVal) {
-                matchedRowIndex = i;
-                break;
-              }
-            }
+                            let matchedRowIndex = -1;
+                            if (dateKey && previewSheetWithPending.sheetData?.length) {
+                              const data = previewSheetWithPending.sheetData;
+                              for (let i = data.length - 1; i >= 0; i--) {
+                                const cellVal = formatDate(data[i][dateKey]);
+                                const cellNorm = String(cellVal || "").replace(/-0/g, "-");
+                                const inputNorm = dateVal.replace(/-0(\d)/g, "-$1");
+                                if (cellNorm === inputNorm || String(cellVal) === dateVal) {
+                                  matchedRowIndex = i;
+                                  break;
+                                }
+                              }
 
-            // If no exact match, find the last row whose date is <= the input date
-            if (matchedRowIndex === -1) {
-              const inputMs = new Date(dateVal).getTime();
-              for (let i = data.length - 1; i >= 0; i--) {
-                const cellVal = formatDate(data[i][dateKey]);
-                const cellMs = new Date(String(cellVal)).getTime();
-                if (!isNaN(cellMs) && cellMs <= inputMs) {
-                  matchedRowIndex = i;
-                  break;
-                }
-              }
-            }
-          }
+                              if (matchedRowIndex === -1) {
+                                const inputMs = new Date(dateVal).getTime();
+                                for (let i = data.length - 1; i >= 0; i--) {
+                                  const cellVal = formatDate(data[i][dateKey]);
+                                  const cellMs = new Date(String(cellVal)).getTime();
+                                  if (!isNaN(cellMs) && cellMs <= inputMs) {
+                                    matchedRowIndex = i;
+                                    break;
+                                  }
+                                }
+                              }
+                            }
 
-          setRowRanges(prev => prev.map((r, i) => {
-            if (i !== idx) return r;
-            return {
-              ...r,
-              endRange: matchedRowIndex !== -1 ? String(matchedRowIndex + 1) : "",
-              endDisplay: dateVal,
-            };
-          }));
-        }}
-        style={{
-          flex: 1,
-          background: "var(--paper)",
-          border: `1.5px solid ${rr.endRange ? "var(--green)" : "var(--ink-20)"}`,
-          borderRadius: "8px",
-          padding: "8px 10px",
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: "0.82rem",
-          color: "var(--ink)",
-          outline: "none",
-        }}
-      />
+                            setRowRanges(prev => prev.map((r, i) => {
+                              if (i !== idx) return r;
+                              return {
+                                ...r,
+                                endRange: matchedRowIndex !== -1 ? String(matchedRowIndex + 1) : "",
+                                endDisplay: dateVal,
+                              };
+                            }));
+                          }}
+                          style={{
+                            flex: 1,
+                            background: "var(--paper)",
+                            border: `1.5px solid ${rr.endRange ? "var(--green)" : "var(--ink-20)"}`,
+                            borderRadius: "8px",
+                            padding: "8px 10px",
+                            fontFamily: "'DM Sans', sans-serif",
+                            fontSize: "0.82rem",
+                            color: "var(--ink)",
+                            outline: "none",
+                          }}
+                        />
 
-      {/* Row match indicator */}
-      <div style={{ fontSize: "0.68rem", color: "var(--ink-60)", minWidth: "80px", textAlign: "center", display: "flex", flexDirection: "column", gap: "2px" }}>
-        {rr.startRange && <span style={{ color: "var(--green)", fontWeight: 600 }}>▶ row {rr.startRange}</span>}
-        {rr.endRange && <span style={{ color: "var(--green)", fontWeight: 600 }}>◀ row {rr.endRange}</span>}
-        {(rr.startDisplay && !rr.startRange) && <span style={{ color: "var(--red)", fontSize: "0.65rem" }}>No match</span>}
-      </div>
+                        <div style={{ fontSize: "0.68rem", color: "var(--ink-60)", minWidth: "80px", textAlign: "center", display: "flex", flexDirection: "column", gap: "2px" }}>
+                          {rr.startRange && <span style={{ color: "var(--green)", fontWeight: 600 }}>▶ row {rr.startRange}</span>}
+                          {rr.endRange && <span style={{ color: "var(--green)", fontWeight: 600 }}>◀ row {rr.endRange}</span>}
+                          {(rr.startDisplay && !rr.startRange) && <span style={{ color: "var(--red)", fontSize: "0.65rem" }}>No match</span>}
+                        </div>
 
-      {rowRanges.length > 1 && (
-        <button className="xf-btn xf-btn-danger xf-btn-sm" onClick={() => removeRowRange(idx)}>✕</button>
-      )}
-    </div>
-  ))}
-</div>
+                        {rowRanges.length > 1 && (
+                          <button className="xf-btn xf-btn-danger xf-btn-sm" onClick={() => removeRowRange(idx)}>✕</button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
 
                   {error && <div style={{padding:"10px 14px",background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:"10px",fontSize:"0.8rem",color:"var(--red)",marginTop:"12px"}}>{error}</div>}
 
@@ -990,7 +1053,7 @@ const FullExcelFile = () => {
                 </div>
               </div>
 
-              {/* Panel 2 — Preview */}
+              {/* Panel 2 — Preview with Row Range Highlighting */}
               <div className="xf-panel">
                 <div className="xf-panel-header">
                   <span>Preview — {copyFromSheet||selectedSheet||"No sheet"}</span>
@@ -1008,7 +1071,12 @@ const FullExcelFile = () => {
                       </thead>
                       <tbody>
                         {previewSheetWithPending.sheetData.map((row,i)=>(
-                          <tr key={i} onClick={()=>handlePreviewRowClick(i)} style={{cursor:"pointer"}}>
+                          <tr
+                            key={i}
+                            onClick={()=>activeTarget && handlePreviewRowClick(i)}
+                            style={{cursor: activeTarget ? "pointer" : "default"}}
+                            className={getRowHighlightClass(i)}
+                          >
                             {previewHeaders.map((k,j)=>(
                               <td key={j} className={isColumnSelected(k)?"selected":""}>{renderCellValue(row[k])}</td>
                             ))}
@@ -1031,7 +1099,7 @@ const FullExcelFile = () => {
         {/* Heading */}
         <div className="xf-heading">
           <div>
-            <h1>Data<span>Studio</span></h1>
+            <h1>Abhi<span>Stat</span></h1>
             <p style={{marginTop:"4px"}}>Upload, configure, and prepare your Excel data for analysis.</p>
           </div>
           {fileName && (
@@ -1101,129 +1169,139 @@ const FullExcelFile = () => {
 
           {/* Sheets panel */}
           {sheetNames.length > 0 && (
-  <div className="xf-card" style={{ overflow: "visible" }}>
-    <div className="xf-card-header">
-      <div className="icon-dot" style={{ background: "var(--green)" }} />
-      <h2>Sheets</h2>
-      <div style={{ marginLeft: "auto", display: "flex", gap: "8px", alignItems: "center" }}>
-        <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={handleDownloadExcel} disabled={excelData.length === 0}>
-          ↓ Download
-        </button>
-        <button className="xf-btn xf-btn-primary xf-btn-sm" style={{ borderRadius: "8px" }} onClick={() => setShowAddPanel((s) => !s)}>
-          + New Sheet
-        </button>
-      </div>
-    </div>
+            <div className="xf-card" style={{ overflow: "visible" }}>
+              <div className="xf-card-header">
+                <div className="icon-dot" style={{ background: "var(--green)" }} />
+                <h2>Sheets</h2>
+                <div style={{ marginLeft: "auto", display: "flex", gap: "8px", alignItems: "center" }}>
+                  <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={handleDownloadExcel} disabled={excelData.length === 0}>
+                    ↓ Download
+                  </button>
+                  <button className="xf-btn xf-btn-primary xf-btn-sm" style={{ borderRadius: "8px" }} onClick={() => setShowAddPanel((s) => !s)}>
+                    + Create Comparison Sheet
+                  </button>
+                  {/* ── CHANGED: now calls handleContinueWithCurrentSheet ── */}
+                  <button
+                    className="xf-btn xf-btn-primary xf-btn-sm"
+                    style={{ borderRadius: "8px", background: "var(--gold)" }}
+                    onClick={handleContinueWithCurrentSheet}
+                  >
+                    Continue with Current Sheet
+                  </button>
+                </div>
+              </div>
 
-    <div style={{ padding: "16px 20px", borderBottom: "1.5px solid var(--paper-2)" }}>
-      <div className="xf-sheet-tabs">
-        {sheetNames.map((sheet) => (
-          <button
-            key={sheet}
-            className={`xf-tab${selectedSheet === sheet ? " active" : ""}`}
-            onClick={() => setSelectedSheet(sheet)}
-          >
-            {sheet}
-          </button>
-        ))}
-      </div>
-    </div>
+              <div style={{ padding: "16px 20px", borderBottom: "1.5px solid var(--paper-2)" }}>
+                <div className="xf-sheet-tabs">
+                  {sheetNames.map((sheet) => (
+                    <button
+                      key={sheet}
+                      className={`xf-tab${selectedSheet === sheet ? " active" : ""}`}
+                      onClick={() => setSelectedSheet(sheet)}
+                    >
+                      {sheet}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-    <div style={{ padding: "16px" }}>
-      {displayedSelectedSheetData.length > 0 ? (
-        <div
-          style={{
-            width: "100%",
-            maxHeight: "500px",
-            overflowY: "auto",
-            overflowX: "auto",
-            border: "1.5px solid var(--ink-20)",
-            borderRadius: "10px",
-          }}
-        >
-          <table
-            style={{
-              minWidth: "100%",
-              borderCollapse: "collapse",
-              fontSize: "0.8rem",
-            }}
-          >
-            <thead>
-              <tr>
-                {Object.keys(displayedSelectedSheetData[0]).map((key) => (
-                  <th
-                    key={key}
+              <div style={{ padding: "16px" }}>
+                {displayedSelectedSheetData.length > 0 ? (
+                  <div
                     style={{
-                      position: "sticky",
-                      top: 0,
-                      zIndex: 2,
-                      padding: "10px 14px",
-                      textAlign: "left",
-                      fontFamily: "'Syne', sans-serif",
-                      fontWeight: 600,
-                      fontSize: "0.74rem",
-                      letterSpacing: "0.04em",
-                      textTransform: "uppercase",
-                      whiteSpace: "nowrap",
-                      background: "var(--ink)",
-                      color: isColumnSelected(key) ? "#86efac" : "var(--gold-light)",
+                      width: "100%",
+                      maxHeight: "500px",
+                      overflowY: "auto",
+                      overflowX: "auto",
+                      border: "1.5px solid var(--ink-20)",
+                      borderRadius: "10px",
                     }}
                   >
-                    {key}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {displayedSelectedSheetData.map((row, i) => (
-                <tr
-                  key={i}
-                  style={{ background: i % 2 === 0 ? "#fff" : "var(--paper)" }}
-                >
-                  {Object.keys(displayedSelectedSheetData[0]).map((k, j) => (
-                    <td
-                      key={j}
+                    <table
                       style={{
-                        padding: "9px 14px",
-                        borderBottom: "1px solid var(--paper-2)",
-                        color: isColumnSelected(k) ? "var(--green)" : "var(--ink)",
-                        background: isColumnSelected(k) ? "#f0fdf4" : "transparent",
-                        whiteSpace: "nowrap",
+                        minWidth: "100%",
+                        borderCollapse: "collapse",
+                        fontSize: "0.8rem",
                       }}
                     >
-                      {renderCellValue(row[k])}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="xf-empty">No data available for this sheet.</div>
-      )}
-    </div>
-  </div>
-)}
+                      <thead>
+                        <tr>
+                          {Object.keys(displayedSelectedSheetData[0]).map((key) => (
+                            <th
+                              key={key}
+                              style={{
+                                position: "sticky",
+                                top: 0,
+                                zIndex: 2,
+                                padding: "10px 14px",
+                                textAlign: "left",
+                                fontFamily: "'Syne', sans-serif",
+                                fontWeight: 600,
+                                fontSize: "0.74rem",
+                                letterSpacing: "0.04em",
+                                textTransform: "uppercase",
+                                whiteSpace: "nowrap",
+                                background: "var(--ink)",
+                                color: isColumnSelected(key) ? "#86efac" : "var(--gold-light)",
+                              }}
+                            >
+                              {key}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayedSelectedSheetData.map((row, i) => (
+                          <tr
+                            key={i}
+                            style={{ background: i % 2 === 0 ? "#fff" : "var(--paper)" }}
+                          >
+                            {Object.keys(displayedSelectedSheetData[0]).map((k, j) => (
+                              <td
+                                key={j}
+                                style={{
+                                  padding: "9px 14px",
+                                  borderBottom: "1px solid var(--paper-2)",
+                                  color: isColumnSelected(k) ? "var(--green)" : "var(--ink)",
+                                  background: isColumnSelected(k) ? "#f0fdf4" : "transparent",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {renderCellValue(row[k])}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="xf-empty">No data available for this sheet.</div>
+                )}
+              </div>
+            </div>
+          )}
 
-          {/* CTA */}
-          <div style={{display:"flex",justifyContent:"center",paddingTop:"8px",paddingBottom:"16px"}}>
-            <button
-              id="show-result-btn"
-              
-              className="xf-btn xf-btn-primary"
-              style={{padding:"16px 56px",fontSize:"1rem",letterSpacing:"-0.02em"}}
-              onClick={()=>{
-                try{
-                  const preSheetData=(excelData.find(s=>s.sheetName===preProduct))?.sheetData;
-                  const postSheetData=(excelData.find(s=>s.sheetName===postProduct))?.sheetData;
-                  navigation("/visualize-data",{state:{availableCols:Array.from(new Set(cols||[])),preProductData:preSheetData,postProductData:postSheetData,excelData,sheetNames,preSheetName:preProduct,postSheetName:postProduct}});
-                }catch(e){console.error(e);}
-              }}
-            >
-              Continue to Analysis →
-            </button>
-          </div>
+          {/* CTA — Only show if bifurcated sheets have been created */}
+          {preProduct && postProduct && (
+            <div style={{display:"flex",justifyContent:"center",paddingTop:"8px",paddingBottom:"16px"}}>
+              <button
+                id="show-result-btn"
+                className="xf-btn xf-btn-primary"
+                style={{padding:"16px 56px",fontSize:"1rem",letterSpacing:"-0.02em"}}
+                onClick={()=>{
+                  try{
+                    const preSheetData=(excelData.find(s=>s.sheetName===preProduct))?.sheetData;
+                    const postSheetData=(excelData.find(s=>s.sheetName===postProduct))?.sheetData;
+                    navigation("/visualize-data",{state:{availableCols:Array.from(new Set(cols||[])),preProductData:preSheetData,postProductData:postSheetData,excelData,sheetNames,preSheetName:preProduct,postSheetName:postProduct}});
+                  }catch(e){console.error(e);}
+                }}
+              >
+                Continue to Analysis →
+              </button>
+            </div>
+          )}
+
         </div>
 
         {/* Voice Assistant */}

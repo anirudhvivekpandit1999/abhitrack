@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
     Box,
     Typography,
@@ -34,29 +34,37 @@ import {
     FormControlLabel,
     Checkbox,
     IconButton,
-    Tooltip
+    Tooltip,
+    CircularProgress
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import ImageIcon from '@mui/icons-material/Image';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import logo from '../../assets/abhitech-logo.png';
 import SaveVisualizationButton from '../SaveVisualizationButton'
 
 const BootstrappingTab = ({ 
-    availableColumns, 
-    bootstrapAnalysis = {},
+    availableColumns = [], 
+    withProductData = [],
+    withoutProductData = [],
     clientName = '',
     plantName = '',
     productName = ''
 }) => {
     const [selectedColumn, setSelectedColumn] = useState('');
-    const [itemSelectOpen,   setItemSelectOpen] = useState(false);
     const [significantPage, setSignificantPage] = useState(1);
     const [nonSignificantPage, setNonSignificantPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(20);
     const [sortOrder, setSortOrder] = useState('impact');
     const [viewMode, setViewMode] = useState('grid');
+    const [isLoading, setIsLoading] = useState(false);
+    const [bootstrapAnalysis, setBootstrapAnalysis] = useState({
+        significant_impact: [],
+        no_significant_impact: [],
+        total_columns_analyzed: 0
+    });
     
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
     const [downloadOptions, setDownloadOptions] = useState({
@@ -74,43 +82,128 @@ const BootstrappingTab = ({
     const [columnSearchTerm, setColumnSearchTerm] = useState('');
     const tableRef = useRef(null);
 
-    const generateFileName = (visualizationName) => {
-        const parts = [];
-        if (clientName) parts.push(clientName.replace(/\s+/g, '_'));
-        if (plantName) parts.push(plantName.replace(/\s+/g, '_'));
-        if (productName) parts.push(productName.replace(/\s+/g, '_'));
-        parts.push(visualizationName.replace(/\s+/g, '_'));
-        return parts.join('-');
-    };
+    // Bootstrap calculation function
+    const performBootstrapAnalysis = useCallback((withProduct, withoutProduct, column, nBootstraps = 10000, confidenceLevel = 0.95) => {
+        // Extract values from the column
+        const withValues = withProduct
+            .map(row => row?.[column])
+            .filter(val => val !== null && val !== undefined && !isNaN(Number(val)))
+            .map(val => Number(val));
+        
+        const withoutValues = withoutProduct
+            .map(row => row?.[column])
+            .filter(val => val !== null && val !== undefined && !isNaN(Number(val)))
+            .map(val => Number(val));
+        
+        if (withValues.length === 0 || withoutValues.length === 0) {
+            return null;
+        }
+        
+        // Calculate observed mean difference
+        const meanWith = withValues.reduce((a, b) => a + b, 0) / withValues.length;
+        const meanWithout = withoutValues.reduce((a, b) => a + b, 0) / withoutValues.length;
+        const observedDiff = meanWith - meanWithout;
+        
+        // Bootstrap sampling
+        const bootstrapDiffs = [];
+        for (let i = 0; i < nBootstraps; i++) {
+            // Sample with replacement from both groups
+            const bootWith = Array(withValues.length).fill().map(() => 
+                withValues[Math.floor(Math.random() * withValues.length)]
+            );
+            const bootWithout = Array(withoutValues.length).fill().map(() => 
+                withoutValues[Math.floor(Math.random() * withoutValues.length)]
+            );
+            
+            const bootMeanWith = bootWith.reduce((a, b) => a + b, 0) / bootWith.length;
+            const bootMeanWithout = bootWithout.reduce((a, b) => a + b, 0) / bootWithout.length;
+            bootstrapDiffs.push(bootMeanWith - bootMeanWithout);
+        }
+        
+        // Sort bootstrap differences for confidence interval
+        bootstrapDiffs.sort((a, b) => a - b);
+        const lowerPercentile = (1 - confidenceLevel) / 2;
+        const upperPercentile = 1 - lowerPercentile;
+        const lowerIndex = Math.floor(bootstrapDiffs.length * lowerPercentile);
+        const upperIndex = Math.floor(bootstrapDiffs.length * upperPercentile);
+        
+        const ciLower = bootstrapDiffs[lowerIndex];
+        const ciUpper = bootstrapDiffs[upperIndex];
+        
+        // Calculate standard deviation
+        const meanBootstrap = bootstrapDiffs.reduce((a, b) => a + b, 0) / bootstrapDiffs.length;
+        const variance = bootstrapDiffs.reduce((sum, val) => sum + Math.pow(val - meanBootstrap, 2), 0) / bootstrapDiffs.length;
+        const stdDev = Math.sqrt(variance);
+        
+        // Determine significance (CI does not include 0)
+        const isSignificant = (ciLower > 0) || (ciUpper < 0);
+        
+        return {
+            column,
+            mean_difference: observedDiff,
+            standard_deviation: stdDev,
+            confidence_interval: {
+                lower_bound: ciLower,
+                upper_bound: ciUpper
+            },
+            is_significant: isSignificant,
+            sample_size_with: withValues.length,
+            sample_size_without: withoutValues.length,
+            n_bootstraps: nBootstraps
+        };
+    }, []);
 
+    // Run bootstrap analysis for all columns
+    const runFullBootstrapAnalysis = useCallback(async () => {
+        if (!availableColumns.length || !withProductData.length || !withoutProductData.length) {
+            return;
+        }
+        
+        setIsLoading(true);
+        
+        // Simulate async operation to keep UI responsive
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const significantResults = [];
+        const nonSignificantResults = [];
+        
+        for (const column of availableColumns) {
+            const result = performBootstrapAnalysis(withProductData, withoutProductData, column);
+            if (result) {
+                if (result.is_significant) {
+                    significantResults.push(result);
+                } else {
+                    nonSignificantResults.push(result);
+                }
+            }
+        }
+        
+        // Sort significant by absolute mean difference (highest impact first)
+        significantResults.sort((a, b) => Math.abs(b.mean_difference) - Math.abs(a.mean_difference));
+        nonSignificantResults.sort((a, b) => Math.abs(b.mean_difference) - Math.abs(a.mean_difference));
+        
+        setBootstrapAnalysis({
+            significant_impact: significantResults,
+            no_significant_impact: nonSignificantResults,
+            total_columns_analyzed: significantResults.length + nonSignificantResults.length
+        });
+        
+        setIsLoading(false);
+    }, [availableColumns, withProductData, withoutProductData, performBootstrapAnalysis]);
+
+    // Run analysis when data changes
     useEffect(() => {
-        if (availableColumns.length > 0) {
+        if (availableColumns.length > 0 && withProductData.length > 0 && withoutProductData.length > 0) {
+            runFullBootstrapAnalysis();
+        }
+    }, [availableColumns, withProductData, withoutProductData, runFullBootstrapAnalysis]);
+
+    // Set initial selected column
+    useEffect(() => {
+        if (availableColumns.length > 0 && !selectedColumn) {
             setSelectedColumn(availableColumns[0]);
         }
-    }, [availableColumns]);
-
-    useEffect(()=>{
-        const syncViewMode = () => {
-            const viewMode = localStorage.getItem('bootstrapViewMode') || 'grid';
-            setViewMode(viewMode);
-        };
-        syncViewMode();
-        window.addEventListener('bootstrapViewModeChanged', syncViewMode);
-        return () => {
-            window.removeEventListener('bootstrapViewModeChanged', syncViewMode);
-        };
-    },[])
-
-    useEffect(()=>{
-        const syncItemSelectOpen = () => {
-            const isOpen = localStorage.getItem('bootstrapItemSelectOpen') === 'true';
-            setItemSelectOpen(isOpen);
-        };
-        window.addEventListener('bootstrapItemSelectOpenChanged', syncItemSelectOpen);
-        return () => {
-            window.removeEventListener('bootstrapItemSelectOpenChanged', syncItemSelectOpen);
-        };
-    },[])
+    }, [availableColumns, selectedColumn]);
 
     const getColumnStatistics = (columnName) => {
         const significantResults = bootstrapAnalysis.significant_impact || [];
@@ -153,6 +246,16 @@ const BootstrappingTab = ({
         const startIndex = (nonSignificantPage - 1) * itemsPerPage;
         return sortedNonSignificantColumns.slice(startIndex, startIndex + itemsPerPage);
     }, [sortedNonSignificantColumns, nonSignificantPage, itemsPerPage]);
+
+    // Generate custom filename
+    const generateFileName = (visualizationName) => {
+        const parts = [];
+        if (clientName) parts.push(clientName.replace(/\s+/g, '_'));
+        if (plantName) parts.push(plantName.replace(/\s+/g, '_'));
+        if (productName) parts.push(productName.replace(/\s+/g, '_'));
+        parts.push(visualizationName.replace(/\s+/g, '_'));
+        return parts.join('-');
+    };
 
     const handleDownloadTableAsPNG = async () => {
         if (!tableRef.current || !selectedColumn) {
@@ -267,7 +370,10 @@ const BootstrappingTab = ({
             mean_difference,
             standard_deviation,
             confidence_interval,
-            is_significant
+            is_significant,
+            sample_size_with,
+            sample_size_without,
+            n_bootstraps
         } = columnStats;
 
         return (
@@ -277,7 +383,8 @@ const BootstrappingTab = ({
                     display: 'flex', 
                     alignItems: 'center', 
                     gap: 1,
-                    justifyContent: { xs: 'center', sm: 'flex-start' }
+                    justifyContent: { xs: 'center', sm: 'flex-start' },
+                    flexWrap: 'wrap'
                 }}>
                     <Chip 
                         label={is_significant ? "Significant Impact" : "No Significant Impact"} 
@@ -286,8 +393,29 @@ const BootstrappingTab = ({
                         size="small"
                         sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
                     />
+                    <Chip 
+                        label={`With Product: n=${sample_size_with}`}
+                        variant="outlined"
+                        size="small"
+                        color="primary"
+                        sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
+                    />
+                    <Chip 
+                        label={`Without Product: n=${sample_size_without}`}
+                        variant="outlined"
+                        size="small"
+                        color="secondary"
+                        sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
+                    />
+                    <Chip 
+                        label={`Bootstraps: ${n_bootstraps}`}
+                        variant="outlined"
+                        size="small"
+                        sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}
+                    />
                 </Box>
                 
+                {/* Download PNG Button */}
                 <Box sx={{ 
                     mb: 2, 
                     display: 'flex', 
@@ -302,7 +430,6 @@ const BootstrappingTab = ({
                     />
                     <Tooltip title="Download Table as PNG">
                         <Button
-                            id='bootstrap-btn'
                             variant="outlined"
                             size="small"
                             startIcon={<ImageIcon />}
@@ -339,18 +466,18 @@ const BootstrappingTab = ({
                         <TableBody>
                             <TableRow>
                                 <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                                    Mean Difference
+                                    Mean Difference (With - Without)
                                 </TableCell>
                                 <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                                    {mean_difference}
+                                    {mean_difference?.toFixed(4) || 'N/A'}
                                 </TableCell>
                             </TableRow>
                             <TableRow>
                                 <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                                    Standard Deviation
+                                    Bootstrap Standard Error
                                 </TableCell>
                                 <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                                    {standard_deviation}
+                                    {standard_deviation?.toFixed(4) || 'N/A'}
                                 </TableCell>
                             </TableRow>
                             <TableRow>
@@ -358,7 +485,7 @@ const BootstrappingTab = ({
                                     95% Confidence Interval
                                 </TableCell>
                                 <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                                    [{confidence_interval.lower_bound}, {confidence_interval.upper_bound}]
+                                    [{confidence_interval?.lower_bound?.toFixed(4)}, {confidence_interval?.upper_bound?.toFixed(4)}]
                                 </TableCell>
                             </TableRow>
                             <TableRow>
@@ -368,11 +495,11 @@ const BootstrappingTab = ({
                                 <TableCell 
                                     align="right" 
                                     sx={{ 
-                                        color: confidence_interval.lower_bound > 0 ? 'error.main' : 'text.primary',
+                                        color: confidence_interval?.lower_bound > 0 ? 'error.main' : 'text.primary',
                                         fontSize: { xs: '0.75rem', sm: '0.875rem' }
                                     }}
                                 >
-                                    {confidence_interval.lower_bound}
+                                    {confidence_interval?.lower_bound?.toFixed(4) || 'N/A'}
                                 </TableCell>
                             </TableRow>
                             <TableRow>
@@ -382,11 +509,11 @@ const BootstrappingTab = ({
                                 <TableCell 
                                     align="right" 
                                     sx={{ 
-                                        color: confidence_interval.upper_bound < 0 ? 'error.main' : 'text.primary',
+                                        color: confidence_interval?.upper_bound < 0 ? 'error.main' : 'text.primary',
                                         fontSize: { xs: '0.75rem', sm: '0.875rem' }
                                     }}
                                 >
-                                    {confidence_interval.upper_bound}
+                                    {confidence_interval?.upper_bound?.toFixed(4) || 'N/A'}
                                 </TableCell>
                             </TableRow>
                         </TableBody>
@@ -401,7 +528,7 @@ const BootstrappingTab = ({
         const nonSignificantCount = bootstrapAnalysis.no_significant_impact?.length || 0;
         const totalAnalyzed = bootstrapAnalysis.total_columns_analyzed || 0;
 
-        if (totalAnalyzed === 0) {
+        if (totalAnalyzed === 0 || isLoading) {
             return null;
         }
 
@@ -432,6 +559,9 @@ const BootstrappingTab = ({
                                 <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                                     Mean Difference
                                 </TableCell>
+                                <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                                    95% CI
+                                </TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -450,6 +580,9 @@ const BootstrappingTab = ({
                                     </TableCell>
                                     <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                                         {result.mean_difference?.toFixed(4) || 'N/A'}
+                                    </TableCell>
+                                    <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                                        [{result.confidence_interval?.lower_bound?.toFixed(4)}, {result.confidence_interval?.upper_bound?.toFixed(4)}]
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -532,7 +665,7 @@ const BootstrappingTab = ({
                 const row = {};
                 if (downloadOptions.statistics.column) row['Column'] = item.column;
                 if (downloadOptions.statistics.mean_difference) row['Mean Difference'] = item.mean_difference;
-                if (downloadOptions.statistics.standard_deviation) row['Standard Deviation'] = item.standard_deviation;
+                if (downloadOptions.statistics.standard_deviation) row['Standard Error'] = item.standard_deviation;
                 if (downloadOptions.statistics.confidence_interval_lower) row['CI Lower (2.5%)'] = item.confidence_interval?.lower_bound;
                 if (downloadOptions.statistics.confidence_interval_upper) row['CI Upper (97.5%)'] = item.confidence_interval?.upper_bound;
                 if (downloadOptions.statistics.is_significant) row['Significant Impact'] = item.is_significant ? 'Yes' : 'No';
@@ -545,7 +678,7 @@ const BootstrappingTab = ({
                 const row = {};
                 if (downloadOptions.statistics.column) row['Column'] = item.column;
                 if (downloadOptions.statistics.mean_difference) row['Mean Difference'] = item.mean_difference;
-                if (downloadOptions.statistics.standard_deviation) row['Standard Deviation'] = item.standard_deviation;
+                if (downloadOptions.statistics.standard_deviation) row['Standard Error'] = item.standard_deviation;
                 if (downloadOptions.statistics.confidence_interval_lower) row['CI Lower (2.5%)'] = item.confidence_interval?.lower_bound;
                 if (downloadOptions.statistics.confidence_interval_upper) row['CI Upper (97.5%)'] = item.confidence_interval?.upper_bound;
                 if (downloadOptions.statistics.is_significant) row['Significant Impact'] = item.is_significant ? 'Yes' : 'No';
@@ -652,14 +785,59 @@ const BootstrappingTab = ({
         );
     };
 
+    // Loading state
+    if (isLoading) {
+        return (
+            <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                minHeight: 400 
+            }}>
+                <CircularProgress />
+                <Typography sx={{ mt: 2, color: 'text.secondary' }}>
+                    Performing bootstrap analysis on {availableColumns.length} columns...
+                </Typography>
+                <Typography variant="caption" sx={{ mt: 1, color: 'text.secondary' }}>
+                    This may take a moment depending on the number of columns and data size.
+                </Typography>
+            </Box>
+        );
+    }
+
+    // No data state
+    if (!withProductData.length && !withoutProductData.length) {
+        return (
+            <Box sx={{ p: 3 }}>
+                <Alert severity="info">
+                    <AlertTitle>No Data Available</AlertTitle>
+                    Please ensure both "With Product" and "Without Product" data are loaded to perform bootstrap analysis.
+                </Alert>
+            </Box>
+        );
+    }
+
     return (
         <Box sx={{ p: { xs: 1, sm: 2, md: 0 } }}>
+            {/* Refresh Button */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<RefreshIcon />}
+                    onClick={runFullBootstrapAnalysis}
+                    disabled={isLoading}
+                >
+                    Refresh Analysis
+                </Button>
+            </Box>
+
             {renderSummaryStats()}
             
             <Grid container spacing={{ xs: 2, sm: 3 }}>
                 <Grid item xs={12} md={6} lg={4}>
                     <Autocomplete
-                        id='bootstrap-column-select'
                         options={availableColumns}
                         value={selectedColumn}
                         onChange={(event, newValue) => {
@@ -668,8 +846,7 @@ const BootstrappingTab = ({
                             }
                         }}
                         renderInput={(params) => (
-                            <TextField 
-                                id='bootstrap-column-select'
+                            <TextField
                                 {...params}
                                 label="Select Column for Analysis"
                                 variant="outlined"
@@ -726,7 +903,6 @@ const BootstrappingTab = ({
                                 value={itemsPerPage}
                                 label="Items per page"
                                 onChange={(e) => {
-                                    setItemSelectOpen(true);
                                     setItemsPerPage(e.target.value);
                                     setSignificantPage(1);
                                     setNonSignificantPage(1);
@@ -760,14 +936,13 @@ const BootstrappingTab = ({
                             size="small"
                             fullWidth
                         >
-                            <ToggleButton id="grid"value="grid">Grid View</ToggleButton>
-                            <ToggleButton id="list"value="list">List View</ToggleButton>
+                            <ToggleButton value="grid">Grid View</ToggleButton>
+                            <ToggleButton value="list">List View</ToggleButton>
                         </ToggleButtonGroup>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
                         <Tooltip title="Download Excel Report">
                             <Button
-                                id='export-bootstrap-excel-btn'
                                 variant="outlined"
                                 size="small"
                                 startIcon={<DownloadIcon />}
@@ -1035,7 +1210,7 @@ const BootstrappingTab = ({
                                         onChange={() => handleStatisticToggle('standard_deviation')}
                                     />
                                 }
-                                label="Standard Deviation"
+                                label="Standard Error"
                             />
                             <FormControlLabel
                                 control={
