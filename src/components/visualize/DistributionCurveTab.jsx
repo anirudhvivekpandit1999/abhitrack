@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
     Box, Typography, Card, CardContent, Grid, Alert, TextField, Autocomplete,
     IconButton, Tooltip as MuiTooltip, ToggleButton, ToggleButtonGroup,
@@ -157,28 +157,72 @@ const DistributionCurveTab = ({
         if (availableColumns.length > 0 && !separateColumn) setSeparateColumn(availableColumns[0]);
     }, [availableColumns, singleColumn, separateColumn]);
 
-    // DateTime helpers
     const isDateTimeColumn = (allRows, columnName) => {
         if (!allRows || allRows.length === 0 || !columnName) return false;
         const sampleValues = allRows.slice(0, 10).map(row => row?.[columnName]).filter(val => val != null);
         if (sampleValues.length === 0) return false;
-        const dateTimeRegex = /^\d{4}-\d{2}-\d{2}([\sT]\d{2}:\d{2}:\d{2}(\.\d{3})?)?$/;
-        return sampleValues.every(val => {
-            const str = String(val).trim();
-            return dateTimeRegex.test(str) && !isNaN(Date.parse(str));
-        });
+
+        let dateCount = 0;
+        for (const val of sampleValues) {
+            if (isValidDateValue(val)) {
+                dateCount++;
+            }
+        }
+
+        return dateCount >= Math.ceil(sampleValues.length * 0.7); // 70% threshold
+    };
+
+    const isValidDateValue = (value) => {
+        if (value instanceof Date && !isNaN(value.getTime())) return true;
+        if (typeof value === 'number') {
+            if (value > 1e11) return true; // likely a JS timestamp in ms
+            if (Number.isInteger(value) && value >= 25000 && value <= 50000) {
+                const date = new Date((value - 25569) * 86400 * 1000);
+                return !isNaN(date.getTime()) && date.getFullYear() >= 1900 && date.getFullYear() <= 2100;
+            }
+            return false;
+        }
+        if (typeof value === 'string') {
+            const str = value.trim();
+            if (!str) return false;
+            const date = new Date(str);
+            if (!isNaN(date.getTime())) {
+                const year = date.getFullYear();
+                return year >= 1900 && year <= 2100;
+            }
+        }
+        return false;
     };
 
     const parseDateTimeFromInput = (inputValue) => {
         if (!inputValue) return null;
+        if (typeof inputValue === 'number') {
+            return inputValue; // Already a timestamp
+        }
         const date = new Date(inputValue);
         return isNaN(date.getTime()) ? null : date.getTime();
     };
 
     const parseValue = (value, treatAsDateTime) => {
         if (treatAsDateTime) {
-            const date = new Date(value);
-            return isNaN(date.getTime()) ? null : date.getTime();
+            if (value instanceof Date && !isNaN(value.getTime())) {
+                return value.getTime();
+            }
+            if (typeof value === 'number') {
+                if (value > 1e11) {
+                    return value; // already a JS timestamp in milliseconds
+                }
+                if (Number.isInteger(value) && value >= 25000 && value <= 50000) {
+                    const date = new Date((value - 25569) * 86400 * 1000);
+                    return isNaN(date.getTime()) ? null : date.getTime();
+                }
+                return null;
+            }
+            if (typeof value === 'string') {
+                const date = new Date(value.trim());
+                return isNaN(date.getTime()) ? null : date.getTime();
+            }
+            return null;
         }
         const num = Number(value);
         return isNaN(num) ? null : num;
@@ -188,6 +232,22 @@ const DistributionCurveTab = ({
         const all = [...(withProductData || []), ...(withoutProductData || [])];
         return isDateTimeColumn(all, filterColumn);
     }, [withProductData, withoutProductData, filterColumn]);
+
+    const columnDateTimeMap = useMemo(() => {
+        const all = [...(withProductData || []), ...(withoutProductData || [])];
+        const map = {};
+        (availableColumns || []).forEach(col => {
+            map[col] = isDateTimeColumn(all, col);
+        });
+        return map;
+    }, [availableColumns, withProductData, withoutProductData]);
+
+    const parseRowValue = useCallback((row, column) => {
+        if (!row || !column) return null;
+        const raw = row[column];
+        if (raw == null) return null;
+        return parseValue(raw, columnDateTimeMap[column]);
+    }, [columnDateTimeMap, parseValue]);
 
     const filteredWithProductData = useMemo(() => {
         if (!filterColumn) return withProductData || [];
@@ -231,14 +291,14 @@ const DistributionCurveTab = ({
         const binWidth = (globalMax - globalMin) / nBins;
         const buckets = Array.from({ length: nBins }, () => []);
         rows.forEach(row => {
-            const xVal = parseFloat(row[xCol]);
-            if (isNaN(xVal)) return;
+            const xVal = parseRowValue(row, xCol);
+            if (xVal == null) return;
             let idx = Math.floor((xVal - globalMin) / binWidth);
             if (idx >= nBins) idx = nBins - 1;
             if (idx < 0) return;
             if (yCol) {
-                const yVal = parseFloat(row[yCol]);
-                if (!isNaN(yVal)) buckets[idx].push(yVal);
+                const yVal = parseRowValue(row, yCol);
+                if (yVal != null) buckets[idx].push(yVal);
             } else {
                 buckets[idx].push(1);
             }
@@ -256,7 +316,7 @@ const DistributionCurveTab = ({
     // ========================================================================
     const calculateDistributionStats = (data, column) => {
         if (!data || data.length === 0) return null;
-        const values = data.map(row => parseFloat(row[column])).filter(val => !isNaN(val));
+        const values = data.map(row => parseRowValue(row, column)).filter(val => val != null);
         if (values.length === 0) return null;
         return {
             count: values.length,
@@ -274,7 +334,7 @@ const DistributionCurveTab = ({
 
     const calculateSkewness = (data, column) => {
         if (!data || data.length === 0) return null;
-        const values = data.map(row => parseFloat(row[column])).filter(val => !isNaN(val));
+        const values = data.map(row => parseRowValue(row, column)).filter(val => val != null);
         if (values.length < 3) return null;
         const mean = d3.mean(values);
         const std = d3.deviation(values);
@@ -287,7 +347,7 @@ const DistributionCurveTab = ({
 
     const detectOutliers = (data, column, threshold = 1.5) => {
         if (!data || data.length === 0) return [];
-        const values = data.map(row => parseFloat(row[column])).filter(v => !isNaN(v));
+        const values = data.map(row => parseRowValue(row, column)).filter(v => v != null);
         if (values.length < 4) return [];
         const q1 = d3.quantile(values, 0.25);
         const q3 = d3.quantile(values, 0.75);
@@ -297,7 +357,7 @@ const DistributionCurveTab = ({
 
     const assessDataQuality = (data, column) => {
         if (!data || data.length === 0) return null;
-        const values = data.map(row => parseFloat(row[column])).filter(v => !isNaN(v));
+        const values = data.map(row => parseRowValue(row, column)).filter(v => v != null);
         const completeness = (values.length / data.length) * 100;
         const outliers = detectOutliers(data, column);
         const outlierPct = (outliers.length / values.length) * 100;
@@ -316,8 +376,8 @@ const DistributionCurveTab = ({
         if (selectedColumns.length === 0) return [];
         let allXValues = [];
         selectedColumns.forEach(column => {
-            filteredWithProductData.map(row => parseFloat(row[column])).filter(v => !isNaN(v)).forEach(v => allXValues.push(v));
-            filteredWithoutProductData.map(row => parseFloat(row[column])).filter(v => !isNaN(v)).forEach(v => allXValues.push(v));
+            filteredWithProductData.map(row => parseRowValue(row, column)).filter(v => v != null).forEach(v => allXValues.push(v));
+            filteredWithoutProductData.map(row => parseRowValue(row, column)).filter(v => v != null).forEach(v => allXValues.push(v));
         });
         if (allXValues.length === 0) return [];
         const globalMin = Math.min(...allXValues);
@@ -349,7 +409,7 @@ const DistributionCurveTab = ({
     // ========================================================================
     const buildViewBins = (rows, xCol, yCol, aggregation, nBins) => {
         if (!rows.length || !xCol) return [];
-        const xValues = rows.map(row => parseFloat(row[xCol])).filter(v => !isNaN(v));
+        const xValues = rows.map(row => parseRowValue(row, xCol)).filter(v => v != null);
         if (!xValues.length) return [];
         const globalMin = Math.min(...xValues);
         const globalMax = Math.max(...xValues);
@@ -361,13 +421,16 @@ const DistributionCurveTab = ({
             return { binStart: start, binEnd: end, binMiddle: parseFloat(((start + end) / 2).toFixed(4)), yVals: [], count: 0 };
         });
         rows.forEach(row => {
-            const xVal = parseFloat(row[xCol]);
-            if (isNaN(xVal)) return;
+            const xVal = parseRowValue(row, xCol);
+            if (xVal == null) return;
             let idx = Math.floor((xVal - globalMin) / binWidth);
             if (idx >= nBins) idx = nBins - 1;
             if (idx < 0) return;
             bins[idx].count++;
-            if (yCol) { const yVal = parseFloat(row[yCol]); if (!isNaN(yVal)) bins[idx].yVals.push(yVal); }
+            if (yCol) {
+                const yVal = parseRowValue(row, yCol);
+                if (yVal != null) bins[idx].yVals.push(yVal);
+            }
         });
         return bins.map(bin => {
             let yValue;
@@ -404,6 +467,21 @@ const DistributionCurveTab = ({
         if (agg === 'sum') return `Sum of ${yCol}`;
         return `Mean of ${yCol}`;
     };
+
+    const formatDateValue = (value, includeTime = false) => {
+        if (value == null || value === '' || Number.isNaN(value)) return value;
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return value;
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        if (includeTime && (date.getHours() || date.getMinutes() || date.getSeconds())) {
+            options.hour = '2-digit';
+            options.minute = '2-digit';
+            options.second = '2-digit';
+        }
+        return date.toLocaleString('en-US', options);
+    };
+
+    const isDateChartValue = (column) => Boolean(column && columnDateTimeMap?.[column]);
 
     // ========================================================================
     // Watermark
@@ -492,7 +570,7 @@ const DistributionCurveTab = ({
         if (selectedColumns.length === 0) return null;
         const firstColumn = selectedColumns[0];
         const allData = [...filteredWithProductData, ...filteredWithoutProductData];
-        const values = allData.map(row => parseFloat(row[firstColumn])).filter(v => !isNaN(v));
+        const values = allData.map(row => parseRowValue(row, firstColumn)).filter(v => v != null);
         if (values.length === 0) return null;
         return {
             count: values.length,
@@ -631,7 +709,7 @@ const DistributionCurveTab = ({
     };
 
     // ========================================================================
-    // Axis Control Panel
+    // Axis Control Panel (Combined X & Y settings side by side)
     // ========================================================================
     const AxisControlPanel = ({ title, xLabel, setXLabel, yLabel, setYLabel, xMin, setXMin, xMax, setXMax, yMin, setYMin, yMax, setYMax, dataMin, dataMax }) => {
         const [showAdvanced, setShowAdvanced] = useState(false);
@@ -645,16 +723,24 @@ const DistributionCurveTab = ({
                 <Collapse in={showAdvanced}><Divider />
                     <CardContent sx={{ p: 2 }}>
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}><TextField label="X-Axis Label" value={xLabel} onChange={(e) => setXLabel(e.target.value)} fullWidth size="small" placeholder={`e.g., ${columnName || 'Variable'}`} /></Grid>
-                            <Grid item xs={12} sm={6}><TextField label="Y-Axis Label" value={yLabel} onChange={(e) => setYLabel(e.target.value)} fullWidth size="small" placeholder="e.g., Mean of Parameter" /></Grid>
-                            <Grid item xs={12}>
+                            {/* X-Axis Label */}
+                            <Grid item xs={12} sm={6}>
+                                <TextField label="X-Axis Label" value={xLabel} onChange={(e) => setXLabel(e.target.value)} fullWidth size="small" placeholder={`e.g., ${columnName || 'Variable'}`} />
+                            </Grid>
+                            {/* Y-Axis Label */}
+                            <Grid item xs={12} sm={6}>
+                                <TextField label="Y-Axis Label" value={yLabel} onChange={(e) => setYLabel(e.target.value)} fullWidth size="small" placeholder="e.g., Mean of Parameter" />
+                            </Grid>
+                            {/* X-Axis Range */}
+                            <Grid item xs={12} sm={6}>
                                 <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>X-Axis Range (Optional)</Typography>
                                 <Box sx={{ display: 'flex', gap: 2 }}>
                                     <TextField label={`Min (Data: ${dataMin?.toFixed(2) || 'N/A'})`} type="number" value={xMin} onChange={(e) => setXMin(e.target.value)} size="small" placeholder="Auto" sx={{ flex: 1 }} />
                                     <TextField label={`Max (Data: ${dataMax?.toFixed(2) || 'N/A'})`} type="number" value={xMax} onChange={(e) => setXMax(e.target.value)} size="small" placeholder="Auto" sx={{ flex: 1 }} />
                                 </Box>
                             </Grid>
-                            <Grid item xs={12}>
+                            {/* Y-Axis Range */}
+                            <Grid item xs={12} sm={6}>
                                 <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>Y-Axis Range (Optional)</Typography>
                                 <Box sx={{ display: 'flex', gap: 2 }}>
                                     <TextField label="Y-Axis Min" type="number" value={yMin} onChange={(e) => setYMin(e.target.value)} size="small" placeholder="Auto" sx={{ flex: 1 }} />
@@ -664,6 +750,123 @@ const DistributionCurveTab = ({
                         </Grid>
                     </CardContent>
                 </Collapse>
+            </Card>
+        );
+    };
+
+    // ========================================================================
+    // Combined X & Y Selection Card (side by side)
+    // ========================================================================
+    const CombinedAxisSelectionCard = () => {
+        const yCol = viewMode === 'combined' ? yAxisColumn : viewMode === 'single' ? singleYAxisColumn : separateYAxisColumn;
+        const setYCol = viewMode === 'combined' ? setYAxisColumn : viewMode === 'single' ? setSingleYAxisColumn : setSeparateYAxisColumn;
+        
+        return (
+            <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, border: '1px solid', borderColor: 'primary.light' }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>Axis Configuration</Typography>
+                    
+                    <Grid container spacing={3}>
+                        {/* X-Axis Selection Section */}
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'secondary.main' }}>X-Axis (Independent Variable)</Typography>
+                            
+                            {viewMode === 'combined' && (
+                                <Autocomplete
+                                    multiple
+                                    options={availableColumns}
+                                    value={selectedColumns}
+                                    onChange={(event, newValue) => setSelectedColumns(newValue)}
+                                    renderInput={(params) => <TextField {...params} label="Select X-axis columns to compare" placeholder="Select columns..." size="small" />}
+                                    renderTags={(value, getTagProps) =>
+                                        value.map((option, index) => (
+                                            <Chip 
+                                                key={option}
+                                                label={option} 
+                                                {...getTagProps({ index })} 
+                                                size="small"
+                                                sx={{ bgcolor: columnColorMap[option]?.with || '#2563EB', color: 'white', fontWeight: 'bold' }} 
+                                            />
+                                        ))
+                                    }
+                                    size="small"
+                                />
+                            )}
+                            
+                            {viewMode === 'single' && (
+                                <Grid container spacing={2}>
+                                    <Grid item xs={12} sm={7}>
+                                        <Autocomplete 
+                                            options={availableColumns} 
+                                            value={singleColumn} 
+                                            onChange={(e, v) => setSingleColumn(v || '')} 
+                                            renderInput={(params) => <TextField {...params} label="X-Axis Column" size="small" />} 
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={5}>
+                                        <ToggleButtonGroup 
+                                            value={singleViewType} 
+                                            exclusive 
+                                            onChange={(e, v) => v && setSingleViewType(v)} 
+                                            fullWidth 
+                                            size="small"
+                                        >
+                                            <ToggleButton value="withProduct">With Product</ToggleButton>
+                                            <ToggleButton value="withoutProduct">Without Product</ToggleButton>
+                                        </ToggleButtonGroup>
+                                    </Grid>
+                                </Grid>
+                            )}
+                            
+                            {viewMode === 'separate' && (
+                                <Autocomplete 
+                                    options={availableColumns} 
+                                    value={separateColumn} 
+                                    onChange={(e, v) => setSeparateColumn(v || '')} 
+                                    renderInput={(params) => <TextField {...params} label="X-Axis Column" size="small" />} 
+                                />
+                            )}
+                        </Grid>
+                        
+                        {/* Y-Axis Selection Section */}
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'secondary.main' }}>Y-Axis (Dependent Variable / Aggregation)</Typography>
+                            
+                            <Grid container spacing={2}>
+                                <Grid item xs={12} sm={6}>
+                                    <Autocomplete
+                                        options={['', ...availableColumns]}
+                                        value={yCol}
+                                        onChange={(e, v) => setYCol(v || '')}
+                                        renderInput={(params) => <TextField {...params} label="Select Y-axis column" placeholder="Default: Frequency count" size="small" />}
+                                        getOptionLabel={(o) => o === '' ? 'Frequency (count)' : o}
+                                        size="small"
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <ToggleButtonGroup 
+                                        value={yAggregation} 
+                                        exclusive 
+                                        onChange={(e, v) => v && setYAggregation(v)} 
+                                        fullWidth 
+                                        size="small"
+                                        disabled={!yCol}
+                                    >
+                                        <ToggleButton value="mean">Mean</ToggleButton>
+                                        <ToggleButton value="sum">Sum</ToggleButton>
+                                        <ToggleButton value="frequency">Count</ToggleButton>
+                                    </ToggleButtonGroup>
+                                </Grid>
+                            </Grid>
+                            
+                            {yCol && (
+                                <Alert severity="success" sx={{ mt: 1, py: 0.5 }}>
+                                    <Typography variant="caption">Plotting <strong>{yAggregation}</strong> of <strong>{yCol}</strong> per X bin</Typography>
+                                </Alert>
+                            )}
+                        </Grid>
+                    </Grid>
+                </CardContent>
             </Card>
         );
     };
@@ -703,6 +906,8 @@ const DistributionCurveTab = ({
         const yDomain = combinedYAxisMin !== '' || combinedYAxisMax !== ''
             ? [parseFloat(combinedYAxisMin) || 'auto', parseFloat(combinedYAxisMax) || 'auto'] : ['auto', 'auto'];
         const defaultYLabel = getDefaultYLabel(yAxisColumn, yAggregation);
+        const combinedXAxisIsDate = selectedColumns.some(col => columnDateTimeMap[col]);
+        const combinedYAxisIsDate = isDateChartValue(yAxisColumn);
         const areas = [];
         const bars = [];
 
@@ -758,14 +963,19 @@ const DistributionCurveTab = ({
                                 {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />}
                                 <XAxis dataKey="binMiddle"
                                     label={{ value: combinedXAxisLabel || 'X Value', position: 'insideBottom', offset: -20, style: { fontSize: '13px', fill: '#555' } }}
-                                    domain={xDomain} type="number" tick={{ fontSize: isMobile ? 10 : 12 }} />
+                                    domain={xDomain} type="number" tick={{ fontSize: isMobile ? 10 : 12 }} tickFormatter={combinedXAxisIsDate ? formatDateValue : undefined} />
                                 <YAxis yAxisId="left"
                                     label={{ value: combinedYAxisLabel || defaultYLabel, angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: '13px', fill: '#555' } }}
-                                    domain={yDomain} tick={{ fontSize: isMobile ? 10 : 12 }} />
+                                    domain={yDomain} tick={{ fontSize: isMobile ? 10 : 12 }} tickFormatter={combinedYAxisIsDate ? formatDateValue : undefined} />
                                 <YAxis yAxisId="right" orientation="right"
                                     label={{ value: 'Count', angle: 90, position: 'insideRight', offset: -5, style: { fontSize: '13px', fill: '#555' } }}
                                     tick={{ fontSize: isMobile ? 10 : 12 }} />
-                                <Tooltip formatter={(value, name) => typeof value === 'number' ? [value.toFixed(3), name] : [value, name]} />
+                                <Tooltip formatter={(value, name) => {
+                                    if (combinedYAxisIsDate && typeof value === 'number') return [formatDateValue(value, true), name];
+                                    return [typeof value === 'number' ? value.toFixed(3) : value, name];
+                                }}
+                                    labelFormatter={(label) => combinedXAxisIsDate ? formatDateValue(label, true) : label}
+                                />
                                 <Legend wrapperStyle={{ fontSize: isMobile ? '10px' : '12px', paddingTop: '8px' }} />
                                 {areas}
                                 {bars}
@@ -784,7 +994,7 @@ const DistributionCurveTab = ({
     const renderDistributionChart = (
         data, title, areaColor, barColor, chartRef,
         legendLabel = 'Value', xAxisLabel = null, yAxisLabel = '',
-        xMin = '', xMax = '', yMin = '', yMax = '', activeYCol = ''
+        xMin = '', xMax = '', yMin = '', yMax = '', activeYCol = '', activeXCol = ''
     ) => {
         if (!data || data.length === 0) {
             return <Alert severity="info" sx={{ width: '100%', mx: { xs: 1, sm: 0 } }}>No data available for visualization</Alert>;
@@ -793,6 +1003,8 @@ const DistributionCurveTab = ({
         const effectiveYAxisLabel = yAxisLabel || getDefaultYLabel(activeYCol, yAggregation);
         const xAxisDomain = xMin !== '' || xMax !== '' ? [parseFloat(xMin) || 'auto', parseFloat(xMax) || 'auto'] : ['auto', 'auto'];
         const yAxisDomain = yMin !== '' || yMax !== '' ? [parseFloat(yMin) || 'auto', parseFloat(yMax) || 'auto'] : ['auto', 'auto'];
+        const activeXAxisIsDate = Boolean(activeXCol && columnDateTimeMap[activeXCol]);
+        const activeYAxisIsDate = Boolean(activeYCol && columnDateTimeMap[activeYCol]);
 
         return (
             <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
@@ -820,19 +1032,22 @@ const DistributionCurveTab = ({
                                 {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />}
                                 <XAxis dataKey="binMiddle"
                                     label={{ value: effectiveXAxisLabel, position: 'insideBottom', offset: isMobile ? -30 : -20, style: { fontSize: isMobile ? '12px' : '13px', fill: '#555' } }}
-                                    tick={{ fontSize: isMobile ? 10 : 12 }} domain={xAxisDomain} type="number" />
+                                    tick={{ fontSize: isMobile ? 10 : 12 }} domain={xAxisDomain} type="number"
+                                    tickFormatter={activeXAxisIsDate ? formatDateValue : undefined} />
                                 <YAxis yAxisId="left"
                                     label={{ value: effectiveYAxisLabel, angle: -90, position: 'insideLeft', offset: -5, style: { fontSize: isMobile ? '12px' : '13px', fill: '#555' } }}
-                                    tick={{ fontSize: isMobile ? 10 : 12 }} domain={yAxisDomain} />
+                                    tick={{ fontSize: isMobile ? 10 : 12 }} domain={yAxisDomain}
+                                    tickFormatter={activeYAxisIsDate ? formatDateValue : undefined} />
                                 <YAxis yAxisId="right" orientation="right"
                                     label={{ value: 'Count', angle: 90, position: 'insideRight', offset: -5, style: { fontSize: isMobile ? '12px' : '13px', fill: '#555' } }}
                                     tick={{ fontSize: isMobile ? 10 : 12 }} />
                                 <Tooltip
                                     formatter={(value, name) => {
                                         if (name === 'Count') return [value, 'Count'];
+                                        if (activeYAxisIsDate && typeof value === 'number') return [formatDateValue(value, true), legendLabel];
                                         return [typeof value === 'number' ? value.toFixed(3) : value, legendLabel];
                                     }}
-                                    labelFormatter={(label) => `${effectiveXAxisLabel}: ${label}`}
+                                    labelFormatter={(label) => `${effectiveXAxisLabel}: ${activeXAxisIsDate ? formatDateValue(label, true) : label}`}
                                     contentStyle={{ fontSize: isMobile ? '12px' : '13px' }}
                                 />
                                 <Legend verticalAlign="top" height={36} align="left" wrapperStyle={{ fontSize: isMobile ? '12px' : '13px' }} />
@@ -862,8 +1077,8 @@ const DistributionCurveTab = ({
     // Separate Charts Render
     // ========================================================================
     const renderSeparateCharts = () => {
-        const withValues = filteredWithProductData.map(row => parseFloat(row[separateColumn])).filter(v => !isNaN(v));
-        const withoutValues = filteredWithoutProductData.map(row => parseFloat(row[separateColumn])).filter(v => !isNaN(v));
+        const withValues = filteredWithProductData.map(row => parseRowValue(row, separateColumn)).filter(v => v != null);
+        const withoutValues = filteredWithoutProductData.map(row => parseRowValue(row, separateColumn)).filter(v => v != null);
         const all = [...withValues, ...withoutValues];
         const globalMinMax = all.length ? { min: Math.min(...all), max: Math.max(...all) } : { min: 0, max: 0 };
 
@@ -884,7 +1099,7 @@ const DistributionCurveTab = ({
                         withoutProductChartRef, separateLegendLabels.withoutProduct,
                         separateXAxisLabel, separateYAxisLabel,
                         separateXAxisMin, separateXAxisMax, separateYAxisMin, separateYAxisMax,
-                        separateYAxisColumn
+                        separateYAxisColumn, separateColumn
                     )}
                 </Grid>
                 <Grid item xs={12} lg={6}>
@@ -902,7 +1117,7 @@ const DistributionCurveTab = ({
                         withProductChartRef, separateLegendLabels.withProduct,
                         separateXAxisLabel, separateYAxisLabel,
                         separateXAxisMin, separateXAxisMax, separateYAxisMin, separateYAxisMax,
-                        separateYAxisColumn
+                        separateYAxisColumn, separateColumn
                     )}
                 </Grid>
             </Grid>
@@ -919,7 +1134,7 @@ const DistributionCurveTab = ({
         const barColor = isWithProduct ? SINGLE_COLORS.withProduct.bar : SINGLE_COLORS.withoutProduct.bar;
         const chartRef = isWithProduct ? withProductChartRef : withoutProductChartRef;
         const data = isWithProduct ? filteredWithProductData : filteredWithoutProductData;
-        const values = data.map(row => parseFloat(row[singleColumn])).filter(v => !isNaN(v));
+        const values = data.map(row => parseRowValue(row, singleColumn)).filter(v => v != null);
         const globalMinMax = values.length ? { min: Math.min(...values), max: Math.max(...values) } : { min: 0, max: 0 };
 
         return (
@@ -937,44 +1152,9 @@ const DistributionCurveTab = ({
                     areaColor, barColor, chartRef,
                     singleLegendLabel, singleXAxisLabel, singleYAxisLabel,
                     singleXAxisMin, singleXAxisMax, singleYAxisMin, singleYAxisMax,
-                    singleYAxisColumn
+                    singleYAxisColumn, singleColumn
                 )}
             </>
-        );
-    };
-
-    // ========================================================================
-    // Y-axis column selector UI
-    // ========================================================================
-    const renderYColumnSelector = () => {
-        const yCol = viewMode === 'combined' ? yAxisColumn : viewMode === 'single' ? singleYAxisColumn : separateYAxisColumn;
-        const setYCol = viewMode === 'combined' ? setYAxisColumn : viewMode === 'single' ? setSingleYAxisColumn : setSeparateYAxisColumn;
-        return (
-            <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} sm={5} md={4}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'secondary.main' }}>Y-Axis Parameter (optional)</Typography>
-                    <Autocomplete
-                        options={['', ...availableColumns]} value={yCol} onChange={(e, v) => setYCol(v || '')}
-                        renderInput={(params) => <TextField {...params} label="Select Y-axis column" placeholder="Default: Frequency count" size="small" />}
-                        getOptionLabel={(o) => o === '' ? 'Frequency (count)' : o} size="small"
-                    />
-                </Grid>
-                <Grid item xs={12} sm={4} md={3}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'secondary.main' }}>Aggregation</Typography>
-                    <ToggleButtonGroup value={yAggregation} exclusive onChange={(e, v) => v && setYAggregation(v)} fullWidth size="small" disabled={!yCol}>
-                        <ToggleButton value="mean">Mean</ToggleButton>
-                        <ToggleButton value="sum">Sum</ToggleButton>
-                        <ToggleButton value="frequency">Count</ToggleButton>
-                    </ToggleButtonGroup>
-                </Grid>
-                {yCol && (
-                    <Grid item xs={12} sm={3} md={5}>
-                        <Alert severity="success" sx={{ py: 0.5 }}>
-                            <Typography variant="caption">Plotting <strong>{yAggregation}</strong> of <strong>{yCol}</strong> per X bin</Typography>
-                        </Alert>
-                    </Grid>
-                )}
-            </Grid>
         );
     };
 
@@ -985,7 +1165,7 @@ const DistributionCurveTab = ({
         <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
             <ChartSettingsModal open={settingsModalOpen} onClose={handleSettingsModalClose} onSave={handleSettingsSave} draftSettings={draftSettings} setDraftSettings={setDraftSettings} />
 
-            {/* View Mode and Column Selection */}
+            {/* View Mode Toggle */}
             <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, sm: 4 } }}>
                 <Grid item xs={12} sm={6} md={3}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'secondary.main' }}>View Mode</Typography>
@@ -995,56 +1175,10 @@ const DistributionCurveTab = ({
                         <ToggleButton value="single">Single</ToggleButton>
                     </ToggleButtonGroup>
                 </Grid>
-
-                {viewMode === 'combined' && (
-                    <Grid item xs={12} sm={12} md={9}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'primary.main' }}>Select X Columns (Multiple)</Typography>
-                        <Autocomplete
-                            multiple options={availableColumns} value={selectedColumns}
-                            onChange={(event, newValue) => setSelectedColumns(newValue)}
-                            renderInput={(params) => <TextField {...params} label="Choose X-axis columns to compare" placeholder="Select columns..." size="small" />}
-                            renderTags={(value, getTagProps) =>
-                                value.map((option, index) => (
-                                    <Chip label={option} {...getTagProps({ index })} size="small"
-                                        sx={{ bgcolor: columnColorMap[option]?.with || '#2563EB', color: 'white', fontWeight: 'bold' }} />
-                                ))
-                            }
-                            size="small"
-                        />
-                    </Grid>
-                )}
-
-                {viewMode === 'single' && (
-                    <>
-                        <Grid item xs={12} sm={6} md={3}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'primary.main' }}>X-Axis Column</Typography>
-                            <Autocomplete options={availableColumns} value={singleColumn} onChange={(e, v) => setSingleColumn(v || '')} renderInput={(params) => <TextField {...params} size="small" />} />
-                        </Grid>
-                        <Grid item xs={12} sm={6} md={3}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'info.main' }}>Dataset</Typography>
-                            <ToggleButtonGroup value={singleViewType} exclusive onChange={(e, v) => v && setSingleViewType(v)} fullWidth size="small">
-                                <ToggleButton value="withProduct">With Product</ToggleButton>
-                                <ToggleButton value="withoutProduct">Without Product</ToggleButton>
-                            </ToggleButtonGroup>
-                        </Grid>
-                    </>
-                )}
-
-                {viewMode === 'separate' && (
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'primary.main' }}>X-Axis Column</Typography>
-                        <Autocomplete options={availableColumns} value={separateColumn} onChange={(e, v) => setSeparateColumn(v || '')} renderInput={(params) => <TextField {...params} size="small" />} />
-                    </Grid>
-                )}
             </Grid>
 
-            {/* Y-Axis Column Selector */}
-            <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, border: '1px solid', borderColor: 'primary.light' }}>
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>Y-Axis Configuration</Typography>
-                    {renderYColumnSelector()}
-                </CardContent>
-            </Card>
+            {/* Combined X & Y Axis Selection Card */}
+            <CombinedAxisSelectionCard />
 
             {/* Distribution Settings */}
             <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
