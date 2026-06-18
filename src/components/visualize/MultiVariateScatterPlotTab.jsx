@@ -42,6 +42,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import ScaleIcon from "@mui/icons-material/Scale";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import * as d3 from "d3";
 import { v4 as uuidv4 } from 'uuid';
 import logo from "../../assets/abhitech-logo.png";
@@ -206,6 +208,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   // New settings for line and area display
   const [showLines, setShowLines] = useState(true);
   const [showArea, setShowArea] = useState(true);
+  const [showPoints, setShowPoints] = useState(true);
   const [areaOpacity, setAreaOpacity] = useState(0.3);
   const [lineWidth, setLineWidth] = useState(2);
   
@@ -241,6 +244,15 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const [filterColumn, setFilterColumn] = useState('');
   const [filterMin, setFilterMin] = useState('');
   const [filterMax, setFilterMax] = useState('');
+
+  // ---------------------------------------------------------------------------
+  // Derived flag: are both datasets actually present (have data)?
+  // This drives whether we show Pre/Post legend or a single-sheet legend.
+  // ---------------------------------------------------------------------------
+  const hasBothDatasets = useMemo(
+    () => withProductData.length > 0 && withoutProductData.length > 0,
+    [withProductData.length, withoutProductData.length]
+  );
 
   const isDateString = useCallback((value) => {
     if (!value || typeof value !== 'string') return false;
@@ -784,6 +796,51 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     return isNaN(timestamp) ? null : timestamp;
   };
 
+  // ---------------------------------------------------------------------------
+  // Helper: render legend entries for a single pair.
+  // When hasBothDatasets is true  → show two circles (pre / post).
+  // When hasBothDatasets is false → show one circle with the dataset label.
+  // ---------------------------------------------------------------------------
+  const renderLegendEntry = useCallback((svgSelection, pair, colors, offsetX, datasetView) => {
+    const label = `${pair.x} vs ${pair.y}`;
+    const shortLabel = label.length > 20 ? label.slice(0, 18) + "…" : label;
+    const grp = svgSelection.append("g").attr("transform", `translate(${offsetX}, 0)`);
+    let entryWidth;
+
+    if (hasBothDatasets && datasetView === "both") {
+      // Two-circle Pre / Post legend
+      grp.append("circle").attr("cx", 6).attr("cy", 6).attr("r", 6)
+        .style("fill", colors.pre).style("stroke", colors.base).style("stroke-width", 1);
+      grp.append("text").attr("x", 16).attr("y", 6).attr("dy", "0.35em")
+        .style("font-size", "10px").style("fill", "#555").text("Pre");
+      grp.append("circle").attr("cx", 42).attr("cy", 6).attr("r", 6)
+        .style("fill", colors.post).style("stroke", colors.base).style("stroke-width", 1);
+      grp.append("text").attr("x", 52).attr("y", 6).attr("dy", "0.35em")
+        .style("font-size", "10px").style("fill", "#555").text("Post");
+      grp.append("text").attr("x", 90).attr("y", 6).attr("dy", "0.35em")
+        .style("font-size", "10px").style("font-weight", "600").style("fill", colors.base)
+        .text(`(${shortLabel})`);
+      entryWidth = Math.max(180, shortLabel.length * 7 + 90 + 10);
+    } else {
+      // Single-circle legend — use base color, show the active dataset name
+      const activeLabel = datasetView === "withProduct" ? "With Product"
+        : datasetView === "withoutProduct" ? "Without Product"
+        : "Data";
+      const circleColor = datasetView === "withProduct" ? colors.post
+        : datasetView === "withoutProduct" ? colors.pre
+        : colors.base;
+
+      grp.append("circle").attr("cx", 6).attr("cy", 6).attr("r", 6)
+        .style("fill", circleColor).style("stroke", colors.base).style("stroke-width", 1);
+      grp.append("text").attr("x", 16).attr("y", 6).attr("dy", "0.35em")
+        .style("font-size", "10px").style("font-weight", "600").style("fill", colors.base)
+        .text(`${shortLabel}`);
+      entryWidth = Math.max(120, shortLabel.length * 7 + 36 + 10);
+    }
+
+    return entryWidth;
+  }, [hasBothDatasets]);
+
   // Draw SVG (axes, grid, trend lines, lines, and areas)
   useEffect(() => {
     if (!svgRef.current || !containerRef.current) return;
@@ -805,6 +862,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       .append("rect").attr("width", plotWidth).attr("height", plotHeight);
 
     const gridGroup = plotGroup.append("g").attr("class", "grid-group").attr("clip-path", "url(#plot-clip)");
+    const contentGroup = plotGroup.append("g").attr("class", "content-group").attr("clip-path", "url(#plot-clip)");
     const tickCount = 8;
     const panelCount = useStackedPanels ? activePairObjects.length : 1;
     const panelHeight = plotHeight / panelCount;
@@ -815,10 +873,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     // Helper to draw area under a line
     const drawAreaUnderLine = (group, points, xSc, ySc, color, opacity) => {
       if (!points || points.length < 2) return;
-      
+      const yBottom = ySc.range()[0];
       const areaGenerator = d3.area()
         .x(d => xSc(d.x))
-        .y0(ySc(0))
+        .y0(yBottom)
         .y1(d => ySc(d.y))
         .curve(d3.curveMonotoneX);
       
@@ -893,7 +951,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         const yDomain = perPairAutoRanges[pair.key] || { yMin: 0, yMax: 1 };
         const yScale = d3.scaleLinear().domain([yDomain.yMin, yDomain.yMax]).range([panelHeight, 0]);
         originalYScales[pair.key] = yScale.copy();
-        const panelGroup = plotGroup.append("g").attr("transform", `translate(0,${index * panelHeight})`).attr("class", `panel-${pair.key}`);
+        const panelGroup = contentGroup.append("g").attr("transform", `translate(0,${index * panelHeight})`).attr("class", `panel-${pair.key}`);
 
         // Add lines and areas first (so they are behind points)
         if (showLines || showArea) {
@@ -963,11 +1021,11 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
             if (datasetView === "both" || datasetView === "withoutProduct") {
               const withoutPoints = withoutProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              drawLinesAndAreas(plotGroup, withoutPoints, xScale, yScale, getTrendLineColor(pair.key, "Without Product"), "Without Product", pair.key);
+              drawLinesAndAreas(contentGroup, withoutPoints, xScale, yScale, getTrendLineColor(pair.key, "Without Product"), "Without Product", pair.key);
             }
             if (datasetView === "both" || datasetView === "withProduct") {
               const withPoints = withProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              drawLinesAndAreas(plotGroup, withPoints, xScale, yScale, getTrendLineColor(pair.key, "With Product"), "With Product", pair.key);
+              drawLinesAndAreas(contentGroup, withPoints, xScale, yScale, getTrendLineColor(pair.key, "With Product"), "With Product", pair.key);
             }
           }
         }
@@ -980,7 +1038,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           gridGroup.append("g").attr("class", "grid-y-left")
             .call(d3.axisLeft(yScaleLeft).ticks(tickCount).tickSize(-plotWidth).tickFormat(""))
             .selectAll("line").style("stroke-dasharray", "3,3").style("opacity", 0.3);
-          // Grid for right Y-axis (optional, can be omitted for clarity)
         }
 
         const drawTrendLinesDual = (xSc, yScLeft, yScRight) => {
@@ -990,7 +1047,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           for (const pair of pairsToDraw) {
             const isY1 = pair.y === yVar1;
             const ySc = isY1 ? yScLeft : yScRight;
-            drawPairTrendLines(pair, xSc, ySc, plotGroup);
+            drawPairTrendLines(pair, xSc, ySc, contentGroup);
           }
         };
 
@@ -1038,11 +1095,11 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           for (const pair of pairsToDraw) {
             if (datasetView === "both" || datasetView === "withoutProduct") {
               const withoutPoints = withoutProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              drawLinesAndAreas(plotGroup, withoutPoints, xScale, yScale, getTrendLineColor(pair.key, "Without Product"), "Without Product", pair.key);
+              drawLinesAndAreas(contentGroup, withoutPoints, xScale, yScale, getTrendLineColor(pair.key, "Without Product"), "Without Product", pair.key);
             }
             if (datasetView === "both" || datasetView === "withProduct") {
               const withPoints = withProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              drawLinesAndAreas(plotGroup, withPoints, xScale, yScale, getTrendLineColor(pair.key, "With Product"), "With Product", pair.key);
+              drawLinesAndAreas(contentGroup, withPoints, xScale, yScale, getTrendLineColor(pair.key, "With Product"), "With Product", pair.key);
             }
           }
         }
@@ -1061,7 +1118,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           const pairsToDraw = (scaleMode === "perPair" && currentPairKey) ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
           
           for (const pair of pairsToDraw) {
-            drawPairTrendLines(pair, xSc, ySc, plotGroup);
+            drawPairTrendLines(pair, xSc, ySc, contentGroup);
           }
         };
 
@@ -1174,43 +1231,59 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         return title;
       });
 
-    // Legend
-    const legend = svg.append("g").attr("class", "legend").attr("transform", `translate(${margin.left}, ${margin.top - 55})`);
-    let legendX = 0;
-    const pairsToShow = scaleMode === "perPair" && currentPairKey ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
+    // ---------------------------------------------------------------------------
+    // Legend rendering — uses renderLegendEntry helper which respects hasBothDatasets
+    // ---------------------------------------------------------------------------
+    const pairsToShow = scaleMode === "perPair" && currentPairKey
+      ? allPairs.filter(p => p.key === currentPairKey)
+      : allPairs;
 
-    pairsToShow.forEach((pair) => {
-      const colors = pairColorMap[pair.key];
-      if (!colors) return;
-      const grp = legend.append("g").attr("transform", `translate(${legendX}, 0)`);
-      const label = `${pair.x} vs ${pair.y}`;
-      const shortLabel = label.length > 20 ? label.slice(0, 18) + "…" : label;
+    if (useDualYAxis) {
+      const yVar1 = selectedYVars[0];
+      const yVar2 = selectedYVars[1];
 
-      if (datasetView === "both" || datasetView === "withoutProduct") {
-        grp.append("circle").attr("cx", 6).attr("cy", 6).attr("r", 6)
-          .style("fill", colors.pre).style("stroke", colors.base).style("stroke-width", 1);
-        grp.append("text").attr("x", 16).attr("y", 6).attr("dy", "0.35em")
-          .style("font-size", "10px").style("fill", "#555").text("Pre");
+      // Left legend for yVar1
+      const leftPairs = pairsToShow.filter(p => p.y === yVar1);
+      if (leftPairs.length > 0) {
+        const leftLegend = svg.append("g").attr("class", "legend legend-left")
+          .attr("transform", `translate(${margin.left}, ${margin.top - 55})`);
+        let leftLegendX = 0;
+        leftPairs.forEach((pair) => {
+          const colors = pairColorMap[pair.key];
+          if (!colors) return;
+          leftLegendX += renderLegendEntry(leftLegend, pair, colors, leftLegendX, datasetView);
+        });
       }
 
-      if (datasetView === "both" || datasetView === "withProduct") {
-        const preOffset = (datasetView === "both" || datasetView === "withoutProduct") ? 36 : 0;
-        grp.append("circle").attr("cx", preOffset + 6).attr("cy", 6).attr("r", 6)
-          .style("fill", colors.post).style("stroke", colors.base).style("stroke-width", 1);
-        grp.append("text").attr("x", preOffset + 16).attr("y", 6).attr("dy", "0.35em")
-          .style("font-size", "10px").style("fill", "#555").text("Post");
+      // Right legend for yVar2
+      const rightPairs = pairsToShow.filter(p => p.y === yVar2);
+      if (rightPairs.length > 0) {
+        const rightLegend = svg.append("g").attr("class", "legend legend-right")
+          .attr("transform", `translate(${margin.left + width - margin.right - 300}, ${margin.top - 55})`);
+        let rightLegendX = 0;
+        rightPairs.forEach((pair) => {
+          const colors = pairColorMap[pair.key];
+          if (!colors) return;
+          rightLegendX += renderLegendEntry(rightLegend, pair, colors, rightLegendX, datasetView);
+        });
       }
-
-      const labelOffset = datasetView === "both" ? 72 : 36;
-      grp.append("text").attr("x", labelOffset).attr("y", 6).attr("dy", "0.35em")
-        .style("font-size", "10px").style("font-weight", "600").style("fill", colors.base)
-        .text(`(${shortLabel})`);
-
-      legendX += Math.max(180, shortLabel.length * 7 + labelOffset + 10);
-    });
+    } else {
+      // Single Y-axis: original legend at top
+      const legend = svg.append("g").attr("class", "legend")
+        .attr("transform", `translate(${margin.left}, ${margin.top - 55})`);
+      let legendX = 0;
+      pairsToShow.forEach((pair) => {
+        const colors = pairColorMap[pair.key];
+        if (!colors) return;
+        legendX += renderLegendEntry(legend, pair, colors, legendX, datasetView);
+      });
+    }
 
   }, [getEffectiveRanges, formatAxisValue, chartSettings.showGrid, datasetView,
-    chartSettings.showTrendLines, trendLinesData, allPairs, getTrendLineColor, pairColorMap, perPairAutoRanges, activePairs, scaleMode, currentPairKey, showLines, showArea, areaOpacity, lineWidth, withProductPoints, withoutProductPoints, selectedYVars]);
+    chartSettings.showTrendLines, trendLinesData, allPairs, getTrendLineColor, pairColorMap,
+    perPairAutoRanges, activePairs, scaleMode, currentPairKey, showLines, showArea, showPoints,
+    areaOpacity, lineWidth, withProductPoints, withoutProductPoints, selectedYVars,
+    hasBothDatasets, renderLegendEntry]);
 
   // Update canvas points
   const updateCanvasPoints = useCallback(() => {
@@ -1271,38 +1344,40 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     const perfPointSize = nPoints > 2000 ? Math.max(2, chartSettings.pointSize * 0.6) : chartSettings.pointSize;
     const perfOpacity = nPoints > 2000 ? Math.min(0.3, chartSettings.opacity) : chartSettings.opacity;
 
-    for (let i = 0; i < pointsToDraw.length; i++) {
-      const d = pointsToDraw[i];
-      const xPos = transformedXScale(d.x);
-      let yPos;
-      if (useDualYAxis) {
-        // Determine which Y scale to use based on the Y variable in pairKey
-        const yVar = d.pairKey.split('__')[1];
-        const isY1 = yVar === selectedYVars[0];
-        const yScale = isY1 ? transformedYScales.left : transformedYScales.right;
-        yPos = yScale(d.y);
-      } else if (useStackedPanels) {
-        const pairIndex = pairIndexMap[d.pairKey];
-        if (pairIndex == null) continue;
-        yPos = transformedYScales[d.pairKey](d.y) + pairIndex * panelHeight;
-      } else {
-        yPos = transformedYScales.single(d.y);
-      }
-      if (xPos >= -50 && xPos <= plotWidth + 50 && yPos >= -50 && yPos <= plotHeight + 50) {
-        ctx.beginPath();
-        ctx.arc(xPos, yPos, perfPointSize, 0, 2 * Math.PI);
-        ctx.globalAlpha = perfOpacity;
-        ctx.fillStyle = getPointColor(d.pairKey, d.dataset);
-        ctx.fill();
-        ctx.globalAlpha = Math.min(1, perfOpacity + 0.2);
-        ctx.strokeStyle = pairColorMap[d.pairKey]?.base || "#666";
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-        ctx.globalAlpha = 1;
+    if (showPoints) {
+      for (let i = 0; i < pointsToDraw.length; i++) {
+        const d = pointsToDraw[i];
+        const xPos = transformedXScale(d.x);
+        let yPos;
+        if (useDualYAxis) {
+          // Determine which Y scale to use based on the Y variable in pairKey
+          const yVar = d.pairKey.split('__')[1];
+          const isY1 = yVar === selectedYVars[0];
+          const yScale = isY1 ? transformedYScales.left : transformedYScales.right;
+          yPos = yScale(d.y);
+        } else if (useStackedPanels) {
+          const pairIndex = pairIndexMap[d.pairKey];
+          if (pairIndex == null) continue;
+          yPos = transformedYScales[d.pairKey](d.y) + pairIndex * panelHeight;
+        } else {
+          yPos = transformedYScales.single(d.y);
+        }
+        if (xPos >= -50 && xPos <= plotWidth + 50 && yPos >= -50 && yPos <= plotHeight + 50) {
+          ctx.beginPath();
+          ctx.arc(xPos, yPos, perfPointSize, 0, 2 * Math.PI);
+          ctx.globalAlpha = perfOpacity;
+          ctx.fillStyle = getPointColor(d.pairKey, d.dataset);
+          ctx.fill();
+          ctx.globalAlpha = Math.min(1, perfOpacity + 0.2);
+          ctx.strokeStyle = pairColorMap[d.pairKey]?.base || "#666";
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
       }
     }
     ctx.restore();
-  }, [allPoints, activePairs, allPairs, currentPairPoints, chartSettings.pointSize, chartSettings.opacity, getEffectiveRanges, getPointColor, currentTransform, pairColorMap, perPairAutoRanges, scaleMode, currentPairKey, selectedYVars]);
+  }, [allPoints, activePairs, allPairs, currentPairPoints, chartSettings.pointSize, chartSettings.opacity, getEffectiveRanges, getPointColor, currentTransform, pairColorMap, perPairAutoRanges, scaleMode, currentPairKey, selectedYVars, showPoints]);
 
   useEffect(() => {
     updateCanvasPoints();
@@ -1377,92 +1452,180 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     setTooltip({ visible: false, x: 0, y: 0, data: null });
   }, []);
 
-  // Downloads
-  const downloadChartAsPNG = () => {
-    if (!svgRef.current) return;
-    const svgElement = svgRef.current;
-    const svgRect = svgElement.getBoundingClientRect();
-    const scaleFactor = 2;
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = svgRect.width * scaleFactor;
-    canvas.height = (svgRect.height + 50) * scaleFactor;
-
-    const convertImageToDataURL = (imgSrc) => new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        const c = document.createElement('canvas');
-        const cx = c.getContext('2d');
-        c.width = img.width; c.height = img.height;
-        cx.drawImage(img, 0, 0);
-        resolve(c.toDataURL('image/png'));
-      };
-      img.onerror = () => resolve(null);
-      img.src = imgSrc;
-    });
-
-    convertImageToDataURL(logo).then((logoDataURL) => {
-      const svgClone = svgElement.cloneNode(true);
-      if (logoDataURL) {
-        const wg = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        wg.setAttribute("transform", `translate(${svgRect.width - 170}, 10)`);
-        const bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        bgRect.setAttribute("x", "0"); bgRect.setAttribute("y", "0");
-        bgRect.setAttribute("width", "160"); bgRect.setAttribute("height", "36");
-        bgRect.setAttribute("fill", "rgba(255,255,255,0.95)");
-        bgRect.setAttribute("stroke", "rgba(0,0,0,0.1)"); bgRect.setAttribute("stroke-width", "1"); bgRect.setAttribute("rx", "4");
-        const logoImg = document.createElementNS("http://www.w3.org/2000/svg", "image");
-        logoImg.setAttributeNS('http://www.w3.org/1999/xlink', 'href', logoDataURL);
-        logoImg.setAttribute("x", "8"); logoImg.setAttribute("y", "6");
-        logoImg.setAttribute("width", "24"); logoImg.setAttribute("height", "24");
-        logoImg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-        const pt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        pt.setAttribute("x", "40"); pt.setAttribute("y", "18");
-        pt.setAttribute("fill", "#666"); pt.setAttribute("font-size", "10"); pt.setAttribute("font-family", "Arial, sans-serif");
-        pt.textContent = "Powered by";
-        const bt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        bt.setAttribute("x", "40"); bt.setAttribute("y", "30");
-        bt.setAttribute("fill", "#1976d2"); bt.setAttribute("font-size", "11");
-        bt.setAttribute("font-weight", "bold"); bt.setAttribute("font-family", "Arial, sans-serif");
-        bt.textContent = "Abhitech's AbhiStat";
-        wg.appendChild(bgRect); wg.appendChild(logoImg); wg.appendChild(pt); wg.appendChild(bt);
-        svgClone.appendChild(wg);
+  // Helper function to draw points on SVG directly (for screenshot)
+  const drawPointsOnSVG = useCallback(() => {
+    if (!svgRef.current || !containerRef.current) return;
+    
+    const svg = d3.select(svgRef.current);
+    // Remove any existing point groups
+    svg.selectAll(".temp-point-group").remove();
+    
+    const width = containerRef.current.offsetWidth || 700;
+    const height = 500;
+    const margin = { top: 80, right: 60, bottom: 80, left: 80 };
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+    const activePairObjects = allPairs.filter(p => activePairs.includes(p.key));
+    const useDualYAxis = selectedXVars.length === 1 && selectedYVars.length === 2;
+    const useStackedPanels = !useDualYAxis && scaleMode === "global" && activePairObjects.length > 1;
+    const { xMin, xMax, yMin, yMax } = getEffectiveRanges();
+    const xScale = d3.scaleLinear().domain([xMin, xMax]).range([0, plotWidth]);
+    const transformedXScale = currentTransform.rescaleX(xScale);
+    
+    let transformedYScales = {};
+    let panelHeight = plotHeight;
+    let pairIndexMap = {};
+    
+    if (useStackedPanels) {
+      panelHeight = plotHeight / activePairObjects.length;
+      activePairObjects.forEach((pair, index) => {
+        const yDomain = perPairAutoRanges[pair.key] || { yMin: 0, yMax: 1 };
+        const yScale = d3.scaleLinear().domain([yDomain.yMin, yDomain.yMax]).range([panelHeight, 0]);
+        transformedYScales[pair.key] = currentTransform.rescaleY(yScale);
+        pairIndexMap[pair.key] = index;
+      });
+    } else if (useDualYAxis) {
+      const yVar1 = selectedYVars[0];
+      const yVar2 = selectedYVars[1];
+      const pointsForY1 = allPoints.filter(p => p.pairKey.endsWith(`__${yVar1}`));
+      const pointsForY2 = allPoints.filter(p => p.pairKey.endsWith(`__${yVar2}`));
+      const y1Min = d3.min(pointsForY1, d => d.y) || 0;
+      const y1Max = d3.max(pointsForY1, d => d.y) || 1;
+      const y2Min = d3.min(pointsForY2, d => d.y) || 0;
+      const y2Max = d3.max(pointsForY2, d => d.y) || 1;
+      const yScaleLeft = d3.scaleLinear().domain([y1Min, y1Max]).range([plotHeight, 0]);
+      const yScaleRight = d3.scaleLinear().domain([y2Min, y2Max]).range([plotHeight, 0]);
+      transformedYScales.left = currentTransform.rescaleY(yScaleLeft);
+      transformedYScales.right = currentTransform.rescaleY(yScaleRight);
+    } else {
+      const yScale = d3.scaleLinear().domain([yMin, yMax]).range([plotHeight, 0]);
+      transformedYScales.single = currentTransform.rescaleY(yScale);
+    }
+    
+    const pointsToDraw = scaleMode === "perPair" && currentPairKey ? currentPairPoints : allPoints.filter(pt => activePairs.includes(pt.pairKey));
+    const pointSize = chartSettings.pointSize;
+    const pointOpacity = chartSettings.opacity;
+    
+    // Create a group for the points
+    const pointGroup = svg.append("g").attr("class", "temp-point-group").attr("transform", `translate(${margin.left},${margin.top})`);
+    
+    for (const d of pointsToDraw) {
+      const xPos = transformedXScale(d.x);
+      let yPos;
+      if (useDualYAxis) {
+        const yVar = d.pairKey.split('__')[1];
+        const isY1 = yVar === selectedYVars[0];
+        const yScale = isY1 ? transformedYScales.left : transformedYScales.right;
+        yPos = yScale(d.y);
+      } else if (useStackedPanels) {
+        const pairIndex = pairIndexMap[d.pairKey];
+        if (pairIndex == null) continue;
+        yPos = transformedYScales[d.pairKey](d.y) + pairIndex * panelHeight;
+      } else {
+        yPos = transformedYScales.single(d.y);
       }
-      const svgData = new XMLSerializer().serializeToString(svgClone);
-      const img = new Image();
-      img.onload = () => {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'black';
-        ctx.font = `${16 * scaleFactor}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.fillText(`Multi-Variate Scatter Plot (${scaleMode === "perPair" && currentPairKey ? currentPairKey.replace("__", " vs ") : activePairs.length + " pairs"})`, canvas.width / 2, 30 * scaleFactor);
-        ctx.drawImage(img, 0, 50 * scaleFactor, svgRect.width * scaleFactor, svgRect.height * scaleFactor);
-        const link = document.createElement("a");
-        link.download = `${generateFileName("MultiVariateScatterPlot")}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      };
-      img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
-    });
+      
+      if (xPos >= -50 && xPos <= plotWidth + 50 && yPos >= -50 && yPos <= plotHeight + 50) {
+        pointGroup.append("circle")
+          .attr("cx", xPos)
+          .attr("cy", yPos)
+          .attr("r", pointSize)
+          .attr("fill", getPointColor(d.pairKey, d.dataset))
+          .attr("fill-opacity", pointOpacity)
+          .attr("stroke", pairColorMap[d.pairKey]?.base || "#666")
+          .attr("stroke-width", 0.5)
+          .attr("stroke-opacity", Math.min(1, pointOpacity + 0.2));
+      }
+    }
+  }, [allPoints, activePairs, allPairs, currentPairPoints, chartSettings.pointSize, chartSettings.opacity, getEffectiveRanges, getPointColor, currentTransform, pairColorMap, perPairAutoRanges, scaleMode, currentPairKey, selectedYVars]);
+
+  // Remove temporary points from SVG
+  const removeTempPointsFromSVG = useCallback(() => {
+    if (!svgRef.current) return;
+    const svg = d3.select(svgRef.current);
+    svg.selectAll(".temp-point-group").remove();
+  }, []);
+
+  // Downloads
+  const downloadChartAsPNG = async () => {
+    if (!containerRef.current) return;
+    const chartElement = containerRef.current;
+
+    try {
+      const canvas = await html2canvas(chartElement, {
+        useCORS: true,
+        backgroundColor: '#fff',
+        scale: 2,
+        logging: false,
+        foreignObjectRendering: false,
+        allowTaint: false,
+      });
+
+      const link = document.createElement('a');
+      link.download = `${generateFileName('MultiVariateScatterPlot')}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Error capturing chart:', error);
+    }
   };
 
+  // FIXED: Download entire page as PNG - draws points on SVG temporarily
   const downloadPageAsPNG = async () => {
     if (!pageRef.current) return;
+    
+    // Store original state
     const origSummary = showSummaryCards;
     const origInsights = showInsights;
+    
+    // Temporarily expand panels
     setShowSummaryCards(true);
     setShowInsights(true);
-    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    // Wait for UI to update
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Hide the canvas and draw points directly on SVG
+    if (canvasRef.current) {
+      canvasRef.current.style.opacity = '0';
+    }
+    
+    // Draw points on SVG for capture
+    drawPointsOnSVG();
+    
+    // Wait for points to be drawn
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     const element = pageRef.current;
-    const canvas = await html2canvas(element, { useCORS: true, backgroundColor: '#fff', scale: 2, logging: false, windowWidth: element.scrollWidth, windowHeight: element.scrollHeight });
-    setShowSummaryCards(origSummary);
-    setShowInsights(origInsights);
-    const link = document.createElement('a');
-    link.download = `${generateFileName("MultiVariateScatterPlot_Page")}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+    
+    try {
+      const canvas = await html2canvas(element, { 
+        useCORS: true, 
+        backgroundColor: '#fff', 
+        scale: 2, 
+        logging: false,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+        foreignObjectRendering: false,
+        allowTaint: false
+      });
+      
+      const link = document.createElement('a');
+      link.download = `${generateFileName("MultiVariateScatterPlot_Page")}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Error capturing page:', error);
+    } finally {
+      // Clean up: remove temporary points and restore canvas
+      removeTempPointsFromSVG();
+      if (canvasRef.current) {
+        canvasRef.current.style.opacity = '1';
+      }
+      // Restore original state
+      setShowSummaryCards(origSummary);
+      setShowInsights(origInsights);
+    }
   };
 
   // Settings Modal
@@ -1860,12 +2023,27 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               </Typography>
             </Box>
 
-            {/* Color legend for pairs */}
+            {/* Color legend for pairs — in React UI */}
             {allPairs.length > 0 && scaleMode !== "perPair" && (
               <Box sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                 {allPairs.map((pair) => {
                   const colors = pairColorMap[pair.key];
                   if (!activePairs.includes(pair.key)) return null;
+
+                  // Single dataset: show one circle + just the pair name
+                  if (!hasBothDatasets || datasetView !== "both") {
+                    const circleColor = datasetView === "withProduct" ? colors?.post
+                      : datasetView === "withoutProduct" ? colors?.pre
+                      : colors?.base;
+                    return (
+                      <Box key={pair.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                        <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: circleColor, border: `2px solid ${colors?.base}`, flexShrink: 0 }} />
+                        <Typography variant="caption" sx={{ color: colors?.base, fontWeight: 600 }}>{pair.x} vs {pair.y}</Typography>
+                      </Box>
+                    );
+                  }
+
+                  // Both datasets: show two circles with pre/post labels
                   return (
                     <Box key={pair.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
                       <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: colors?.pre, border: `2px solid ${colors?.base}`, flexShrink: 0 }} />
@@ -1882,7 +2060,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               <Alert severity="info" sx={{ display: "flex", alignItems: "center", gap: 1, borderRadius: 2 }}>
                 <PanToolIcon fontSize="small" />
                 <Typography variant="body2">
-                  Use mouse wheel to zoom, drag to pan. Each variable pair has its own color — lighter shade = Pre (Without Product), darker shade = Post (With Product).
+                  Use mouse wheel to zoom, drag to pan. Each variable pair has its own color
+                  {hasBothDatasets && datasetView === "both"
+                    ? " — lighter shade = Pre (Without Product), darker shade = Post (With Product)."
+                    : "."}
                   {showLines && " Blue lines connect points to show data sequence."}
                   {showArea && " Shaded areas highlight the region under each data line."}
                   {scaleMode === "global" && " In Dynamic Scale mode, all active pairs are shown on the same graph with axes that automatically adjust to fit the data ranges of all selected pairs."}
@@ -1907,7 +2088,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                       <Typography variant="body2" sx={{ mb: 2, fontWeight: 500, color: "primary.main" }}>X-Axis Range:</Typography>
                       <Grid container spacing={1} alignItems="center">
                         <Grid item xs={5}><DebouncedTextField type="number" size="small" value={currentXRange?.min || ""} onChange={(e) => handleXRangeChange("min", e.target.value)} placeholder={currentAutoXRanges?.xMin?.toFixed(2) || "Auto"} /></Grid>
-                        <Grid item xs={2} sx={{ textAlign: 'center' }}><Typography variant="body2" sx={{ fontWeight: 500 }}>to</Typography></Grid>
+                        <Grid item xs={2} sx={{ textAlign: 'center' }}><Typography v  ariant="body2" sx={{ fontWeight: 500 }}>to</Typography></Grid>
                         <Grid item xs={5}><DebouncedTextField type="number" size="small" value={currentXRange?.max || ""} onChange={(e) => handleXRangeChange("max", e.target.value)} placeholder={currentAutoXRanges?.xMax?.toFixed(2) || "Auto"} /></Grid>
                       </Grid>
                     </Grid>
@@ -1932,7 +2113,19 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                 <MuiTooltip title="Reset Zoom"><Button onClick={resetZoom} sx={{ minWidth: "40px", px: 1 }}><CenterFocusStrongIcon fontSize="small" /></Button></MuiTooltip>
               </ButtonGroup>
               <Box sx={{ display: "flex", gap: 1, alignItems: 'center' }}>
-                <MuiTooltip title="Chart Settings">
+                <MuiTooltip title={showPoints ? "Hide Points" : "Show Points"}>
+                <Button
+                  variant="outlined"
+                  color={showPoints ? "primary" : "secondary"}
+                  onClick={() => setShowPoints(prev => !prev)}
+                  startIcon={showPoints ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                  size="small"
+                  sx={{ textTransform: 'none', height: 32 }}
+                >
+                  {showPoints ? "Hide Points" : "Show Points"}
+                </Button>
+              </MuiTooltip>
+              <MuiTooltip title="Chart Settings">
                   <Button variant="outlined" color="primary" onClick={openSettingsModal} startIcon={<SettingsIcon />} size="small" sx={{ textTransform: 'none', height: 32 }}>Settings</Button>
                 </MuiTooltip>
                 <SaveVisualizationButton elementId="visualization-content" fileNamePrefix="multivariate_scatter" variableNames={[...selectedXVars, ...selectedYVars].filter(Boolean)} />
