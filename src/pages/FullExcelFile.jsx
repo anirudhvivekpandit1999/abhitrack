@@ -995,7 +995,7 @@ const FullExcelFile = () => {
                         style={{ width: "100%", borderRadius: "10px" }}
                         onClick={() => setActiveTarget({ mode: "header" })}
                       >
-                        👆 Click a row in preview to set as column header
+                        👆🏻Click here to select the Column Header Row from The Preview
                       </button>
                     )}
                   </div>
