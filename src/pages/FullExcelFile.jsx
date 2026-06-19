@@ -361,6 +361,7 @@ const FullExcelFile = () => {
   const [xAxis, setXAxis] = useState("");
   const [yAxis, setYAxis] = useState("");
   const [bifurcateSlices, setBifurcateSlices] = useState([]);
+  const [headerRowIndex, setHeaderRowIndex] = useState(null);
   const fileInputRef = useRef(null);
   const debounceRef = useRef(null);
   const addGridRef = useRef(null);
@@ -783,20 +784,78 @@ const FullExcelFile = () => {
     return '';
   };
 
-  const handlePreviewRowClick=(rowIndex)=>{
-    if(!activeTarget)return;
-    const{idx,field}=activeTarget;
-    const dateStr=getPreviewRowDate(rowIndex);
-    setRowRanges(prev=>prev.map((r,i)=>{
-      if(i!==idx)return r;
-      if(field==="startRange") return {...r, startRange:String(rowIndex+1), startDisplay:dateStr||""};
-      if(field==="endRange") return {...r, endRange:String(rowIndex+1), endDisplay:dateStr||""};
-      return r;
+  // const handlePreviewRowClick=(rowIndex)=>{
+  //   if(!activeTarget)return;
+  //   const{idx,field}=activeTarget;
+  //   const dateStr=getPreviewRowDate(rowIndex);
+  //   setRowRanges(prev=>prev.map((r,i)=>{
+  //     if(i!==idx)return r;
+  //     if(field==="startRange") return {...r, startRange:String(rowIndex+1), startDisplay:dateStr||""};
+  //     if(field==="endRange") return {...r, endRange:String(rowIndex+1), endDisplay:dateStr||""};
+  //     return r;
+  //   }));
+  //   setActiveTarget(null);
+  //   setVoiceFeedback(`${field === 'startRange' ? 'Start' : 'End'} of ${idx === 0 ? 'PRE' : 'POST'} range set to row ${rowIndex + 1}`);
+  //   setTimeout(() => setVoiceFeedback(""), 2000);
+  // };
+  const handlePreviewRowClick = (rowIndex) => {
+  if (!activeTarget) return;
+
+  // ── NEW: handle header row selection ──
+  if (activeTarget.mode === "header") {
+    const selectedRow = previewSheetWithPending.sheetData[rowIndex];
+    // get all values from this row as an array
+    const newHeaders = Object.values(selectedRow).map(String);
+
+    // rebuild all rows using this row's values as column names
+    const remainingRows = previewSheetWithPending.sheetData
+      .filter((_, i) => i !== rowIndex) // remove the header row from data
+      .map(row => {
+        const rowValues = Object.values(row);
+        const newRow = {};
+        newHeaders.forEach((header, i) => {
+          newRow[header] = rowValues[i];
+        });
+        return newRow;
+      });
+
+    // update excelData with new headers applied
+    setExcelData(prev => prev.map(sheet => {
+      if (sheet.sheetName !== (copyFromSheet || selectedSheet)) return sheet;
+      return { ...sheet, sheetData: remainingRows };
     }));
+
+    setHeaderRowIndex(rowIndex);
     setActiveTarget(null);
-    setVoiceFeedback(`${field === 'startRange' ? 'Start' : 'End'} of ${idx === 0 ? 'PRE' : 'POST'} range set to row ${rowIndex + 1}`);
+    setVoiceFeedback(`Row ${rowIndex + 1} set as column headers`);
     setTimeout(() => setVoiceFeedback(""), 2000);
-  };
+    return; // stop here, don't run the date range code below
+  }
+
+  // ── EXISTING: handle date range selection (unchanged) ──
+  const { idx, field } = activeTarget;
+  const dateStr = getPreviewRowDate(rowIndex);
+  setRowRanges(prev => prev.map((r, i) => {
+    if (i !== idx) return r;
+    if (field === "startRange") return { 
+      ...r, 
+      startRange: String(rowIndex + 1), 
+      startDisplay: dateStr || "" 
+    };
+    if (field === "endRange") return { 
+      ...r, 
+      endRange: String(rowIndex + 1), 
+      endDisplay: dateStr || "" 
+    };
+    return r;
+  }));
+  setActiveTarget(null);
+  setVoiceFeedback(
+    `${field === "startRange" ? "Start" : "End"} of 
+     ${idx === 0 ? "PRE" : "POST"} range set to row ${rowIndex + 1}`
+  );
+  setTimeout(() => setVoiceFeedback(""), 2000);
+};
 
   const handleDownloadExcel=()=>{
     if(!excelData||excelData.length===0)return;const wb=XLSX.utils.book_new();
@@ -900,7 +959,50 @@ const FullExcelFile = () => {
                       {sheetNames.map(s=><option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
-
+                  {/* NEW: Select header row button */}
+                  <div className="xf-group" style={{ marginTop: "20px" }}>
+                    <label className="xf-label">Column Header Row</label>
+                    
+                    {headerRowIndex !== null ? (
+                      // shows when a row is selected
+                      <div style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: "8px",
+                        padding: "10px 14px",
+                        background: "#f0fdf4",
+                        border: "1.5px solid var(--green)",
+                        borderRadius: "10px",
+                        fontSize: "0.82rem"
+                      }}>
+                        <span style={{ color: "var(--green)", fontWeight: 600 }}>
+                          ✓ Row {headerRowIndex + 1} selected as header
+                        </span>
+                        <button 
+                          onClick={() => setHeaderRowIndex(null)}
+                          style={{ 
+                            marginLeft: "auto", 
+                            background: "none", 
+                            border: "none", 
+                            color: "var(--red)", 
+                            cursor: "pointer",
+                            fontSize: "0.8rem"
+                          }}
+                        >
+                          ✕ Clear
+                        </button>
+                      </div>
+                    ) : (
+                      // shows when no row selected yet
+                      <button
+                        className="xf-btn xf-btn-ghost"
+                        style={{ width: "100%", borderRadius: "10px" }}
+                        onClick={() => setActiveTarget({ mode: "header" })}
+                      >
+                        👆 Click a row in preview to set as column header
+                      </button>
+                    )}
+                  </div>
                   <div className="xf-group" style={{ marginTop: "20px" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
                       <label className="xf-label" style={{ margin: 0 }}>Row Ranges</label>
