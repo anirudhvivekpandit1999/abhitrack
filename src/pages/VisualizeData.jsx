@@ -312,7 +312,7 @@ const VisualizeData = () => {
                     <Paper elevation={2} sx={{ p: 3 }}>
 
                         <Typography variant="h5" color="primary.main" sx={{ mb: 2 }}>
-                            Step 4: Visualize Data
+                            Step 2: Visualize Data
                         </Typography>
 
                         <Typography variant="body2" sx={{ mb: 3 }}>
@@ -391,12 +391,12 @@ const VisualizeData = () => {
                             stopListening={stopListening}
                         />
 
-                        <NavigationButtons
+                        {/* <NavigationButtons
                             onPrevious={handlePreviousStep}
                             isLoading={isLoading}
                             previousLabel="Back to Dependency Model"
                             hideNext
-                        />
+                        /> */}
 
                     </Paper>
                 </Container>

@@ -218,7 +218,7 @@ const STYLES = `
     animation: fadeIn 0.18s ease;
   }
   .xf-modal {
-    width: 95vw; max-width: 1140px; height: 90vh;
+    width: 100%; height: 100vh;
     background: var(--paper); border-radius: 28px;
     box-shadow: 0 24px 80px rgba(13,13,18,0.28), 0 0 0 1.5px var(--ink-20);
     overflow: hidden; display: flex; flex-direction: column;
@@ -306,23 +306,65 @@ const STYLES = `
   .xf-divider { height: 1.5px; background: var(--ink-20); margin: 4px 0; }
 
   /* ── Highlight styles for date range selection ── */
-  .row-highlight-pre {
-    background-color: rgba(76, 175, 80, 0.2) !important;
-    transition: background-color 0.2s ease;
-  }
-  .row-highlight-pre:hover {
-    background-color: rgba(76, 175, 80, 0.35) !important;
-  }
-  .row-highlight-post {
-    background-color: rgba(33, 150, 243, 0.2) !important;
-    transition: background-color 0.2s ease;
-  }
-  .row-highlight-post:hover {
-    background-color: rgba(33, 150, 243, 0.35) !important;
-  }
-  .xf-table tbody tr {
-    transition: background-color 0.2s ease;
-  }
+  // .row-highlight-pre {
+  //   background-color: rgba(76, 175, 80, 0.2) !important;
+  //   transition: background-color 0.2s ease;
+  // }
+  // .row-highlight-pre:hover {
+  //   background-color: rgba(76, 175, 80, 0.35) !important;
+  // }
+  // .row-highlight-post {
+  //   background-color: rgba(33, 150, 243, 0.2) !important;
+  //   transition: background-color 0.2s ease;
+  // }
+  // .row-highlight-post:hover {
+  //   background-color: rgba(33, 150, 243, 0.35) !important;
+  // }
+  // .xf-table tbody tr {
+  //   transition: background-color 0.2s ease;
+  // }
+  /* pre range — full range */
+  
+.row-highlight-pre {
+  background-color: rgba(76, 175, 80, 0.2) !important;
+  transition: background-color 0.2s ease;
+}
+.row-highlight-pre:hover {
+  background-color: rgba(76, 175, 80, 0.35) !important;
+}
+
+/* pre range — single start row marker */
+.row-highlight-pre-single {
+  background-color: rgba(76, 175, 80, 0.6) !important;
+  border-left: 4px solid #16a34a !important;
+  transition: background-color 0.2s ease;
+}
+.row-highlight-pre-single:hover {
+  background-color: rgba(76, 175, 80, 0.75) !important;
+}
+
+/* post range — full range */
+.row-highlight-post {
+  background-color: rgba(33, 150, 243, 0.2) !important;
+  transition: background-color 0.2s ease;
+}
+.row-highlight-post:hover {
+  background-color: rgba(33, 150, 243, 0.35) !important;
+}
+
+/* post range — single start row marker */
+.row-highlight-post-single {
+  background-color: rgba(33, 150, 243, 0.6) !important;
+  border-left: 4px solid #2563eb !important;
+  transition: background-color 0.2s ease;
+}
+.row-highlight-post-single:hover {
+  background-color: rgba(33, 150, 243, 0.75) !important;
+}
+
+.xf-table tbody tr {
+  transition: background-color 0.2s ease;
+}
 
   /* ── Keyframes ── */
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -365,6 +407,7 @@ const FullExcelFile = () => {
   const fileInputRef = useRef(null);
   const debounceRef = useRef(null);
   const addGridRef = useRef(null);
+  const previewTableRef = useRef(null);
   const [addGridHeight, setAddGridHeight] = useState(560);
   const [rowRanges, setRowRanges] = useState([
     { name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" },
@@ -704,6 +747,37 @@ const FullExcelFile = () => {
     setColumnNames(Array.from(unionCols));
   };
 
+  // AUTO SCROLL — focus selected row to center of preview
+useEffect(() => {
+  const allRanges = [
+    rowRanges[0]?.startRange,
+    rowRanges[0]?.endRange,
+    rowRanges[1]?.startRange,
+    rowRanges[1]?.endRange,
+  ].filter(Boolean);
+
+  if (!allRanges.length) return;
+
+  // get the most recently changed row number
+  const lastRange = allRanges[allRanges.length - 1];
+  const rowNumber = parseInt(lastRange, 10);
+  if (isNaN(rowNumber)) return;
+
+  // find the row element in the preview table
+  requestAnimationFrame(() => {
+    const table = previewTableRef.current;
+    if (!table) return;
+    const rows = table.querySelectorAll("tbody tr");
+    const targetRow = rows[rowNumber - 1]; // rowNumber is 1-based
+    if (targetRow) {
+      targetRow.scrollIntoView({
+        behavior: "smooth",
+        block: "center",   // centers it vertically
+      });
+    }
+  });
+}, [rowRanges]);
+
   useEffect(()=>{if(debounceRef.current)clearTimeout(debounceRef.current);debounceRef.current=setTimeout(()=>buildTempSlices(),300);return()=>clearTimeout(debounceRef.current);},[rowRanges,newSheetName,copyFromSheet,selectedSheet,excelData]);
 
   const escapeRegExp=(string)=>String(string).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
@@ -767,22 +841,56 @@ const FullExcelFile = () => {
 
   const getRowHighlightClass = (rowIndex) => {
     const currentRowNum = rowIndex + 1;
-    if (rowRanges[0] && rowRanges[0].startRange && rowRanges[0].endRange) {
+
+    // pre range — only start selected (no end yet)
+    if (rowRanges[0]?.startRange && !rowRanges[0]?.endRange) {
+      const preStart = parseInt(rowRanges[0].startRange, 10);
+      if (currentRowNum === preStart) return 'row-highlight-pre-single';
+    }
+
+    // pre range — both start and end selected
+    if (rowRanges[0]?.startRange && rowRanges[0]?.endRange) {
       const preStart = parseInt(rowRanges[0].startRange, 10);
       const preEnd = parseInt(rowRanges[0].endRange, 10);
-      if (currentRowNum >= preStart && currentRowNum <= preEnd) {
-        return 'row-highlight-pre';
-      }
+      if (currentRowNum === preStart) return 'row-highlight-pre-single';
+      if (currentRowNum > preStart && currentRowNum <= preEnd) return 'row-highlight-pre';
     }
-    if (rowRanges[1] && rowRanges[1].startRange && rowRanges[1].endRange) {
+
+    // post range — only start selected (no end yet)
+    if (rowRanges[1]?.startRange && !rowRanges[1]?.endRange) {
+      const postStart = parseInt(rowRanges[1].startRange, 10);
+      if (currentRowNum === postStart) return 'row-highlight-post-single';
+    }
+
+    // post range — both start and end selected
+    if (rowRanges[1]?.startRange && rowRanges[1]?.endRange) {
       const postStart = parseInt(rowRanges[1].startRange, 10);
       const postEnd = parseInt(rowRanges[1].endRange, 10);
-      if (currentRowNum >= postStart && currentRowNum <= postEnd) {
-        return 'row-highlight-post';
-      }
+      if (currentRowNum === postStart) return 'row-highlight-post-single';
+      if (currentRowNum > postStart && currentRowNum <= postEnd) return 'row-highlight-post';
     }
+
     return '';
   };
+
+  // const getRowHighlightClass = (rowIndex) => {
+  //   const currentRowNum = rowIndex + 1;
+  //   if (rowRanges[0] && rowRanges[0].startRange && rowRanges[0].endRange) {
+  //     const preStart = parseInt(rowRanges[0].startRange, 10);
+  //     const preEnd = parseInt(rowRanges[0].endRange, 10);
+  //     if (currentRowNum >= preStart && currentRowNum <= preEnd) {
+  //       return 'row-highlight-pre';
+  //     }
+  //   }
+  //   if (rowRanges[1] && rowRanges[1].startRange && rowRanges[1].endRange) {
+  //     const postStart = parseInt(rowRanges[1].startRange, 10);
+  //     const postEnd = parseInt(rowRanges[1].endRange, 10);
+  //     if (currentRowNum >= postStart && currentRowNum <= postEnd) {
+  //       return 'row-highlight-post';
+  //     }
+  //   }
+  //   return '';
+  // };
 
   // const handlePreviewRowClick=(rowIndex)=>{
   //   if(!activeTarget)return;
@@ -1160,7 +1268,7 @@ const FullExcelFile = () => {
                 </div>
                 <div style={{flex:1,overflow:"auto"}}>
                   {previewSheetWithPending.sheetData?.length>0?(
-                    <table className="xf-table">
+                    <table className="xf-table" ref={previewTableRef}>
                       <thead>
                         <tr>
                           {previewHeaders.map(key=>(
