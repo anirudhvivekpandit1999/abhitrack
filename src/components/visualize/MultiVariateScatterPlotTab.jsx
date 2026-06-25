@@ -381,7 +381,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
   useEffect(() => {
     setActivePairs(allPairs.map(p => p.key));
-  }, [allPairs.length]);
+  }, [allPairs]);
   
   // Initialize per-pair ranges when pairs change
   useEffect(() => {
@@ -802,7 +802,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     const plotGroup = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`).attr("class", "plot-group");
 
     svg.append("defs").append("clipPath").attr("id", "plot-clip")
-      .append("rect").attr("width", plotWidth).attr("height", plotHeight);
+      .append("rect").attr("x", 0).attr("y", 0).attr("width", plotWidth).attr("height", plotHeight);
 
     const gridGroup = plotGroup.append("g").attr("class", "grid-group").attr("clip-path", "url(#plot-clip)");
     const tickCount = 8;
@@ -818,7 +818,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       
       const areaGenerator = d3.area()
         .x(d => xSc(d.x))
-        .y0(ySc(0))
+        .y0(ySc.range()[0])
         .y1(d => ySc(d.y))
         .curve(d3.curveMonotoneX);
       
@@ -1175,39 +1175,39 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       });
 
     // Legend
-    const legend = svg.append("g").attr("class", "legend").attr("transform", `translate(${margin.left}, ${margin.top - 55})`);
-    let legendX = 0;
-    const pairsToShow = scaleMode === "perPair" && currentPairKey ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
+    // const legend = svg.append("g").attr("class", "legend").attr("transform", `translate(${margin.left}, ${margin.top - 55})`);
+    // let legendX = 0;
+    // const pairsToShow = scaleMode === "perPair" && currentPairKey ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
 
-    pairsToShow.forEach((pair) => {
-      const colors = pairColorMap[pair.key];
-      if (!colors) return;
-      const grp = legend.append("g").attr("transform", `translate(${legendX}, 0)`);
-      const label = `${pair.x} vs ${pair.y}`;
-      const shortLabel = label.length > 20 ? label.slice(0, 18) + "…" : label;
+    // pairsToShow.forEach((pair) => {
+    //   const colors = pairColorMap[pair.key];
+    //   if (!colors) return;
+    //   const grp = legend.append("g").attr("transform", `translate(${legendX}, 0)`);
+    //   const label = `${pair.x} vs ${pair.y}`;
+    //   const shortLabel = label.length > 20 ? label.slice(0, 18) + "…" : label;
 
-      if (datasetView === "both" || datasetView === "withoutProduct") {
-        grp.append("circle").attr("cx", 6).attr("cy", 6).attr("r", 6)
-          .style("fill", colors.pre).style("stroke", colors.base).style("stroke-width", 1);
-        grp.append("text").attr("x", 16).attr("y", 6).attr("dy", "0.35em")
-          .style("font-size", "10px").style("fill", "#555").text("Pre");
-      }
+    //   if (datasetView === "both" || datasetView === "withoutProduct") {
+    //     grp.append("circle").attr("cx", 6).attr("cy", 6).attr("r", 6)
+    //       .style("fill", colors.pre).style("stroke", colors.base).style("stroke-width", 1);
+    //     grp.append("text").attr("x", 16).attr("y", 6).attr("dy", "0.35em")
+    //       .style("font-size", "10px").style("fill", "#555").text("Pre");
+    //   }
 
-      if (datasetView === "both" || datasetView === "withProduct") {
-        const preOffset = (datasetView === "both" || datasetView === "withoutProduct") ? 36 : 0;
-        grp.append("circle").attr("cx", preOffset + 6).attr("cy", 6).attr("r", 6)
-          .style("fill", colors.post).style("stroke", colors.base).style("stroke-width", 1);
-        grp.append("text").attr("x", preOffset + 16).attr("y", 6).attr("dy", "0.35em")
-          .style("font-size", "10px").style("fill", "#555").text("Post");
-      }
+    //   if (datasetView === "both" || datasetView === "withProduct") {
+    //     const preOffset = (datasetView === "both" || datasetView === "withoutProduct") ? 36 : 0;
+    //     grp.append("circle").attr("cx", preOffset + 6).attr("cy", 6).attr("r", 6)
+    //       .style("fill", colors.post).style("stroke", colors.base).style("stroke-width", 1);
+    //     grp.append("text").attr("x", preOffset + 16).attr("y", 6).attr("dy", "0.35em")
+    //       .style("font-size", "10px").style("fill", "#555").text("Post");
+    //   }
 
-      const labelOffset = datasetView === "both" ? 72 : 36;
-      grp.append("text").attr("x", labelOffset).attr("y", 6).attr("dy", "0.35em")
-        .style("font-size", "10px").style("font-weight", "600").style("fill", colors.base)
-        .text(`(${shortLabel})`);
+    //   const labelOffset = datasetView === "both" ? 72 : 36;
+    //   grp.append("text").attr("x", labelOffset).attr("y", 6).attr("dy", "0.35em")
+    //     .style("font-size", "10px").style("font-weight", "600").style("fill", colors.base)
+    //     .text(`(${shortLabel})`);
 
-      legendX += Math.max(180, shortLabel.length * 7 + labelOffset + 10);
-    });
+    //   legendX += Math.max(180, shortLabel.length * 7 + labelOffset + 10);
+    // });
 
   }, [getEffectiveRanges, formatAxisValue, chartSettings.showGrid, datasetView,
     chartSettings.showTrendLines, trendLinesData, allPairs, getTrendLineColor, pairColorMap, perPairAutoRanges, activePairs, scaleMode, currentPairKey, showLines, showArea, areaOpacity, lineWidth, withProductPoints, withoutProductPoints, selectedYVars]);
@@ -1687,7 +1687,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <ScaleIcon color="primary" />
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'primary.main' }}>Axis Scaling Mode:</Typography>
-            <ToggleButtonGroup value={scaleMode} exclusive onChange={(_, v) => { if (v) { setScaleMode(v); resetZoom(); } }} size="small">
+            <ToggleButtonGroup value={scaleMode} exclusive onChange={(_, v) => { if (v) { setScaleMode(v); resetZoom(); if (v == "perPair"){setActivePairs(allPairs.map(p => p.key));if (allPairs.length > 0) { setCurrentPairKey(allPairs[0].key); } } } }} size="small">
               <ToggleButton value="global" sx={{ textTransform: 'none' }}>Dynamic Scale (All Active Pairs)</ToggleButton>
               <ToggleButton value="perPair" sx={{ textTransform: 'none' }}>Single Pair View</ToggleButton>
               <ToggleButton value="perVariable" sx={{ textTransform: 'none' }}>Per-Variable Scale</ToggleButton>
@@ -1861,7 +1861,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             </Box>
 
             {/* Color legend for pairs */}
-            {allPairs.length > 0 && scaleMode !== "perPair" && (
+            {/* {allPairs.length > 0 && scaleMode !== "perPair" && (
               <Box sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                 {allPairs.map((pair) => {
                   const colors = pairColorMap[pair.key];
@@ -1876,7 +1876,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                   );
                 })}
               </Box>
-            )}
+            )} */}
+            
 
             <Box sx={{ mb: 3 }}>
               <Alert severity="info" sx={{ display: "flex", alignItems: "center", gap: 1, borderRadius: 2 }}>
@@ -1941,7 +1942,33 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                 </MuiTooltip>
               </Box>
             </Box>
-
+            {allPairs.length > 0 && (
+              <Box sx={{ mb: 2, p: 2, bgcolor: '#e3f2fd', borderRadius: 2, border: '1px solid #1976d2', display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                {(scaleMode === "perPair" && currentPairKey
+                  ? allPairs.filter(p => p.key === currentPairKey)
+                  : allPairs
+                ).map((pair) => {
+                  const colors = pairColorMap[pair.key];
+                  if (!activePairs.includes(pair.key)) return null;
+                  return (
+                    <Box key={pair.key} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap', mr: 1 }}>
+                      {(datasetView === "both" || datasetView === "withoutProduct") && (
+                        <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: colors?.pre, flexShrink: 0 }} />
+                      )}
+                      {(datasetView === "both" || datasetView === "withProduct") && (
+                        <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: colors?.post, flexShrink: 0 }} />
+                      )}
+                      <Typography sx={{ color: colors?.base, fontWeight: 700, fontSize: '14px', fontFamily: 'inherit' }}>
+                        {pair.x} vs {pair.y}
+                      </Typography>
+                      <Typography sx={{ color: 'text.secondary', fontSize: '12px', fontFamily: 'inherit' }}>
+                        {datasetView === "both" ? "(light=pre, dark=post)" : datasetView === "withoutProduct" ? "(pre)" : "(post)"}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
             {/* Plot Area */}
             {!hasData ? (
               <Alert severity="info" sx={{ width: "100%", my: 3, borderRadius: 2 }}>No data available for the selected variables</Alert>
@@ -1960,10 +1987,17 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                         onMouseUp={() => setIsDragging(false)}
                         onMouseLeave={() => { setIsDragging(false); handleCanvasMouseOut(); }}
                       />
-                      <Box sx={{ position: 'absolute', top: 10, right: 20, zIndex: 1000, pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 1, background: 'rgba(255,255,255,0.95)', p: '4px 10px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.1)', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+                      {/* <Box sx={{ position: 'absolute', top: 10, right: 20, zIndex: 1000, pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 1, background: 'rgba(255,255,255,0.95)', p: '4px 10px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.1)', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
                         <Box sx={{ width: 22, height: 22 }}><img src={logo} alt="Abhitech Logo" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'contain' }} /></Box>
                         <Box><Box sx={{ fontSize: '8px', lineHeight: '1' }}>Powered by</Box><Box sx={{ fontSize: '9px', fontWeight: 'bold', color: '#1976d2', lineHeight: '1.1' }}>Abhitech's AbhiStat</Box></Box>
+                      </Box> */}
+                      <Box sx={{ position: 'absolute', top: 12, right: 20, zIndex: 1000, pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 1.5, background: 'rgba(255,255,255,0.97)', p: '8px 14px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', boxShadow: '0 3px 10px rgba(0,0,0,0.15)' }}>
+                      <Box sx={{ width: 36, height: 36 }}><img src={logo} alt="Abhitech Logo" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'contain' }} /></Box>
+                      <Box>
+                        <Box sx={{ fontSize: '11px', lineHeight: '1.4', color: '#666' }}>Powered by</Box>
+                        <Box sx={{ fontSize: '13px', fontWeight: 'bold', color: '#1976d2', lineHeight: '1.4' }}>Abhitech's AbhiStat</Box>
                       </Box>
+                    </Box>
                       {tooltip.visible && tooltip.data && (
                         <Paper elevation={3} sx={{ position: "absolute", left: Math.min(tooltip.x + 10, window.innerWidth - 320), top: Math.max(tooltip.y - 10, 10), p: { xs: 1.5, md: 2 }, backgroundColor: "background.paper", maxWidth: { xs: 250, md: 300 }, borderRadius: 2, border: "2px solid", borderColor: pairColorMap[tooltip.data.pairKey]?.base || 'divider', boxShadow: "0 4px 12px rgba(0,0,0,0.15)", pointerEvents: "none", zIndex: 1000 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.5 }}>
