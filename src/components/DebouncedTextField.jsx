@@ -19,7 +19,7 @@ const DebouncedTextField = ({
   };
 
   const handleBlur = () => {
-    if (localValue !== value) {
+    if (localValue !== value && typeof onChange === 'function') {
       onChange({
         target: { value: localValue }
       });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, createRef } from "react";
 import DebouncedTextField from '../DebouncedTextField';
 import {
   Box,
@@ -48,6 +48,7 @@ import logo from "../../assets/abhitech-logo.png";
 import html2canvas from "html2canvas";
 import ChartSettingsModal from '../ChartSettingsModal';
 import SaveVisualizationButton from '../SaveVisualizationButton';
+import Draggable from 'react-draggable';
 
 // Base palette — one hue per pair
 const BASE_COLORS = [
@@ -237,6 +238,44 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const [currentTransform, setCurrentTransform] = useState(d3.zoomIdentity);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const [annotations, setAnnotations] = useState([]);
+  const [annotationPositions, setAnnotationPositions] = useState({});
+  const annotationRefs = useRef({});
+
+  const addAnnotation = () => {
+    const id = Date.now();
+    setAnnotations(prev => [...prev, { id, text: '', field: '', pairKey: scaleMode === 'perPair' ? currentPairKey : null }]);
+    setAnnotationPositions(prev => ({ ...prev, [id]: { x: 120, y: 120 } }));
+  };
+
+  const removeAnnotation = (id) => {
+    setAnnotations(prev => prev.filter(a => a.id !== id));
+    setAnnotationPositions(prev => {
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
+  };
+
+  const updateAnnotation = (id, key, value) => {
+    setAnnotations(prev => prev.map(a => a.id === id ? { ...a, [key]: value } : a));
+  };
+
+  const handleAnnotationDragStop = (id, data) => {
+    setAnnotationPositions(prev => ({ ...prev, [id]: { x: data.x, y: data.y } }));
+  };
+
+  const handleAnnotationDrag = (id, data) => {
+    setAnnotationPositions(prev => ({ ...prev, [id]: { x: data.x, y: data.y } }));
+  };
+
+  const visibleAnnotations = useMemo(() => {
+    if (scaleMode === 'perPair' && currentPairKey) {
+      return annotations.filter(a => a.pairKey === currentPairKey);
+    }
+    return annotations;
+  }, [annotations, scaleMode, currentPairKey]);
 
   const [filterColumn, setFilterColumn] = useState('');
   const [filterMin, setFilterMin] = useState('');
@@ -1630,8 +1669,45 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             <CustomSlider value={areaOpacity} onChange={(value) => setAreaOpacity(value)} min={0.1} max={0.7} step={0.05} label="Area Transparency" formatValue={(val) => `${Math.round(val * 100)}%`} />
           </Grid>
         </Grid>
+      </Box>,
+      <Box key="annotations" sx={{ mt: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: '#333' }}>Text Annotations</Typography>
+          <Button variant="contained" size="small" onClick={addAnnotation} sx={{ textTransform: 'none' }}>
+            + Add Text Box
+          </Button>
+        </Box>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+          Add labels that appear on the chart. After closing settings, drag them anywhere on the plot.
+        </Typography>
+        {annotations.length === 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+            No annotations yet. Click "+ Add Text Box" to add one.
+          </Typography>
+        )}
+        {annotations.map((ann, index) => (
+          <Box key={ann.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, p: 1.5, bgcolor: '#f5f5f5', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', minWidth: 24 }}>#{index + 1}</Typography>
+            <DebouncedTextField
+              size="small"
+              label="Label"
+              value={ann.field}
+              onChange={(e) => updateAnnotation(ann.id, 'field', e.target.value)}
+              sx={{ width: 130 }}
+            />
+            <DebouncedTextField
+              size="small"
+              label="Text"
+              value={ann.text}
+              onChange={(e) => updateAnnotation(ann.id, 'text', e.target.value)}
+              sx={{ flex: 1 }}
+            />
+            <Button size="small" color="error" variant="outlined" onClick={() => removeAnnotation(ann.id)} sx={{ minWidth: 32, textTransform: 'none' }}>✕</Button>
+          </Box>
+        ))}
       </Box>
     ];
+
 
     const colorPairs = allPairs.map(pair => ({
       key: pair.key,
@@ -1998,6 +2074,43 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                         <Box sx={{ fontSize: '13px', fontWeight: 'bold', color: '#1976d2', lineHeight: '1.4' }}>Abhitech's AbhiStat</Box>
                       </Box>
                     </Box>
+                    {visibleAnnotations.map((ann) => {
+                      if (!annotationRefs.current[ann.id]) {
+                        annotationRefs.current[ann.id] = createRef();
+                      }
+                      return (
+                        <Draggable
+                          key={ann.id}
+                          nodeRef={annotationRefs.current[ann.id]}
+                          position={annotationPositions[ann.id] || { x: 120, y: 120 }}
+                          onDrag={(e, data) => handleAnnotationDrag(ann.id, data)}
+                          onStop={(e, data) => handleAnnotationDragStop(ann.id, data)}
+                          bounds="parent"
+                        >
+                          <Box ref={annotationRefs.current[ann.id]} sx={{
+                            position: 'absolute',
+                            zIndex: 998,
+                            cursor: 'grab',
+                            background: 'rgba(255,255,255,0.96)',
+                            border: '1.5px solid #1976d2',
+                            borderRadius: '6px',
+                            padding: '6px 12px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                            minWidth: 80,
+                            userSelect: 'none',
+                          }}>
+                            {ann.field && (
+                              <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: '#1976d2', fontSize: '11px' }}>
+                                {ann.field}
+                              </Typography>
+                            )}
+                            <Typography variant="body2" sx={{ fontSize: '12px', color: '#333' }}>
+                              {ann.text || '(empty)'}
+                            </Typography>
+                          </Box>
+                        </Draggable>
+                      );
+                    })}
                       {tooltip.visible && tooltip.data && (
                         <Paper elevation={3} sx={{ position: "absolute", left: Math.min(tooltip.x + 10, window.innerWidth - 320), top: Math.max(tooltip.y - 10, 10), p: { xs: 1.5, md: 2 }, backgroundColor: "background.paper", maxWidth: { xs: 250, md: 300 }, borderRadius: 2, border: "2px solid", borderColor: pairColorMap[tooltip.data.pairKey]?.base || 'divider', boxShadow: "0 4px 12px rgba(0,0,0,0.15)", pointerEvents: "none", zIndex: 1000 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.5 }}>
