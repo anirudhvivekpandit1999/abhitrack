@@ -659,10 +659,16 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   }, [allPoints, allPairs]);
 
   useEffect(() => {
-    if (customXRange.auto && globalAutoRanges?.xMin != null && globalAutoRanges?.xMax != null) {
+    if (globalAutoRanges?.xMin != null && globalAutoRanges?.xMax != null) {
       setFixedXRange({ xMin: globalAutoRanges.xMin, xMax: globalAutoRanges.xMax });
+      if (customXRange.min === "" && customXRange.max === "") {
+        setCustomXRange({ min: "", max: "", auto: true });
+      }
+      if (customYRange.min === "" && customYRange.max === "") {
+        setCustomYRange({ min: "", max: "", auto: true });
+      }
     }
-  }, [globalAutoRanges, customXRange.auto, selectedXVars, activePairs]);
+  }, [globalAutoRanges, activePairs]);
 
   // Determine effective ranges based on scale mode and current pair
   const getEffectiveRanges = useCallback(() => {
@@ -701,7 +707,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       return { xMin, xMax, yMin, yMax };
     } else {
       let xMin, xMax, yMin, yMax;
-      const xAutoRange = fixedXRange || globalAutoRanges;
+      const xAutoRange = globalAutoRanges;
       if (customXRange.auto || customXRange.min === "") xMin = xAutoRange.xMin;
       else xMin = Number.parseFloat(customXRange.min);
       if (customXRange.auto || customXRange.max === "") xMax = xAutoRange.xMax;
@@ -857,14 +863,15 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       
       const areaGenerator = d3.area()
         .x(d => xSc(d.x))
-        .y0(ySc.range()[0])
-        .y1(d => ySc(d.y))
+        .y0(Math.min(ySc.range()[0], panelHeight))
+        .y1(d => Math.max(0, ySc(d.y)))
         .curve(d3.curveMonotoneX);
       
       group.append("path")
         .datum(points)
         .attr("class", "area-under-line")
         .attr("d", areaGenerator)
+        .attr("clip-path", "url(#plot-clip)")
         .style("fill", color)
         .style("fill-opacity", opacity)
         .style("stroke", "none");
@@ -883,6 +890,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         .datum(points)
         .attr("class", "connecting-line")
         .attr("d", lineGenerator)
+        .attr("clip-path", "url(#plot-clip)")
         .style("fill", "none")
         .style("stroke", color)
         .style("stroke-width", strokeWidth)
@@ -932,17 +940,24 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         const yDomain = perPairAutoRanges[pair.key] || { yMin: 0, yMax: 1 };
         const yScale = d3.scaleLinear().domain([yDomain.yMin, yDomain.yMax]).range([panelHeight, 0]);
         originalYScales[pair.key] = yScale.copy();
+        // Create a unique clip path for each panel
+        const panelClipId = `panel-clip-${index}`;
+        svg.select("defs").append("clipPath").attr("id", panelClipId)
+          .append("rect").attr("x", 0).attr("y", 0).attr("width", plotWidth).attr("height", panelHeight);
+          
         const panelGroup = plotGroup.append("g").attr("transform", `translate(0,${index * panelHeight})`).attr("class", `panel-${pair.key}`);
+        // Create a sub-group for clipped content only (lines and areas)
+        const clippedGroup = panelGroup.append("g").attr("clip-path", `url(#${panelClipId})`);
 
         // Add lines and areas first (so they are behind points)
         if (showLines || showArea) {
           if (datasetView === "both" || datasetView === "withoutProduct") {
             const withoutPoints = withoutProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-            drawLinesAndAreas(panelGroup, withoutPoints, xScale, yScale, getTrendLineColor(pair.key, "Without Product"), "Without Product", pair.key);
+            drawLinesAndAreas(clippedGroup, withoutPoints, xScale, yScale, getTrendLineColor(pair.key, "Without Product"), "Without Product", pair.key);
           }
           if (datasetView === "both" || datasetView === "withProduct") {
             const withPoints = withProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-            drawLinesAndAreas(panelGroup, withPoints, xScale, yScale, getTrendLineColor(pair.key, "With Product"), "With Product", pair.key);
+            drawLinesAndAreas(clippedGroup, withPoints, xScale, yScale, getTrendLineColor(pair.key, "With Product"), "With Product", pair.key);
           }
         }
 
@@ -997,9 +1012,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           const pairsToDraw = (scaleMode === "perPair" && currentPairKey) ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
           
           for (const pair of pairsToDraw) {
+            if (!activePairs.includes(pair.key)) continue;
             const isY1 = pair.y === yVar1;
             const yScale = isY1 ? yScaleLeft : yScaleRight;
-
+            
             if (datasetView === "both" || datasetView === "withoutProduct") {
               const withoutPoints = withoutProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
               drawLinesAndAreas(plotGroup, withoutPoints, xScale, yScale, getTrendLineColor(pair.key, "Without Product"), "Without Product", pair.key);
@@ -1075,6 +1091,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           const pairsToDraw = (scaleMode === "perPair" && currentPairKey) ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
           
           for (const pair of pairsToDraw) {
+            if (!activePairs.includes(pair.key)) continue;
             if (datasetView === "both" || datasetView === "withoutProduct") {
               const withoutPoints = withoutProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
               drawLinesAndAreas(plotGroup, withoutPoints, xScale, yScale, getTrendLineColor(pair.key, "Without Product"), "Without Product", pair.key);
@@ -1478,6 +1495,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         ctx.textAlign = 'center';
         ctx.fillText(`Multi-Variate Scatter Plot (${scaleMode === "perPair" && currentPairKey ? currentPairKey.replace("__", " vs ") : activePairs.length + " pairs"})`, canvas.width / 2, 30 * scaleFactor);
         ctx.drawImage(img, 0, 50 * scaleFactor, svgRect.width * scaleFactor, svgRect.height * scaleFactor);
+        // Draw canvas points on top of SVG
+        if (canvasRef.current) {
+          ctx.drawImage(canvasRef.current, 0, 50 * scaleFactor, svgRect.width * scaleFactor, svgRect.height * scaleFactor);
+        }
         const link = document.createElement("a");
         link.download = `${generateFileName("MultiVariateScatterPlot")}.png`;
         link.href = canvas.toDataURL("image/png");
