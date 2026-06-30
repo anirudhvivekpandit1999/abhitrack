@@ -1111,7 +1111,7 @@ useEffect(() => {
                   <div className="xf-group" style={{ marginTop: "20px" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
                       <label className="xf-label" style={{ margin: 0 }}>Row Ranges</label>
-                      <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={addRowRange}>+ Add Range</button>
+                      {/* <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={addRowRange}>+ Add Range</button> */}
                     </div>
 
                     <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
@@ -1242,9 +1242,9 @@ useEffect(() => {
                           {(rr.startDisplay && !rr.startRange) && <span style={{ color: "var(--red)", fontSize: "0.65rem" }}>No match</span>}
                         </div>
 
-                        {rowRanges.length > 1 && (
+                        {/* {rowRanges.length > 1 && (
                           <button className="xf-btn xf-btn-danger xf-btn-sm" onClick={() => removeRowRange(idx)}>✕</button>
-                        )}
+                        )} */}
                       </div>
                     ))}
                   </div>
