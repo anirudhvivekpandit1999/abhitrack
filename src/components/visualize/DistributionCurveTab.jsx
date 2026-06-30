@@ -489,18 +489,18 @@ const DistributionCurveTab = ({
     const WatermarkContent = () => (
         <div style={{
             position: 'absolute', top: isMobile ? '5px' : '0px', right: isMobile ? '10px' : '50px',
-            display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '6px',
-            background: 'rgba(255,255,255,0.95)', padding: isMobile ? '2px 6px' : '4px 10px',
+            display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '10px',
+            background: 'rgba(255,255,255,0.95)', padding: isMobile ? '4px 8px' : '6px 14px',
             borderRadius: '4px', border: '1px solid rgba(0,0,0,0.1)',
             fontSize: isMobile ? '8px' : '10px', color: '#666', fontFamily: 'Arial, sans-serif',
             boxShadow: '0 1px 3px rgba(0,0,0,0.1)', zIndex: 1000, pointerEvents: 'none'
         }}>
-            <div style={{ width: isMobile ? '16px' : '22px', height: isMobile ? '16px' : '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: isMobile ? '24px' : '34px', height: isMobile ? '24px' : '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <img src={logo} alt="Abhitech Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
             </div>
             <div>
-                <div style={{ fontSize: isMobile ? '6px' : '8px', lineHeight: '1' }}>Powered by</div>
-                <div style={{ fontSize: isMobile ? '7px' : '9px', fontWeight: 'bold', color: '#1976d2', lineHeight: '1.1' }}>Abhitech's AbhiStat</div>
+                <div style={{ fontSize: isMobile ? '7px' : '10px', lineHeight: '1' }}>Powered by</div>
+                <div style={{ fontSize: isMobile ? '8px' : '12px', fontWeight: 'bold', color: '#1976d2', lineHeight: '1.1' }}>Abhitech's AbhiStat</div>
             </div>
         </div>
     );
@@ -957,12 +957,12 @@ const DistributionCurveTab = ({
 
                     <ColorLegendBlock columns={selectedColumns} />
 
-                    <div ref={combinedChartRef} className="abhitech-plot-area" style={{ width: '100%', height: isMobile ? 280 : isTablet ? 320 : 390, position: 'relative' }}>
+                    <div ref={combinedChartRef} className="abhitech-plot-area" style={{ width: '100%', height: isMobile ? 340 : isTablet ? 390 : 460, position: 'relative' }}>
                         <ResponsiveContainer width="100%" height="100%">
-                            <ComposedChart data={combinedChartData} margin={{ top: 10, right: 70, left: 20, bottom: 40 }}>
+                            <ComposedChart data={combinedChartData} margin={{ top: 10, right: 70, left: 20, bottom: 70 }}>
                                 {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />}
                                 <XAxis dataKey="binMiddle"
-                                    label={{ value: combinedXAxisLabel || 'X Value', position: 'insideBottom', offset: -20, style: { fontSize: '13px', fill: '#555' } }}
+                                    label={{ value: combinedXAxisLabel || 'X Value', position: 'insideBottom', offset: -10, style: { fontSize: '13px', fill: '#555' } }}
                                     domain={xDomain} type="number" tick={{ fontSize: isMobile ? 10 : 12 }} tickFormatter={combinedXAxisIsDate ? formatDateValue : undefined} />
                                 <YAxis yAxisId="left"
                                     label={{ value: combinedYAxisLabel || defaultYLabel, angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: '13px', fill: '#555' } }}
@@ -976,7 +976,7 @@ const DistributionCurveTab = ({
                                 }}
                                     labelFormatter={(label) => combinedXAxisIsDate ? formatDateValue(label, true) : label}
                                 />
-                                <Legend wrapperStyle={{ fontSize: isMobile ? '10px' : '12px', paddingTop: '8px' }} />
+                                <Legend wrapperStyle={{ fontSize: isMobile ? '10px' : '12px', paddingTop: '28px' }} />
                                 {areas}
                                 {bars}
                             </ComposedChart>
