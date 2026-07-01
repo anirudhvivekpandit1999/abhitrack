@@ -325,42 +325,42 @@ const STYLES = `
   // }
   /* pre range — full range */
   
-.row-highlight-pre {
-  background-color: rgba(76, 175, 80, 0.2) !important;
-  transition: background-color 0.2s ease;
-}
-.row-highlight-pre:hover {
-  background-color: rgba(76, 175, 80, 0.35) !important;
-}
+// .row-highlight-pre {
+//   background-color: rgba(76, 175, 80, 0.2) !important;
+//   transition: background-color 0.2s ease;
+// }
+// .row-highlight-pre:hover {
+//   background-color: rgba(76, 175, 80, 0.35) !important;
+// }
 
 /* pre range — single start row marker */
-.row-highlight-pre-single {
-  background-color: rgba(76, 175, 80, 0.6) !important;
-  border-left: 4px solid #16a34a !important;
-  transition: background-color 0.2s ease;
-}
-.row-highlight-pre-single:hover {
-  background-color: rgba(76, 175, 80, 0.75) !important;
-}
+// .row-highlight-pre-single {
+//   background-color: rgba(76, 175, 80, 0.6) !important;
+//   border-left: 4px solid #16a34a !important;
+//   transition: background-color 0.2s ease;
+// }
+// .row-highlight-pre-single:hover {
+//   background-color: rgba(76, 175, 80, 0.75) !important;
+// }
 
 /* post range — full range */
-.row-highlight-post {
-  background-color: rgba(33, 150, 243, 0.2) !important;
-  transition: background-color 0.2s ease;
-}
-.row-highlight-post:hover {
-  background-color: rgba(33, 150, 243, 0.35) !important;
-}
+// .row-highlight-post {
+//   background-color: rgba(33, 150, 243, 0.2) !important;
+//   transition: background-color 0.2s ease;
+// }
+// .row-highlight-post:hover {
+//   background-color: rgba(33, 150, 243, 0.35) !important;
+// }
 
 /* post range — single start row marker */
-.row-highlight-post-single {
-  background-color: rgba(33, 150, 243, 0.6) !important;
-  border-left: 4px solid #2563eb !important;
-  transition: background-color 0.2s ease;
-}
-.row-highlight-post-single:hover {
-  background-color: rgba(33, 150, 243, 0.75) !important;
-}
+// .row-highlight-post-single {
+//   background-color: rgba(33, 150, 243, 0.6) !important;
+//   border-left: 4px solid #2563eb !important;
+//   transition: background-color 0.2s ease;
+// }
+// .row-highlight-post-single:hover {
+//   background-color: rgba(33, 150, 243, 0.75) !important;
+// }
 
 .xf-table tbody tr {
   transition: background-color 0.2s ease;
@@ -749,34 +749,34 @@ const FullExcelFile = () => {
 
   // AUTO SCROLL — focus selected row to center of preview
 useEffect(() => {
-  const allRanges = [
-    rowRanges[0]?.startRange,
-    rowRanges[0]?.endRange,
-    rowRanges[1]?.startRange,
-    rowRanges[1]?.endRange,
-  ].filter(Boolean);
+    // collect ALL range values from ALL ranges dynamically
+    const allRanges = [];
+    rowRanges.forEach(range => {
+      if (range?.startRange) allRanges.push(range.startRange);
+      if (range?.endRange) allRanges.push(range.endRange);
+    });
 
-  if (!allRanges.length) return;
+    if (!allRanges.length) return;
 
-  // get the most recently changed row number
-  const lastRange = allRanges[allRanges.length - 1];
-  const rowNumber = parseInt(lastRange, 10);
-  if (isNaN(rowNumber)) return;
+    // get the most recently changed row number
+    const lastRange = allRanges[allRanges.length - 1];
+    const rowNumber = parseInt(lastRange, 10);
+    if (isNaN(rowNumber)) return;
 
-  // find the row element in the preview table
-  requestAnimationFrame(() => {
-    const table = previewTableRef.current;
-    if (!table) return;
-    const rows = table.querySelectorAll("tbody tr");
-    const targetRow = rows[rowNumber - 1]; // rowNumber is 1-based
-    if (targetRow) {
-      targetRow.scrollIntoView({
-        behavior: "smooth",
-        block: "center",   // centers it vertically
-      });
-    }
-  });
-}, [rowRanges]);
+    // find the row element in the preview table and scroll to center
+    requestAnimationFrame(() => {
+      const table = previewTableRef.current;
+      if (!table) return;
+      const rows = table.querySelectorAll("tbody tr");
+      const targetRow = rows[rowNumber - 1];
+      if (targetRow) {
+        targetRow.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    });
+  }, [rowRanges]);
 
   useEffect(()=>{if(debounceRef.current)clearTimeout(debounceRef.current);debounceRef.current=setTimeout(()=>buildTempSlices(),300);return()=>clearTimeout(debounceRef.current);},[rowRanges,newSheetName,copyFromSheet,selectedSheet,excelData]);
 
@@ -837,41 +837,89 @@ useEffect(() => {
   const normalize=(s)=>String(s||"").toLowerCase().replace(/[_\-]/g," ").replace(/[^\w\s]/g," ").replace(/\s+/g," ").trim();
   const findHeaderMatch=(text,headers=previewHeaders)=>{if(!text)return null;const cleaned=normalize(text);const source=Array.isArray(headers)?headers:[];let found=source.find(h=>normalize(h)===cleaned||h.toLowerCase()===text.toLowerCase());if(found)return found;found=source.find(h=>cleaned.includes(normalize(h))||normalize(h).includes(cleaned));if(found)return found;const tokens=cleaned.split(/\s+/).filter(Boolean);for(const t of tokens){const f=source.find(h=>normalize(h).includes(t)||t.includes(normalize(h)));if(f)return f;}for(const col of columnNames){if(normalize(col)===cleaned)return col;}return null;};
 
-  const getPreviewRowDate=(rowIndex)=>{const row=previewSheetWithPending.sheetData&&previewSheetWithPending.sheetData[rowIndex];if(!row)return"";const dateKey=previewHeaders.find(h=>h.toLowerCase().includes("date"))||previewHeaders.find(h=>h.toLowerCase().includes("time"))||previewHeaders[0];return formatDate(row[dateKey]);};
+  const RANGE_COLORS = [
+    { full: 'rgba(76, 175, 80, 0.2)',   single: 'rgba(76, 175, 80, 0.6)',   border: '#16a34a' },
+    { full: 'rgba(33, 150, 243, 0.2)',  single: 'rgba(33, 150, 243, 0.6)',  border: '#2563eb' },
+    { full: 'rgba(245, 158, 11, 0.2)',  single: 'rgba(245, 158, 11, 0.6)',  border: '#f59e0b' },
+    { full: 'rgba(139, 92, 246, 0.2)',  single: 'rgba(139, 92, 246, 0.6)',  border: '#8b5cf6' },
+    { full: 'rgba(236, 72, 153, 0.2)',  single: 'rgba(236, 72, 153, 0.6)',  border: '#ec4899' },
+    { full: 'rgba(20, 184, 166, 0.2)',  single: 'rgba(20, 184, 166, 0.6)',  border: '#14b8a6' },
+    { full: 'rgba(239, 68, 68, 0.2)',   single: 'rgba(239, 68, 68, 0.6)',   border: '#ef4444' },
+    { full: 'rgba(234, 179, 8, 0.2)',   single: 'rgba(234, 179, 8, 0.6)',   border: '#eab308' },
+    { full: 'rgba(99, 102, 241, 0.2)',  single: 'rgba(99, 102, 241, 0.6)',  border: '#6366f1' },
+    { full: 'rgba(249, 115, 22, 0.2)',  single: 'rgba(249, 115, 22, 0.6)',  border: '#f97316' },
+  ];
 
-  const getRowHighlightClass = (rowIndex) => {
+  const getRowHighlightStyle = (rowIndex) => {
     const currentRowNum = rowIndex + 1;
 
-    // pre range — only start selected (no end yet)
-    if (rowRanges[0]?.startRange && !rowRanges[0]?.endRange) {
-      const preStart = parseInt(rowRanges[0].startRange, 10);
-      if (currentRowNum === preStart) return 'row-highlight-pre-single';
+    for (let i = 0; i < rowRanges.length; i++) {
+      const range = rowRanges[i];
+      if (!range?.startRange) continue;
+
+      const start = parseInt(range.startRange, 10);
+      const end = range.endRange ? parseInt(range.endRange, 10) : null;
+      const color = RANGE_COLORS[i % RANGE_COLORS.length];
+
+      if (!end && currentRowNum === start) {
+        return {
+          backgroundColor: color.single,
+          borderLeft: `4px solid ${color.border}`
+        };
+      }
+
+      if (end) {
+        if (currentRowNum === start) {
+          return {
+            backgroundColor: color.single,
+            borderLeft: `4px solid ${color.border}`
+          };
+        }
+        if (currentRowNum > start && currentRowNum <= end) {
+          return { backgroundColor: color.full };
+        }
+      }
     }
 
-    // pre range — both start and end selected
-    if (rowRanges[0]?.startRange && rowRanges[0]?.endRange) {
-      const preStart = parseInt(rowRanges[0].startRange, 10);
-      const preEnd = parseInt(rowRanges[0].endRange, 10);
-      if (currentRowNum === preStart) return 'row-highlight-pre-single';
-      if (currentRowNum > preStart && currentRowNum <= preEnd) return 'row-highlight-pre';
-    }
-
-    // post range — only start selected (no end yet)
-    if (rowRanges[1]?.startRange && !rowRanges[1]?.endRange) {
-      const postStart = parseInt(rowRanges[1].startRange, 10);
-      if (currentRowNum === postStart) return 'row-highlight-post-single';
-    }
-
-    // post range — both start and end selected
-    if (rowRanges[1]?.startRange && rowRanges[1]?.endRange) {
-      const postStart = parseInt(rowRanges[1].startRange, 10);
-      const postEnd = parseInt(rowRanges[1].endRange, 10);
-      if (currentRowNum === postStart) return 'row-highlight-post-single';
-      if (currentRowNum > postStart && currentRowNum <= postEnd) return 'row-highlight-post';
-    }
-
-    return '';
+    return {};
   };
+  
+  const getPreviewRowDate=(rowIndex)=>{const row=previewSheetWithPending.sheetData&&previewSheetWithPending.sheetData[rowIndex];if(!row)return"";const dateKey=previewHeaders.find(h=>h.toLowerCase().includes("date"))||previewHeaders.find(h=>h.toLowerCase().includes("time"))||previewHeaders[0];return formatDate(row[dateKey]);};
+
+  // const getRowHighlightClass = (rowIndex) => {
+  //   const currentRowNum = rowIndex + 1;
+
+  //   // pre range — only start selected (no end yet)
+  //   if (rowRanges[0]?.startRange && !rowRanges[0]?.endRange) {
+  //     const preStart = parseInt(rowRanges[0].startRange, 10);
+  //     if (currentRowNum === preStart) return 'row-highlight-pre-single';
+  //   }
+
+  //   // pre range — both start and end selected
+  //   if (rowRanges[0]?.startRange && rowRanges[0]?.endRange) {
+  //     const preStart = parseInt(rowRanges[0].startRange, 10);
+  //     const preEnd = parseInt(rowRanges[0].endRange, 10);
+  //     if (currentRowNum === preStart) return 'row-highlight-pre-single';
+  //     if (currentRowNum > preStart && currentRowNum <= preEnd) return 'row-highlight-pre';
+  //   }
+
+  //   // post range — only start selected (no end yet)
+  //   if (rowRanges[1]?.startRange && !rowRanges[1]?.endRange) {
+  //     const postStart = parseInt(rowRanges[1].startRange, 10);
+  //     if (currentRowNum === postStart) return 'row-highlight-post-single';
+  //   }
+
+  //   // post range — both start and end selected
+  //   if (rowRanges[1]?.startRange && rowRanges[1]?.endRange) {
+  //     const postStart = parseInt(rowRanges[1].startRange, 10);
+  //     const postEnd = parseInt(rowRanges[1].endRange, 10);
+  //     if (currentRowNum === postStart) return 'row-highlight-post-single';
+  //     if (currentRowNum > postStart && currentRowNum <= postEnd) return 'row-highlight-post';
+  //   }
+
+  //   return '';
+  // };
+
 
   // const getRowHighlightClass = (rowIndex) => {
   //   const currentRowNum = rowIndex + 1;
@@ -1111,7 +1159,7 @@ useEffect(() => {
                   <div className="xf-group" style={{ marginTop: "20px" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
                       <label className="xf-label" style={{ margin: 0 }}>Row Ranges</label>
-                      {/* <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={addRowRange}>+ Add Range</button> */}
+                      <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={addRowRange}>+ Add Range</button>
                     </div>
 
                     <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
@@ -1242,9 +1290,9 @@ useEffect(() => {
                           {(rr.startDisplay && !rr.startRange) && <span style={{ color: "var(--red)", fontSize: "0.65rem" }}>No match</span>}
                         </div>
 
-                        {/* {rowRanges.length > 1 && (
+                        {rowRanges.length > 1 && (
                           <button className="xf-btn xf-btn-danger xf-btn-sm" onClick={() => removeRowRange(idx)}>✕</button>
-                        )} */}
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1279,11 +1327,13 @@ useEffect(() => {
                       <tbody>
                         {previewSheetWithPending.sheetData.map((row,i)=>(
                           <tr
-                            key={i}
-                            onClick={()=>activeTarget && handlePreviewRowClick(i)}
-                            style={{cursor: activeTarget ? "pointer" : "default"}}
-                            className={getRowHighlightClass(i)}
-                          >
+                              key={i}
+                              onClick={()=>activeTarget && handlePreviewRowClick(i)}
+                              style={{
+                                cursor: activeTarget ? "pointer" : "default",
+                                ...getRowHighlightStyle(i)
+                              }}
+                            >
                             {previewHeaders.map((k,j)=>(
                               <td key={j} className={isColumnSelected(k)?"selected":""}>{renderCellValue(row[k])}</td>
                             ))}
