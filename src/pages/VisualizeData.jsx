@@ -12,7 +12,8 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    FormControl
+    FormControl,
+    IconButton
 } from '@mui/material';
 
 import customTheme from '../theme/customTheme';
@@ -69,13 +70,26 @@ const VisualizeData = () => {
 
     /* ─── Derive pre/post sheet selections ─── */
     // In single-sheet mode we only have one sheet and no post-sheet selector.
-    const [selectedPreSheet, setSelectedPreSheet] = useState(
-        singleSheetMode ? singleSheetName : (preProductName || '')
+    const [selectedSheetsList, setSelectedSheetsList] = useState(
+        singleSheetMode
+            ? [singleSheetName]
+            : [preProductName || '', postProductName || '']
     );
-    const [selectedPostSheet, setSelectedPostSheet] = useState(
-        singleSheetMode ? '' : (postProductName || '')
-    );
+    const updateSheetAtIndex = (index, value) => {
+        setSelectedSheetsList(prev => {
+            const next = [...prev];
+            next[index] = value;
+            return next;
+        });
+    };
 
+    const addSheetSlot = () => {
+        setSelectedSheetsList(prev => [...prev, '']);
+    };
+
+    const removeSheetSlot = (index) => {
+        setSelectedSheetsList(prev => prev.filter((_, i) => i !== index));
+    };
     const excel_Data = safeArray(excelData);
     const sheets = safeArray(sheetNames);
 
@@ -97,22 +111,27 @@ const VisualizeData = () => {
     // In single-sheet mode: withProductData = current sheet, withoutProductData = []
     const withProductData = singleSheetMode
         ? safeArray(singleSheetData)
-        : (selectedPreSheet ? getSheetData(selectedPreSheet) : safeArray(preProductData));
+        : (selectedSheetsList[0] ? getSheetData(selectedSheetsList[0]) : safeArray(preProductData));
 
     const withoutProductData = singleSheetMode
         ? []
-        : (selectedPostSheet ? getSheetData(selectedPostSheet) : safeArray(postProductData));
+        : (selectedSheetsList[1] ? getSheetData(selectedSheetsList[1]) : safeArray(postProductData));
+
+    const additionalSheetsData = selectedSheetsList
+        .slice(2)
+        .map(name => ({ name, data: getSheetData(name) }))
+        .filter(s => s.data.length > 0);
 
     /* ─── Available columns ─── */
     const availableColumns = singleSheetMode
         ? (singleSheetData.length > 0
             ? Object.keys(singleSheetData[0])
             : safeArray(availableCols))
-        : (selectedPreSheet || selectedPostSheet
+        : (selectedSheetsList[0] || selectedSheetsList[1]
             ? Array.from(
                 new Set([
-                    ...safeArray(getSheetColumns(selectedPreSheet)),
-                    ...safeArray(getSheetColumns(selectedPostSheet))
+                    ...safeArray(getSheetColumns(selectedSheetsList[0])),
+                    ...safeArray(getSheetColumns(selectedSheetsList[1]))
                 ])
             )
             : safeArray(availableCols));
@@ -321,32 +340,51 @@ const VisualizeData = () => {
 
                         {/* ── Sheet selectors — only shown in two-sheet (comparison) mode ── */}
                         {!singleSheetMode && (
-                            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                                <FormControl size="small" sx={{ minWidth: 220 }}>
-                                    <InputLabel>Pre Product Sheet</InputLabel>
-                                    <Select
-                                        value={selectedPreSheet}
-                                        label="Pre Product Sheet"
-                                        onChange={(e) => setSelectedPreSheet(e.target.value)}
-                                    >
-                                        {safeArray(sheets).map(name => (
-                                            <MenuItem key={name} value={name}>{name}</MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
+                            <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+                                {selectedSheetsList.map((sheetVal, index) => (
+                                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                        <FormControl size="small" sx={{ minWidth: 220 }}>
+                                            <InputLabel>{`Data ${index + 1} Sheet`}</InputLabel>
+                                            <Select
+                                                value={sheetVal}
+                                                label={`Data ${index + 1} Sheet`}
+                                                onChange={(e) => updateSheetAtIndex(index, e.target.value)}
+                                            >
+                                                {safeArray(sheets).map(name => (
+                                                    <MenuItem key={name} value={name}>{name}</MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
 
-                                <FormControl size="small" sx={{ minWidth: 220 }}>
-                                    <InputLabel>Post Product Sheet</InputLabel>
-                                    <Select
-                                        value={selectedPostSheet}
-                                        label="Post Product Sheet"
-                                        onChange={(e) => setSelectedPostSheet(e.target.value)}
-                                    >
-                                        {safeArray(sheets).map(name => (
-                                            <MenuItem key={name} value={name}>{name}</MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
+                                        {index >= 2 && (
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => removeSheetSlot(index)}
+                                                sx={{ color: 'error.main' }}
+                                                title="Remove"
+                                            >
+                                                ✕
+                                            </IconButton>
+                                        )}
+                                    </Box>
+                                ))}
+
+                                <IconButton
+                                    onClick={addSheetSlot}
+                                    title="Add another sheet"
+                                    sx={{
+                                        border: '2px solid',
+                                        borderColor: 'primary.main',
+                                        borderRadius: '8px',
+                                        color: 'primary.main',
+                                        fontWeight: 'bold',
+                                        fontSize: '1.2rem',
+                                        width: 36,
+                                        height: 36
+                                    }}
+                                >
+                                    +
+                                </IconButton>
                             </Box>
                         )}
 
