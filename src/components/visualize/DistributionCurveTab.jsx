@@ -151,6 +151,79 @@ const AxisControlPanel = ({
     );
 };
 
+const EditableLabel = ({ value, onChange, color }) => {
+    const [editing, setEditing] = useState(false);
+    const [localValue, setLocalValue] = useState(value);
+    const inputRef = useRef(null);
+
+    useEffect(() => {
+        setLocalValue(value);
+    }, [value]);
+
+    useEffect(() => {
+        if (editing && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [editing]);
+
+    const handleConfirm = () => {
+        if (localValue.trim()) {
+            onChange(localValue.trim());
+        }
+        setEditing(false);
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') handleConfirm();
+        if (e.key === 'Escape') {
+            setLocalValue(value);
+            setEditing(false);
+        }
+    };
+
+    if (editing) {
+        return (
+            <input
+                ref={inputRef}
+                value={localValue}
+                onChange={e => setLocalValue(e.target.value)}
+                onBlur={handleConfirm}
+                onKeyDown={handleKeyDown}
+                style={{
+                    border: `1.5px solid ${color}`,
+                    borderRadius: '6px',
+                    padding: '2px 8px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: color,
+                    background: '#fff',
+                    outline: 'none',
+                    width: '120px',
+                    fontFamily: 'inherit',
+                }}
+            />
+        );
+    }
+
+    return (
+        <span
+            onClick={() => setEditing(true)}
+            title="Click to rename"
+            style={{
+                fontWeight: 700,
+                color: color,
+                fontSize: '0.75rem',
+                cursor: 'text',
+                borderBottom: `1px dashed ${color}`,
+                paddingBottom: '1px',
+            }}
+        >
+            {value}
+        </span>
+    );
+};
+
 const DistributionCurveTab = ({
     availableColumns, withProductData, withoutProductData,
     datasets = [],
@@ -184,7 +257,7 @@ const DistributionCurveTab = ({
     const [combinedDatasetColors, setCombinedDatasetColors] = useState({});
 
     const [columnColorMap, setColumnColorMap] = useState({});
-
+    const [datasetLabels, setDatasetLabels] = useState({});
     // Single View Settings
     const [singleColumn, setSingleColumn] = useState('');
     const [singleLegendLabel, setSingleLegendLabel] = useState('Value');
@@ -358,6 +431,9 @@ const DistributionCurveTab = ({
     const getDatasetColor = (dataset, datasetIndex) => {
         const key = dataset.name || `dataset${datasetIndex}`;
         return combinedDatasetColors[key] || DATASET_COLORS[datasetIndex % DATASET_COLORS.length].area;
+    };
+    const getDatasetLabel = (dataset) => {
+        return datasetLabels[dataset.name] || dataset.name;
     };
 
     const theme = useTheme();
@@ -839,7 +915,7 @@ const DistributionCurveTab = ({
                                             fontWeight: 600, mb: 2,
                                             color: color.area
                                         }}>
-                                            {dataset.name} Analysis
+                                            {getDatasetLabel(dataset)} Analysis
                                         </Typography>
                                         <List dense>
                                             <ListItem>
@@ -1052,6 +1128,7 @@ const DistributionCurveTab = ({
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                         {allDatasets.map((dataset, index) => {
                             const colorValue = getDatasetColor(dataset, index);
+                            const displayLabel = getDatasetLabel(dataset);
                             return (
                                 <Box key={index} sx={{
                                     display: 'flex', alignItems: 'center', gap: 0.75,
@@ -1059,9 +1136,16 @@ const DistributionCurveTab = ({
                                     border: '1px solid', borderColor: 'grey.300'
                                 }}>
                                     <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: colorValue, flexShrink: 0 }} />
-                                    <Typography variant="caption" sx={{ fontWeight: 700, color: colorValue }}>
-                                        {dataset.name}
-                                    </Typography>
+                                    <EditableLabel
+                                        value={displayLabel}
+                                        color={colorValue}
+                                        onChange={(newName) => {
+                                            setDatasetLabels(prev => ({
+                                                ...prev,
+                                                [dataset.name]: newName
+                                            }));
+                                        }}
+                                    />
                                 </Box>
                             );
                         })}
@@ -1102,7 +1186,7 @@ const DistributionCurveTab = ({
                         strokeWidth={2.5}
                         fill={colorValue}
                         fillOpacity={areaOpacity}
-                        name={`${column} — ${dataset.name}`}
+                        name={`${column} — ${getDatasetLabel(dataset)}`}
                         dot={showDataPoints ? { r: 3, fill: colorValue, stroke: '#fff', strokeWidth: 1 } : false}
                         hide={!showAreaChart}
                         connectNulls
@@ -1116,7 +1200,7 @@ const DistributionCurveTab = ({
                             dataKey={`data.${key}_count`}
                             fill={colorValue}
                             fillOpacity={0.65}
-                            name={`Count — ${column} ${dataset.name}`}
+                            name={`Count — ${column} ${getDatasetLabel(dataset)}`}
                             barSize={6}
                             radius={[2, 2, 0, 0]}
                         />
@@ -1326,11 +1410,11 @@ const DistributionCurveTab = ({
                             />
                             {renderDistributionChart(
                                 distribution,
-                                `${dataset.name} Distribution`,
+                                `${getDatasetLabel(dataset)} Distribution`,
                                 colors.area,
                                 colors.bar,
                                 chartRef,
-                                dataset.name,
+                                getDatasetLabel(dataset),
                                 separateXAxisLabel,
                                 separateYAxisLabel,
                                 separateXAxisMin,
