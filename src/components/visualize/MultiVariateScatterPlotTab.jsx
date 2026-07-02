@@ -88,16 +88,12 @@ const darkenColor = (hex, amount = 0.3) => {
   return `#${((1 << 24) | (dr << 16) | (dg << 8) | db).toString(16).slice(1)}`;
 };
 
-// Build per-pair color map: { [pairKey]: { base, pre (lighter), post (darker) } }
+// Build per-pair color map: { [pairKey]: { base } }
 const buildPairColorMap = (pairs) => {
   const map = {};
   pairs.forEach((pair, idx) => {
     const base = BASE_COLORS[idx % BASE_COLORS.length];
-    map[pair.key] = {
-      base,
-      pre: lightenColor(base, 0.45),   // Without Product → lighter
-      post: darkenColor(base, 0.35),    // With Product   → darker
-    };
+    map[pair.key] = { base };
   });
   return map;
 };
@@ -189,7 +185,81 @@ const CustomSlider = ({ value, onChange, min, max, step, label, formatValue }) =
   );
 };
 
-const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData = [], availableColumns = [], clientName = '', plantName = '', productName = '' }) => {
+const EditableLabel = ({ value, onChange, color }) => {
+  const [editing, setEditing] = useState(false);
+  const [localValue, setLocalValue] = useState(value);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  const handleConfirm = () => {
+    const nextValue = localValue.trim();
+    if (nextValue) {
+      onChange(nextValue);
+    }
+    setEditing(false);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') handleConfirm();
+    if (event.key === 'Escape') {
+      setLocalValue(value);
+      setEditing(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={localValue}
+        onChange={(event) => setLocalValue(event.target.value)}
+        onBlur={handleConfirm}
+        onKeyDown={handleKeyDown}
+        style={{
+          border: `1.5px solid ${color}`,
+          borderRadius: '6px',
+          padding: '2px 8px',
+          fontSize: '0.75rem',
+          fontWeight: 700,
+          color,
+          background: '#fff',
+          outline: 'none',
+          width: '120px',
+          fontFamily: 'inherit',
+        }}
+      />
+    );
+  }
+
+  return (
+    <span
+      onClick={() => setEditing(true)}
+      title="Click to rename"
+      style={{
+        fontWeight: 700,
+        color,
+        fontSize: '0.75rem',
+        cursor: 'text',
+        borderBottom: `1px dashed ${color}`,
+        paddingBottom: '1px',
+      }}
+    >
+      {value}
+    </span>
+  );
+};
+
+const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData = [], availableColumns = [], clientName = '', plantName = '', productName = '', datasets = [] }) => {
   const [selectedXVars, setSelectedXVars] = useState([]);
   const [selectedYVars, setSelectedYVars] = useState([]);
   const [activePairs, setActivePairs] = useState([]);
@@ -230,6 +300,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const [customXRange, setCustomXRange] = useState({ min: "", max: "", auto: true });
   const [customYRange, setCustomYRange] = useState({ min: "", max: "", auto: true });
   const [fixedXRange, setFixedXRange] = useState(null);
+  const [datasetLabels, setDatasetLabels] = useState({});
+  const [datasetColors, setDatasetColors] = useState({});
   
   // NEW: Per-pair custom ranges
   const [perPairRanges, setPerPairRanges] = useState({});
@@ -290,16 +362,32 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const toNumeric = useCallback((value) => {
     if (value === null || value === undefined) return null;
     if (typeof value === 'number') return value;
+    if (value instanceof Date && !isNaN(value.getTime())) return value.getTime();
+
     if (typeof value === 'string') {
-      if (isDateString(value)) {
-        const timestamp = Date.parse(value);
-        return isNaN(timestamp) ? null : timestamp;
+      const str = value.trim();
+      if (!str) return null;
+
+      // Try numeric conversion first
+      const num = Number(str);
+      if (!isNaN(num)) {
+        // Large numbers are likely timestamps in ms
+        if (Math.abs(num) > 1e11) return num;
+        // Excel serial date (days) heuristics -> convert to ms
+        if (Number.isInteger(num) && num >= 25000 && num <= 50000) {
+          const date = new Date((num - 25569) * 86400 * 1000);
+          return isNaN(date.getTime()) ? null : date.getTime();
+        }
+        return num;
       }
-      const num = Number(value);
-      return isNaN(num) ? null : num;
+
+      // Fallback: try Date parsing for strings like '2023-07-01 12:00'
+      const dt = new Date(str);
+      return isNaN(dt.getTime()) ? null : dt.getTime();
     }
+
     return null;
-  }, [isDateString]);
+  }, []);
 
   const formatValue = useCallback((value, isDateTime) => {
     if (isDateTime && value && typeof value === 'number') {
@@ -354,12 +442,12 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     return isNaN(num) ? null : num;
   }, []);
 
-  const filteredWithProductData = useMemo(() => {
-    if (!filterColumn) return withProductData;
+  const applyFilterToData = useCallback((data) => {
+    if (!filterColumn || !Array.isArray(data)) return data || [];
     const minVal = columnIsDateTime ? (filterMin ? parseDateTimeFromInput(filterMin) : null) : (filterMin !== '' ? Number.parseFloat(filterMin) : null);
     const maxVal = columnIsDateTime ? (filterMax ? parseDateTimeFromInput(filterMax) : null) : (filterMax !== '' ? Number.parseFloat(filterMax) : null);
-    if (minVal == null && maxVal == null) return withProductData;
-    return withProductData.filter((row) => {
+    if (minVal == null && maxVal == null) return data;
+    return data.filter((row) => {
       const raw = row?.[filterColumn];
       if (raw == null) return false;
       const v = parseValue(raw, columnIsDateTime);
@@ -368,29 +456,72 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       if (maxVal != null && v > maxVal) return false;
       return true;
     });
-  }, [withProductData, filterColumn, filterMin, filterMax, columnIsDateTime, parseDateTimeFromInput, parseValue]);
+  }, [columnIsDateTime, filterColumn, filterMax, filterMin, parseDateTimeFromInput, parseValue]);
 
-  const filteredWithoutProductData = useMemo(() => {
-    if (!filterColumn) return withoutProductData;
-    const minVal = columnIsDateTime ? (filterMin ? parseDateTimeFromInput(filterMin) : null) : (filterMin !== '' ? Number.parseFloat(filterMin) : null);
-    const maxVal = columnIsDateTime ? (filterMax ? parseDateTimeFromInput(filterMax) : null) : (filterMax !== '' ? Number.parseFloat(filterMax) : null);
-    if (minVal == null && maxVal == null) return withoutProductData;
-    return withoutProductData.filter((row) => {
-      const raw = row?.[filterColumn];
-      if (raw == null) return false;
-      const v = parseValue(raw, columnIsDateTime);
-      if (v == null) return false;
-      if (minVal != null && v < minVal) return false;
-      if (maxVal != null && v > maxVal) return false;
-      return true;
+  const allDatasets = useMemo(() => {
+    const sourceDatasets = Array.isArray(datasets) && datasets.length > 0
+      ? datasets
+      : [
+          { name: 'With Product', data: withProductData || [] },
+          { name: 'Without Product', data: withoutProductData || [] },
+        ];
+
+    return sourceDatasets
+      .filter((dataset) => Array.isArray(dataset?.data) && dataset.data.length > 0)
+      .map((dataset) => ({
+        ...dataset,
+        data: applyFilterToData(dataset.data),
+      }));
+  }, [applyFilterToData, datasets, withProductData, withoutProductData]);
+
+  // Legacy with/without datasets removed — use `allDatasets` everywhere
+
+  useEffect(() => {
+    setDatasetColors((prev) => {
+      const next = { ...prev };
+      allDatasets.forEach((dataset, index) => {
+        const key = dataset.name || `dataset${index}`;
+        if (!next[key]) {
+          next[key] = BASE_COLORS[index % BASE_COLORS.length];
+        }
+      });
+      return next;
     });
-  }, [withoutProductData, filterColumn, filterMin, filterMax, columnIsDateTime, parseDateTimeFromInput, parseValue]);
+  }, [allDatasets]);
+
+  useEffect(() => {
+    setDatasetLabels((prev) => {
+      const next = { ...prev };
+      allDatasets.forEach((dataset, index) => {
+        const key = dataset.name || `dataset${index}`;
+        if (!next[key]) {
+          next[key] = dataset.name || `Dataset ${index + 1}`;
+        }
+      });
+      return next;
+    });
+  }, [allDatasets]);
 
   const resetLocalFilter = useCallback(() => {
     setFilterColumn('');
     setFilterMin('');
     setFilterMax('');
   }, []);
+
+  useEffect(() => {
+    if (!Array.isArray(availableColumns) || availableColumns.length === 0) return;
+
+    setSelectedXVars((prev) => {
+      if (prev.length > 0) return prev;
+      return [availableColumns[0]];
+    });
+
+    setSelectedYVars((prev) => {
+      if (prev.length > 0) return prev;
+      const fallback = availableColumns[1] || availableColumns[0];
+      return [fallback];
+    });
+  }, [availableColumns]);
 
   const allPairs = useMemo(() => {
     const pairs = [];
@@ -405,18 +536,14 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const pairColorMap = useMemo(() => buildPairColorMap(allPairs), [allPairs]);
 
   const getPointColor = useCallback((pairKey, dataset) => {
-    if (dataset === "With Product") {
-      return chartSettings.withProductColorOverride[pairKey] || pairColorMap[pairKey]?.post || "#1565c0";
-    }
-    return chartSettings.withoutProductColorOverride[pairKey] || pairColorMap[pairKey]?.pre || "#90caf9";
-  }, [chartSettings.withProductColorOverride, chartSettings.withoutProductColorOverride, pairColorMap]);
+    const key = dataset || '';
+    return datasetColors[key] || pairColorMap[pairKey]?.base || BASE_COLORS[0];
+  }, [datasetColors, pairColorMap]);
 
   const getTrendLineColor = useCallback((pairKey, dataset) => {
-    if (dataset === "With Product") {
-      return chartSettings.withProductColorOverride[pairKey] || pairColorMap[pairKey]?.post || "#1565c0";
-    }
-    return chartSettings.withoutProductColorOverride[pairKey] || pairColorMap[pairKey]?.pre || "#90caf9";
-  }, [chartSettings.withProductColorOverride, chartSettings.withoutProductColorOverride, pairColorMap]);
+    const key = dataset || '';
+    return datasetColors[key] || pairColorMap[pairKey]?.base || BASE_COLORS[0];
+  }, [datasetColors, pairColorMap]);
 
   useEffect(() => {
     setActivePairs(allPairs.map(p => p.key));
@@ -464,30 +591,59 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     return result.sort((a, b) => a.x - b.x);
   }, [toNumeric]);
 
-  const withProductPoints = useMemo(
-    () => processData(filteredWithProductData, allPairs, "With Product"),
-    [filteredWithProductData, allPairs, processData]
-  );
+  // Visible datasets: always show all selected sheets (datasets)
+  const visibleDatasetNames = useMemo(() => allDatasets.map((dataset) => dataset.name), [allDatasets]);
 
-  const withoutProductPoints = useMemo(
-    () => processData(filteredWithoutProductData, allPairs, "Without Product"),
-    [filteredWithoutProductData, allPairs, processData]
-  );
+  const datasetPointsByName = useMemo(() => {
+    const pointsByName = {};
+    allDatasets.forEach((dataset) => {
+      pointsByName[dataset.name] = processData(dataset.data || [], allPairs, dataset.name);
+    });
+    return pointsByName;
+  }, [allDatasets, allPairs, processData]);
+
+  
+
+  const withProductPoints = useMemo(() => datasetPointsByName["With Product"] || [], [datasetPointsByName]);
+  const withoutProductPoints = useMemo(() => datasetPointsByName["Without Product"] || [], [datasetPointsByName]);
 
   const allPoints = useMemo(() => {
-    let arr = [];
-    if (datasetView === "both" || datasetView === "withoutProduct") arr = arr.concat(withoutProductPoints);
-    if (datasetView === "both" || datasetView === "withProduct") arr = arr.concat(withProductPoints);
-    return arr.filter(pt => activePairs.includes(pt.pairKey));
-  }, [withProductPoints, withoutProductPoints, datasetView, activePairs]);
+    const visiblePoints = [];
+    allDatasets.forEach((dataset) => {
+      if (!visibleDatasetNames.includes(dataset.name)) return;
+      visiblePoints.push(...(datasetPointsByName[dataset.name] || []));
+    });
+    return visiblePoints.filter((pt) => activePairs.includes(pt.pairKey));
+  }, [allDatasets, visibleDatasetNames, datasetPointsByName, activePairs]);
+
+  // Debug: log dataset / selection / parsed counts to help diagnose "No data"
+  useEffect(() => {
+    try {
+      const datasetSummaries = allDatasets.map(ds => ({ name: ds.name, rows: (ds.data || []).length }));
+      const pointsCounts = Object.fromEntries(Object.entries(datasetPointsByName || {}).map(([k, pts]) => [k, pts.length]));
+      // eslint-disable-next-line no-console
+      console.debug('ScatterTab Debug:', {
+        datasetSummaries,
+        availableColumns: (availableColumns || []).slice(0, 20),
+        selectedXVars,
+        selectedYVars,
+        allPairs,
+        pointsCounts,
+        allPointsCount: (allPoints || []).length,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('ScatterTab debug logging failed', err);
+    }
+  }, [allDatasets, availableColumns, selectedXVars, selectedYVars, allPairs, datasetPointsByName, allPoints]);
 
   // Sort points by x for line/area rendering
   const sortedPointsByPair = useMemo(() => {
     const pointsByPair = {};
-    allPairs.forEach(pair => {
+    allPairs.forEach((pair) => {
       pointsByPair[pair.key] = {
-        withProduct: withProductPoints.filter(p => p.pairKey === pair.key),
-        withoutProduct: withoutProductPoints.filter(p => p.pairKey === pair.key)
+        withProduct: withProductPoints.filter((p) => p.pairKey === pair.key),
+        withoutProduct: withoutProductPoints.filter((p) => p.pairKey === pair.key)
       };
     });
     return pointsByPair;
@@ -496,7 +652,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   // NEW: Get points filtered by current pair (for per-pair mode)
   const currentPairPoints = useMemo(() => {
     if (!currentPairKey || scaleMode !== "perPair") return allPoints;
-    return allPoints.filter(pt => pt.pairKey === currentPairKey);
+    return allPoints.filter((pt) => pt.pairKey === currentPairKey);
   }, [allPoints, currentPairKey, scaleMode]);
 
   const calculateTrendLine = useCallback((points, pairKey) => {
@@ -527,13 +683,14 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const trendLinesData = useMemo(() => {
     const lines = {};
     for (const pair of allPairs) {
-      lines[pair.key] = {
-        withProduct: chartSettings.showTrendLines ? calculateTrendLine(withProductPoints, pair.key) : null,
-        withoutProduct: chartSettings.showTrendLines ? calculateTrendLine(withoutProductPoints, pair.key) : null
-      };
+      lines[pair.key] = {};
+      allDatasets.forEach(ds => {
+        const pts = datasetPointsByName[ds.name] || [];
+        lines[pair.key][ds.name] = chartSettings.showTrendLines ? calculateTrendLine(pts, pair.key) : null;
+      });
     }
     return lines;
-  }, [allPairs, withProductPoints, withoutProductPoints, calculateTrendLine, chartSettings.showTrendLines]);
+  }, [allPairs, allDatasets, datasetPointsByName, calculateTrendLine, chartSettings.showTrendLines]);
 
   // Dynamic global auto ranges - scales to fit ALL active pairs on the same graph
   const globalAutoRanges = useMemo(() => {
@@ -898,24 +1055,18 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     };
 
     const drawPairTrendLines = (pair, xSc, ySc, group) => {
-      const withoutTrend = trendLinesData[pair.key]?.withoutProduct;
-      if (withoutTrend && (datasetView === "both" || datasetView === "withoutProduct")) {
+      // Draw trend lines for each visible dataset
+      allDatasets.forEach((ds) => {
+        if (!visibleDatasetNames.includes(ds.name)) return;
+        const trend = trendLinesData[pair.key]?.[ds.name];
+        if (!trend) return;
         group.append("line")
-          .attr("class", `trend-line-without trend-line-${pair.key.replace(/__/g, '-')}`)
-          .attr("x1", xSc(withoutTrend[0].x)).attr("y1", ySc(withoutTrend[0].y))
-          .attr("x2", xSc(withoutTrend[1].x)).attr("y2", ySc(withoutTrend[1].y))
-          .style("stroke", getTrendLineColor(pair.key, "Without Product"))
-          .style("stroke-width", 2).style("stroke-dasharray", "5,5").style("opacity", 0.8);
-      }
-      const withTrend = trendLinesData[pair.key]?.withProduct;
-      if (withTrend && (datasetView === "both" || datasetView === "withProduct")) {
-        group.append("line")
-          .attr("class", `trend-line-with trend-line-${pair.key.replace(/__/g, '-')}`)
-          .attr("x1", xSc(withTrend[0].x)).attr("y1", ySc(withTrend[0].y))
-          .attr("x2", xSc(withTrend[1].x)).attr("y2", ySc(withTrend[1].y))
-          .style("stroke", getTrendLineColor(pair.key, "With Product"))
-          .style("stroke-width", 2.5).style("stroke-dasharray", "5,5").style("opacity", 0.9);
-      }
+          .attr("class", `trend-line-${ds.name.replace(/\s+/g, '-')}-${pair.key.replace(/__/g, '-')}`)
+          .attr("x1", xSc(trend[0].x)).attr("y1", ySc(trend[0].y))
+          .attr("x2", xSc(trend[1].x)).attr("y2", ySc(trend[1].y))
+          .style("stroke", getTrendLineColor(pair.key, ds.name))
+          .style("stroke-width", 2).style("stroke-dasharray", "5,5").style("opacity", 0.9);
+      });
     };
 
     // Helper to draw lines and areas for a dataset
@@ -951,14 +1102,13 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
         // Add lines and areas first (so they are behind points)
         if (showLines || showArea) {
-          if (datasetView === "both" || datasetView === "withoutProduct") {
-            const withoutPoints = withoutProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-            drawLinesAndAreas(clippedGroup, withoutPoints, xScale, yScale, getTrendLineColor(pair.key, "Without Product"), "Without Product", pair.key);
-          }
-          if (datasetView === "both" || datasetView === "withProduct") {
-            const withPoints = withProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-            drawLinesAndAreas(clippedGroup, withPoints, xScale, yScale, getTrendLineColor(pair.key, "With Product"), "With Product", pair.key);
-          }
+          // Draw for each visible dataset
+          allDatasets.forEach((ds) => {
+            if (!visibleDatasetNames.includes(ds.name)) return;
+            const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
+            const color = datasetColors[ds.name] || pairColorMap[pair.key]?.base;
+            drawLinesAndAreas(clippedGroup, pts, xScale, yScale, color, ds.name, pair.key);
+          });
         }
 
         if (chartSettings.showGrid) {
@@ -1016,14 +1166,13 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             const isY1 = pair.y === yVar1;
             const yScale = isY1 ? yScaleLeft : yScaleRight;
             
-            if (datasetView === "both" || datasetView === "withoutProduct") {
-              const withoutPoints = withoutProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              drawLinesAndAreas(plotGroup, withoutPoints, xScale, yScale, getTrendLineColor(pair.key, "Without Product"), "Without Product", pair.key);
-            }
-            if (datasetView === "both" || datasetView === "withProduct") {
-              const withPoints = withProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              drawLinesAndAreas(plotGroup, withPoints, xScale, yScale, getTrendLineColor(pair.key, "With Product"), "With Product", pair.key);
-            }
+            // Draw lines/areas for each visible dataset
+            allDatasets.forEach((ds) => {
+              if (!visibleDatasetNames.includes(ds.name)) return;
+              const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
+              const color = datasetColors[ds.name] || pairColorMap[pair.key]?.base;
+              drawLinesAndAreas(plotGroup, pts, xScale, yScale, color, ds.name, pair.key);
+            });
           }
         }
 
@@ -1092,14 +1241,13 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           
           for (const pair of pairsToDraw) {
             if (!activePairs.includes(pair.key)) continue;
-            if (datasetView === "both" || datasetView === "withoutProduct") {
-              const withoutPoints = withoutProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              drawLinesAndAreas(plotGroup, withoutPoints, xScale, yScale, getTrendLineColor(pair.key, "Without Product"), "Without Product", pair.key);
-            }
-            if (datasetView === "both" || datasetView === "withProduct") {
-              const withPoints = withProductPoints.filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              drawLinesAndAreas(plotGroup, withPoints, xScale, yScale, getTrendLineColor(pair.key, "With Product"), "With Product", pair.key);
-            }
+            // Draw each visible dataset's line/area for this pair
+            allDatasets.forEach((ds) => {
+              if (!visibleDatasetNames.includes(ds.name)) return;
+              const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
+              const color = datasetColors[ds.name] || pairColorMap[pair.key]?.base;
+              drawLinesAndAreas(plotGroup, pts, xScale, yScale, color, ds.name, pair.key);
+            });
           }
         }
 
@@ -1266,7 +1414,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     // });
 
   }, [getEffectiveRanges, formatAxisValue, chartSettings.showGrid, datasetView,
-    chartSettings.showTrendLines, trendLinesData, allPairs, getTrendLineColor, pairColorMap, perPairAutoRanges, activePairs, scaleMode, currentPairKey, showLines, showArea, areaOpacity, lineWidth, withProductPoints, withoutProductPoints, selectedYVars]);
+    chartSettings.showTrendLines, trendLinesData, allPairs, getTrendLineColor, pairColorMap, perPairAutoRanges, activePairs, scaleMode, currentPairKey, showLines, showArea, areaOpacity, lineWidth, datasetPointsByName, datasetColors, allDatasets, visibleDatasetNames, selectedYVars]);
 
   // Update canvas points
   const updateCanvasPoints = useCallback(() => {
@@ -1597,11 +1745,12 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                 return (
                   <Grid item xs={12} md={scaleMode === "perPair" ? 12 : 6} key={pair.key}>
                     <Card sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2, borderLeft: `4px solid ${colors?.base || '#ccc'}` }}>
-                      <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
-                        <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: colors?.pre, border: `2px solid ${colors?.base}` }} />
-                        <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: colors?.post, border: `2px solid ${colors?.base}` }} />
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: colors?.base }}>{pair.x} vs {pair.y}</Typography>
-                      </Box>
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 1, alignItems: 'center' }}>
+                              {allDatasets.filter(ds => visibleDatasetNames.includes(ds.name)).map((ds, idx) => (
+                                <Box key={ds.name} sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], border: `2px solid ${darkenColor(datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], 0.25)}` }} />
+                              ))}
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary', ml: 1 }}>{pair.x} vs {pair.y}</Typography>
+                            </Box>
                       <List dense>
                         <ListItem>
                           <ListItemIcon><TrendingUpIcon sx={{ color: colors?.base }} /></ListItemIcon>
@@ -1763,7 +1912,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
   const showWithoutProduct = (datasetView === "both" || datasetView === "withoutProduct") && withoutProductPoints.length > 0;
   const showWithProduct = (datasetView === "both" || datasetView === "withProduct") && withProductPoints.length > 0;
-  const hasData = showWithoutProduct || showWithProduct;
+  // Determine data availability from processed points (works for generic dataset names)
+  const hasData = (allPoints && allPoints.length > 0) || showWithProduct || showWithoutProduct;
 
   // Get current pair label for display
   const currentPairLabel = currentPairKey ? currentPairKey.replace("__", " vs ") : "";
@@ -1773,6 +1923,43 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const currentYRange = scaleMode === "perPair" && currentPairKey ? perPairRanges[currentPairKey]?.yRange : customYRange;
   const currentAutoXRanges = scaleMode === "perPair" && currentPairKey ? perPairAutoRanges[currentPairKey] : globalAutoRanges;
   const currentAutoYRanges = scaleMode === "perPair" && currentPairKey ? perPairAutoRanges[currentPairKey] : globalAutoRanges;
+
+  const renderLegendBlock = () => (
+    <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>Legend</Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 1.25 }}>
+        {allDatasets.map((dataset, index) => {
+          const key = dataset.name || `dataset${index}`;
+          const color = datasetColors[key] || BASE_COLORS[index % BASE_COLORS.length];
+          const label = datasetLabels[key] || dataset.name || `Dataset ${index + 1}`;
+          return (
+            <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, bgcolor: 'background.paper', px: 1.25, py: 0.75, borderRadius: 2, border: '1px solid', borderColor: 'grey.300' }}>
+              <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: color, flexShrink: 0 }} />
+              <EditableLabel value={label} color={color} onChange={(newName) => setDatasetLabels((prev) => ({ ...prev, [key]: newName }))} />
+            </Box>
+          );
+        })}
+      </Box>
+      {allPairs.length > 0 && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+          {allPairs.filter((pair) => activePairs.includes(pair.key)).map((pair) => {
+            return (
+              <Box key={pair.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, bgcolor: 'background.paper', px: 1.25, py: 0.75, borderRadius: 2, border: '1px solid', borderColor: 'grey.300' }}>
+                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                  {allDatasets.filter(ds => visibleDatasetNames.includes(ds.name)).map((ds, idx) => (
+                    <Box key={ds.name} sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], border: `2px solid ${darkenColor(datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], 0.25)}` }} />
+                  ))}
+                </Box>
+                <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                  {pair.x} vs {pair.y}
+                </Typography>
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+    </Box>
+  );
 
   return (
     <Box sx={{ width: "100%", p: { xs: 1, sm: 2, md: 3 } }} ref={pageRef}>
@@ -1871,7 +2058,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                 <Typography variant="body2" color="text.secondary">Select X and Y variables to see pairs.</Typography>
               ) : (
                 allPairs.map((pair) => {
-                  const colors = pairColorMap[pair.key];
                   return (
                     <FormControlLabel
                       key={pair.key}
@@ -1879,14 +2065,17 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                         <Checkbox
                           checked={activePairs.includes(pair.key)}
                           onChange={() => setActivePairs(prev => prev.includes(pair.key) ? prev.filter(k => k !== pair.key) : [...prev, pair.key])}
-                          sx={{ color: colors?.base }}
+                          sx={{ color: datasetColors[allDatasets[0]?.name] || pairColorMap[pair.key]?.base || BASE_COLORS[0] }}
                         />
                       }
                       label={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: colors?.pre, border: `2px solid ${colors?.base}` }} />
-                          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: colors?.post, border: `2px solid ${colors?.base}` }} />
-                          <Typography variant="body2" sx={{ color: colors?.base, fontWeight: 500 }}>{pair.x} vs {pair.y}</Typography>
+                          <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                            {allDatasets.filter(ds => visibleDatasetNames.includes(ds.name)).map((ds, idx) => (
+                              <Box key={ds.name} sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], border: `2px solid ${darkenColor(datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], 0.25)}` }} />
+                            ))}
+                          </Box>
+                          <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>{pair.x} vs {pair.y}</Typography>
                         </Box>
                       }
                       sx={{ m: 0, mr: 2, mb: 1 }}
@@ -1980,7 +2169,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               <Alert severity="info" sx={{ display: "flex", alignItems: "center", gap: 1, borderRadius: 2 }}>
                 <PanToolIcon fontSize="small" />
                 <Typography variant="body2">
-                  Use mouse wheel to zoom, drag to pan. Each variable pair has its own color — lighter shade = Pre (Without Product), darker shade = Post (With Product).
+                  Use mouse wheel to zoom, drag to pan. Each variable pair has its own color — each sheet (dataset) is plotted using its assigned color.
                   {showLines && " Blue lines connect points to show data sequence."}
                   {showArea && " Shaded areas highlight the region under each data line."}
                   {scaleMode === "global" && " In Dynamic Scale mode, all active pairs are shown on the same graph with axes that automatically adjust to fit the data ranges of all selected pairs."}
@@ -1989,6 +2178,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                 </Typography>
               </Alert>
             </Box>
+
+            {renderLegendBlock()}
 
             {/* Axis Scale Controls */}
             {scaleMode !== "perVariable" && (
@@ -2045,21 +2236,14 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                   ? allPairs.filter(p => p.key === currentPairKey)
                   : allPairs
                 ).map((pair) => {
-                  const colors = pairColorMap[pair.key];
                   if (!activePairs.includes(pair.key)) return null;
                   return (
                     <Box key={pair.key} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap', mr: 1 }}>
-                      {(datasetView === "both" || datasetView === "withoutProduct") && (
-                        <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: colors?.pre, flexShrink: 0 }} />
-                      )}
-                      {(datasetView === "both" || datasetView === "withProduct") && (
-                        <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: colors?.post, flexShrink: 0 }} />
-                      )}
-                      <Typography sx={{ color: colors?.base, fontWeight: 700, fontSize: '14px', fontFamily: 'inherit' }}>
+                      {allDatasets.filter(ds => visibleDatasetNames.includes(ds.name)).map((ds, idx) => (
+                        <Box key={ds.name} sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], flexShrink: 0, border: `2px solid ${darkenColor(datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], 0.25)}` }} />
+                      ))}
+                      <Typography sx={{ color: pairColorMap[pair.key]?.base || 'text.primary', fontWeight: 700, fontSize: '14px', fontFamily: 'inherit' }}>
                         {pair.x} vs {pair.y}
-                      </Typography>
-                      <Typography sx={{ color: 'text.secondary', fontSize: '12px', fontFamily: 'inherit' }}>
-                        {datasetView === "both" ? "(light=pre, dark=post)" : datasetView === "withoutProduct" ? "(pre)" : "(post)"}
                       </Typography>
                     </Box>
                   );
