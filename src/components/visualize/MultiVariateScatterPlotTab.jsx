@@ -565,9 +565,17 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     return pairColors.datasetColors[dataset] || pairColors.base;
   }, [pairColorMap]);
 
+  const getPairBaseColor = useCallback((pairKey) => {
+    return pairColorMap[pairKey]?.base || BASE_COLORS[0];
+  }, [pairColorMap]);
+
+  const getDatasetColor = useCallback((dataset) => {
+    return datasetColors[dataset] || BASE_COLORS[visibleDatasetNames.indexOf(dataset) % BASE_COLORS.length] || BASE_COLORS[0];
+  }, [datasetColors, visibleDatasetNames]);
+
   const getPointColor = useCallback((pairKey, dataset) => {
-    return getPairDatasetColor(pairKey, dataset);
-  }, [getPairDatasetColor]);
+    return getDatasetColor(dataset);
+  }, [getDatasetColor]);
 
   const getTrendLineColor = useCallback((pairKey, dataset) => {
     return getPairDatasetColor(pairKey, dataset);
@@ -1132,10 +1140,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           allDatasets.forEach((ds) => {
             if (!visibleDatasetNames.includes(ds.name)) return;
             const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-            const color = getPairDatasetColor(pair.key, ds.name);
-            drawLinesAndAreas(clippedGroup, pts, xScalePair, yScale, color, ds.name, pair.key);
+            const datasetColor = getDatasetColor(ds.name);
+            drawLinesAndAreas(clippedGroup, pts, xScalePair, yScale, getPairDatasetColor(pair.key, ds.name), ds.name, pair.key);
             if (datasetView === "individual") {
-              drawScatterPoints(clippedGroup, pts, xScalePair, yScale, color, 3, 0.8);
+              drawScatterPoints(clippedGroup, pts, xScalePair, yScale, getDatasetColor(ds.name), 3, 0.8);
             }
           });
         }
@@ -1202,10 +1210,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             allDatasets.forEach((ds) => {
               if (!visibleDatasetNames.includes(ds.name)) return;
               const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              const color = getPairDatasetColor(pair.key, ds.name);
-              drawLinesAndAreas(plotGroup, pts, xScale, yScale, color, ds.name, pair.key);
+              const datasetColor = getDatasetColor(ds.name);
+              drawLinesAndAreas(plotGroup, pts, xScale, yScale, datasetColor, ds.name, pair.key);
               if (datasetView === "individual") {
-                drawScatterPoints(plotGroup, pts, xScale, yScale, color, 3, 0.8);
+                drawScatterPoints(plotGroup, pts, xScale, yScale, datasetColor, 3, 0.8);
               }
             });
           }
@@ -1280,10 +1288,9 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             allDatasets.forEach((ds) => {
               if (!visibleDatasetNames.includes(ds.name)) return;
               const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              const color = getPairDatasetColor(pair.key, ds.name);
-              drawLinesAndAreas(plotGroup, pts, xScale, yScale, color, ds.name, pair.key);
+              drawLinesAndAreas(plotGroup, pts, xScale, yScale, getPairDatasetColor(pair.key, ds.name), ds.name, pair.key);
               if (datasetView === "individual") {
-                drawScatterPoints(plotGroup, pts, xScale, yScale, color, 3, 0.8);
+                drawScatterPoints(plotGroup, pts, xScale, yScale, getDatasetColor(ds.name), 3, 0.8);
               }
             });
           }
@@ -1979,22 +1986,23 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const currentAutoYRanges = scaleMode === "perPair" && currentPairKey ? perPairAutoRanges[currentPairKey] : globalAutoRanges;
 
   const renderLegendBlock = () => {
-    const seriesLegend = [];
-    allPairs.filter((pair) => activePairs.includes(pair.key)).forEach((pair) => {
-      visibleDatasetNames.forEach((datasetName, idx) => {
-        seriesLegend.push({
-          key: `${pair.key}__${datasetName}`,
-          label: `${pair.x} vs ${pair.y} — ${datasetLabels[datasetName] || datasetName}`,
-          color: getPairDatasetColor(pair.key, datasetName)
-        });
-      });
-    });
+    const datasetLegend = visibleDatasetNames.map((datasetName, idx) => ({
+      key: `dataset-${datasetName}`,
+      label: datasetLabels[datasetName] || datasetName,
+      color: getDatasetColor(datasetName),
+    }));
+
+    const pairLegend = allPairs.filter((pair) => activePairs.includes(pair.key)).map((pair) => ({
+      key: `pair-${pair.key}`,
+      label: `${pair.x} vs ${pair.y}`,
+      color: pairColorMap[pair.key]?.base || BASE_COLORS[0],
+    }));
 
     return (
       <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>Legend</Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-          {seriesLegend.map((item) => (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 1.5 }}>
+          {datasetLegend.map((item) => (
             <Box key={item.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, bgcolor: 'background.paper', px: 1.25, py: 0.75, borderRadius: 2, border: '1px solid', borderColor: 'grey.300' }}>
               <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: item.color, flexShrink: 0, border: `1px solid ${darkenColor(item.color, 0.3)}` }} />
               <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 600 }}>
@@ -2003,6 +2011,18 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             </Box>
           ))}
         </Box>
+        {pairLegend.length > 0 && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+            {pairLegend.map((item) => (
+              <Box key={item.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, bgcolor: 'background.paper', px: 1.25, py: 0.75, borderRadius: 2, border: '1px solid', borderColor: 'grey.300' }}>
+                <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: item.color, flexShrink: 0, border: `1px solid ${darkenColor(item.color, 0.3)}` }} />
+                <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                  {item.label}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
       </Box>
     );
   };
