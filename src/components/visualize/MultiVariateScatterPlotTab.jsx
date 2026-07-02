@@ -1062,9 +1062,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         .style("stroke-opacity", 0.8);
     };
 
-    const drawPairTrendLines = (pair, xSc, ySc, group) => {
-      const pairClass = sanitizeClassName(pair.key);
-      // Draw trend lines for each visible dataset
+    const drawPairTrendLines = (pair, xSc, ySc, group, clipPathId = "plot-clip") => {
+      // Draw trend lines for each visible dataset and clip them to the plot area
       allDatasets.forEach((ds) => {
         if (!visibleDatasetNames.includes(ds.name)) return;
         const trend = trendLinesData[pair.key]?.[ds.name];
@@ -1074,6 +1073,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           .attr("class", `trend-line-${pairClass} trend-line-${dsClass}-${pairClass}`)
           .attr("x1", xSc(trend[0].x)).attr("y1", ySc(trend[0].y))
           .attr("x2", xSc(trend[1].x)).attr("y2", ySc(trend[1].y))
+          .attr("clip-path", `url(#${clipPathId})`)
           .style("stroke", getTrendLineColor(pair.key, ds.name))
           .style("stroke-width", 2).style("stroke-dasharray", "5,5").style("opacity", 0.9);
       });
@@ -1159,7 +1159,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           .text(`${pair.x} vs ${pair.y}`);
 
         if (chartSettings.showTrendLines) {
-          drawPairTrendLines(pair, xScalePair, yScale, panelGroup);
+          drawPairTrendLines(pair, xScale, yScale, panelGroup, panelClipId);
         }
       });
     };
@@ -1228,7 +1228,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           for (const pair of pairsToDraw) {
             const isY1 = pair.y === yVar1;
             const ySc = isY1 ? yScLeft : yScRight;
-            drawPairTrendLines(pair, xSc, ySc, plotGroup);
+            drawPairTrendLines(pair, xSc, ySc, plotGroup, "plot-clip");
           }
         };
 
@@ -1302,7 +1302,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           const pairsToDraw = (scaleMode === "perPair" && currentPairKey) ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
           
           for (const pair of pairsToDraw) {
-            drawPairTrendLines(pair, xSc, ySc, plotGroup);
+            drawPairTrendLines(pair, xSc, ySc, plotGroup, "plot-clip");
           }
         };
 
@@ -1354,8 +1354,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             plotGroup.select(`.y-axis-${sanitized}`).call(d3.axisLeft(newY).tickFormat(d => formatAxisValue(d)));
             plotGroup.selectAll(`.trend-line-${sanitized}`).remove();
             if (chartSettings.showTrendLines) {
-              const panelGroup = plotGroup.select(`.panel-${sanitized}`);
-              drawPairTrendLines(pair, newX, newY, panelGroup);
+              const panelGroup = plotGroup.select(`.panel-${pair.key}`);
+              drawPairTrendLines(pair, newX, newY, panelGroup, panelClipId);
             }
           });
           if (chartSettings.showGrid) {
@@ -2017,8 +2017,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             <ScaleIcon color="primary" />
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'primary.main' }}>Axis Scaling Mode:</Typography>
             <ToggleButtonGroup value={scaleMode} exclusive onChange={(_, v) => { if (v) { setScaleMode(v); resetZoom(); if (v == "perPair"){setActivePairs(allPairs.map(p => p.key));if (allPairs.length > 0) { setCurrentPairKey(allPairs[0].key); } } } }} size="small">
-              <ToggleButton value="global" sx={{ textTransform: 'none' }}>Dynamic Scale (All Active Pairs)</ToggleButton>
-              <ToggleButton value="perPair" sx={{ textTransform: 'none' }}>Single Pair View</ToggleButton>
+              <ToggleButton value="global" sx={{ textTransform: 'none' }}>All Selected Pairs View (All Sheets)</ToggleButton>
+              <ToggleButton value="perPair" sx={{ textTransform: 'none' }}>Single Sheet View</ToggleButton>
               <ToggleButton value="perVariable" sx={{ textTransform: 'none' }}>Per-Variable Scale</ToggleButton>
             </ToggleButtonGroup>
             {scaleMode === "perPair" && allPairs.length > 0 && (
