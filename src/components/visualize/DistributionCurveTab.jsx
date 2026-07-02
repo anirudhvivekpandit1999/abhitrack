@@ -65,6 +65,10 @@ const DATASET_COLORS = [
     { area: '#1C1917', bar: '#D6D3D1' },  // Dark Grey
 ];
 
+const DEFAULT_COMBINED_COLOR_OPTIONS = [
+    '#2563EB', '#DC2626', '#059669', '#D97706', '#7C3AED', '#DB2777', '#0891B2', '#EA580C', '#4338CA', '#0D9488'
+];
+
 const AxisControlPanel = ({
     title,
     columnName,
@@ -177,6 +181,7 @@ const DistributionCurveTab = ({
     const [combinedXAxisMax, setCombinedXAxisMax] = useState('');
     const [combinedYAxisMin, setCombinedYAxisMin] = useState('');
     const [combinedYAxisMax, setCombinedYAxisMax] = useState('');
+    const [combinedDatasetColors, setCombinedDatasetColors] = useState({});
 
     const [columnColorMap, setColumnColorMap] = useState({});
 
@@ -335,6 +340,26 @@ const DistributionCurveTab = ({
             data: applyFilter(d.data)
         }));
     }, [datasets, withProductData, withoutProductData, filterColumn, filterMin, filterMax, columnIsDateTime]);
+
+    useEffect(() => {
+        if (!allDatasets.length) return;
+        setCombinedDatasetColors(prev => {
+            const next = { ...prev };
+            allDatasets.forEach((dataset, index) => {
+                const key = dataset.name || `dataset${index}`;
+                if (!next[key]) {
+                    next[key] = DATASET_COLORS[index % DATASET_COLORS.length].area;
+                }
+            });
+            return next;
+        });
+    }, [allDatasets]);
+
+    const getDatasetColor = (dataset, datasetIndex) => {
+        const key = dataset.name || `dataset${datasetIndex}`;
+        return combinedDatasetColors[key] || DATASET_COLORS[datasetIndex % DATASET_COLORS.length].area;
+    };
+
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -814,17 +839,20 @@ const DistributionCurveTab = ({
     // Settings Modal
     // ========================================================================
     const [draftSettings, setDraftSettings] = useState(null);
-    const openSettingsModal = () => {
+    const resetSettingsDraft = () => {
         setDraftSettings({
             showGrid, showStatistics, showOutliers, showDataPoints, areaOpacity, binCount,
             combinedLegendLabels: { ...combinedLegendLabels }, combinedXAxisLabel, combinedYAxisLabel,
             combinedXAxisMin, combinedXAxisMax, combinedYAxisMin, combinedYAxisMax,
-            distributionColors: { withProduct: SINGLE_COLORS.withProduct.area, withoutProduct: SINGLE_COLORS.withoutProduct.area },
-            barColors: { withProduct: SINGLE_COLORS.withProduct.bar, withoutProduct: SINGLE_COLORS.withoutProduct.bar },
+            combinedDatasetColors: { ...combinedDatasetColors },
             singleLegendLabel, singleXAxisLabel, singleYAxisLabel, singleXAxisMin, singleXAxisMax, singleYAxisMin, singleYAxisMax,
             separateLegendLabels: { ...separateLegendLabels }, separateXAxisLabel, separateYAxisLabel,
             separateXAxisMin, separateXAxisMax, separateYAxisMin, separateYAxisMax,
         });
+    };
+
+    const openSettingsModal = () => {
+        resetSettingsDraft();
         setSettingsModalOpen(true);
     };
     const handleSettingsModalClose = () => { setSettingsModalOpen(false); setDraftSettings(null); };
@@ -836,6 +864,7 @@ const DistributionCurveTab = ({
         setCombinedXAxisLabel(draftSettings.combinedXAxisLabel); setCombinedYAxisLabel(draftSettings.combinedYAxisLabel);
         setCombinedXAxisMin(draftSettings.combinedXAxisMin); setCombinedXAxisMax(draftSettings.combinedXAxisMax);
         setCombinedYAxisMin(draftSettings.combinedYAxisMin); setCombinedYAxisMax(draftSettings.combinedYAxisMax);
+        setCombinedDatasetColors({ ...draftSettings.combinedDatasetColors });
         setSingleLegendLabel(draftSettings.singleLegendLabel);
         setSingleXAxisLabel(draftSettings.singleXAxisLabel); setSingleYAxisLabel(draftSettings.singleYAxisLabel);
         setSingleXAxisMin(draftSettings.singleXAxisMin); setSingleXAxisMax(draftSettings.singleXAxisMax);
@@ -953,15 +982,15 @@ const DistributionCurveTab = ({
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                         {allDatasets.map((dataset, index) => {
-                            const color = DATASET_COLORS[index % DATASET_COLORS.length];
+                            const colorValue = getDatasetColor(dataset, index);
                             return (
                                 <Box key={index} sx={{
                                     display: 'flex', alignItems: 'center', gap: 0.75,
                                     bgcolor: 'grey.100', px: 1.5, py: 0.75, borderRadius: 2,
                                     border: '1px solid', borderColor: 'grey.300'
                                 }}>
-                                    <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: color.area, flexShrink: 0 }} />
-                                    <Typography variant="caption" sx={{ fontWeight: 700, color: color.area }}>
+                                    <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: colorValue, flexShrink: 0 }} />
+                                    <Typography variant="caption" sx={{ fontWeight: 700, color: colorValue }}>
                                         {dataset.name}
                                     </Typography>
                                 </Box>
@@ -992,7 +1021,7 @@ const DistributionCurveTab = ({
 
         selectedColumns.forEach(column => {
             allDatasets.forEach((dataset, datasetIndex) => {
-                const color = DATASET_COLORS[datasetIndex % DATASET_COLORS.length];
+                const colorValue = getDatasetColor(dataset, datasetIndex);
                 const key = `${column}_dataset${datasetIndex}`;
                 areas.push(
                     <Area
@@ -1000,12 +1029,12 @@ const DistributionCurveTab = ({
                         yAxisId="left"
                         type="monotone"
                         dataKey={`data.${key}`}
-                        stroke={color.area}
+                        stroke={colorValue}
                         strokeWidth={2.5}
-                        fill={color.area}
+                        fill={colorValue}
                         fillOpacity={areaOpacity}
                         name={`${column} — ${dataset.name}`}
-                        dot={showDataPoints ? { r: 3, fill: color.area, stroke: '#fff', strokeWidth: 1 } : false}
+                        dot={showDataPoints ? { r: 3, fill: colorValue, stroke: '#fff', strokeWidth: 1 } : false}
                         hide={!showAreaChart}
                         connectNulls
                     />
@@ -1016,7 +1045,7 @@ const DistributionCurveTab = ({
                             key={`${key}_count`}
                             yAxisId="right"
                             dataKey={`data.${key}_count`}
-                            fill={color.area}
+                            fill={colorValue}
                             fillOpacity={0.65}
                             name={`Count — ${column} ${dataset.name}`}
                             barSize={6}
@@ -1289,7 +1318,30 @@ const DistributionCurveTab = ({
     // ========================================================================
     return (
         <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
-            <ChartSettingsModal open={settingsModalOpen} onClose={handleSettingsModalClose} onSave={handleSettingsSave} draftSettings={draftSettings} setDraftSettings={setDraftSettings} />
+            <ChartSettingsModal
+                open={settingsModalOpen}
+                onClose={handleSettingsModalClose}
+                onApply={handleSettingsSave}
+                onReset={resetSettingsDraft}
+                draftSettings={draftSettings}
+                setDraftSettings={setDraftSettings}
+                colorPairs={allDatasets.map((dataset, index) => {
+                    const datasetKey = dataset.name || `dataset${index}`;
+                    return {
+                        key: datasetKey,
+                        label: dataset.name || `Dataset ${index + 1}`,
+                        value: draftSettings?.combinedDatasetColors?.[datasetKey] || combinedDatasetColors[datasetKey] || DATASET_COLORS[index % DATASET_COLORS.length].area,
+                        onChange: (color) => setDraftSettings(ds => ({
+                            ...ds,
+                            combinedDatasetColors: {
+                                ...ds?.combinedDatasetColors,
+                                [datasetKey]: color,
+                            }
+                        }))
+                    };
+                })}
+                colorOptions={DEFAULT_COMBINED_COLOR_OPTIONS}
+            />
 
             {/* View Mode Toggle */}
             <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, sm: 4 } }}>
