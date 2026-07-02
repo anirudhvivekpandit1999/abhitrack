@@ -16,13 +16,14 @@ const DebouncedTextField = ({
   const handleChange = (e) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
+    if (typeof onChange === 'function') {
+      onChange({ target: { value: newValue } });
+    }
   };
 
   const handleBlur = () => {
     if (localValue !== value && typeof onChange === 'function') {
-      onChange({
-        target: { value: localValue }
-      });
+      onChange({ target: { value: localValue } });
     }
   };
   

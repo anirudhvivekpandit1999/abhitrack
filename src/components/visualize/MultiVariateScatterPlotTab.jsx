@@ -636,6 +636,25 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       console.error('ScatterTab debug logging failed', err);
     }
   }, [allDatasets, availableColumns, selectedXVars, selectedYVars, allPairs, datasetPointsByName, allPoints]);
+  useEffect(() => {
+    try {
+      const datasetSummaries = allDatasets.map(ds => ({ name: ds.name, rows: (ds.data || []).length }));
+      const pointsCounts = Object.fromEntries(Object.entries(datasetPointsByName || {}).map(([k, pts]) => [k, pts.length]));
+      // eslint-disable-next-line no-console
+      console.debug('ScatterTab Debug:', {
+        datasetSummaries,
+        availableColumns: (availableColumns || []).slice(0, 20),
+        selectedXVars,
+        selectedYVars,
+        allPairs,
+        pointsCounts,
+        allPointsCount: (allPoints || []).length,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('ScatterTab debug logging failed', err);
+    }
+  }, [allDatasets, availableColumns, selectedXVars, selectedYVars, allPairs, datasetPointsByName, allPoints]);
 
   // Sort points by x for line/area rendering
   const sortedPointsByPair = useMemo(() => {
@@ -679,18 +698,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       { x: maxX, y: maxX * slope + intercept }
     ];
   }, []);
-
-  const trendLinesData = useMemo(() => {
-    const lines = {};
-    for (const pair of allPairs) {
-      lines[pair.key] = {};
-      allDatasets.forEach(ds => {
-        const pts = datasetPointsByName[ds.name] || [];
-        lines[pair.key][ds.name] = chartSettings.showTrendLines ? calculateTrendLine(pts, pair.key) : null;
-      });
-    }
-    return lines;
-  }, [allPairs, allDatasets, datasetPointsByName, calculateTrendLine, chartSettings.showTrendLines]);
 
   // Dynamic global auto ranges - scales to fit ALL active pairs on the same graph
   const globalAutoRanges = useMemo(() => {
@@ -877,6 +884,38 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       return { xMin, xMax, yMin, yMax };
     }
   }, [scaleMode, currentPairKey, perVariableAutoRanges, perPairAutoRanges, perPairRanges, globalAutoRanges, fixedXRange, customXRange, customYRange, allPairs, activePairs]);
+
+  const effectiveRanges = useMemo(() => getEffectiveRanges(), [getEffectiveRanges]);
+
+  const visibleAnalysisPoints = useMemo(() => {
+    let points = allPoints.filter((pt) => activePairs.includes(pt.pairKey));
+    if (scaleMode === "perPair" && currentPairKey) {
+      points = points.filter((pt) => pt.pairKey === currentPairKey);
+    }
+    if (!effectiveRanges) return points;
+    const { xMin, xMax, yMin, yMax } = effectiveRanges;
+    return points.filter((pt) => {
+      const withinX = pt.x >= xMin && pt.x <= xMax;
+      const withinY = pt.y >= yMin && pt.y <= yMax;
+      return withinX && withinY;
+    });
+  }, [allPoints, activePairs, scaleMode, currentPairKey, effectiveRanges]);
+
+  const trendLinesData = useMemo(() => {
+    const lines = {};
+    for (const pair of allPairs) {
+      lines[pair.key] = {};
+      allDatasets.forEach(ds => {
+        if (!visibleDatasetNames.includes(ds.name)) {
+          lines[pair.key][ds.name] = null;
+          return;
+        }
+        const pts = visibleAnalysisPoints.filter((p) => p.pairKey === pair.key && p.dataset === ds.name);
+        lines[pair.key][ds.name] = chartSettings.showTrendLines ? calculateTrendLine(pts, pair.key) : null;
+      });
+    }
+    return lines;
+  }, [allPairs, allDatasets, visibleDatasetNames, visibleAnalysisPoints, calculateTrendLine, chartSettings.showTrendLines]);
 
   // Handle per-pair range changes
   const handlePerPairRangeChange = useCallback((pairKey, axis, field, value) => {
@@ -1695,9 +1734,12 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         <CardContent sx={{ p: 3 }}>
           <Grid container spacing={2}>
             {(() => {
-              const datasetCountsSummary = Object.entries(datasetPointsByName || {}).map(([name, pts]) => `${datasetLabels[name] || name}: ${pts.length}`).join(' | ');
+              const datasetCountsSummary = Object.entries(visibleAnalysisPoints.reduce((acc, pt) => {
+                acc[pt.dataset] = (acc[pt.dataset] || 0) + 1;
+                return acc;
+              }, {})).map(([name, count]) => `${datasetLabels[name] || name}: ${count}`).join(' | ');
               return [
-                { label: "Total Points", value: allPoints.length, sub: datasetCountsSummary || 'No data', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', icon: <AnalyticsIcon sx={{ mr: 1, fontSize: 20 }} /> },
+                { label: "Total Points", value: visibleAnalysisPoints.length, sub: datasetCountsSummary || 'No data', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', icon: <AnalyticsIcon sx={{ mr: 1, fontSize: 20 }} /> },
                 { label: "Active Pairs", value: activePairs.length, sub: `out of ${allPairs.length} total pairs`, gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', icon: <TrendingUpIcon sx={{ mr: 1, fontSize: 20 }} /> },
                 { label: "X Variables", value: selectedXVars.length, sub: "selected for analysis", gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', icon: <BarChartIcon sx={{ mr: 1, fontSize: 20 }} /> },
                 { label: "Y Variables", value: selectedYVars.length, sub: "selected for analysis", gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', icon: <InfoIcon sx={{ mr: 1, fontSize: 20 }} /> },
@@ -1783,7 +1825,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   };
 
   const combinedInsights = useMemo(() => {
-    const allData = allPoints;
+    const allData = visibleAnalysisPoints;
     if (allData.length === 0) return null;
     const correlations = {};
     const regressions = {};
@@ -1818,7 +1860,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       }
     }
     return { correlations, regressions, outliers };
-  }, [allPoints, allPairs]);
+  }, [visibleAnalysisPoints, allPairs]);
 
   const SettingsModal = () => {
     const featureSections = [
