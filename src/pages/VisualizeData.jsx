@@ -273,6 +273,14 @@ const VisualizeData = () => {
                         availableColumns={availableColumns}
                         withProductData={withProductData}
                         withoutProductData={withoutProductData}
+                        datasets={[
+                            ...selectedSheetsList
+                                .filter(name => name)
+                                .map((name, index) => ({
+                                    name: `Data ${index + 1}`,
+                                    data: getSheetData(name)
+                                }))
+                        ]}
                         clientName={clientName}
                         plantName={plantName}
                         productName={productName}

@@ -1173,7 +1173,7 @@ useEffect(() => {
                         <input
                           value={rr.name}
                           onChange={e => handleRowRangeChange(idx, "name", e.target.value, newSheetName)}
-                          placeholder="Pre / Post"
+                          placeholder="Enter range name"
                           style={{ flex: "1.2" }}
                         />
 
