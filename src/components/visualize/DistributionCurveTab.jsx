@@ -258,6 +258,7 @@ const DistributionCurveTab = ({
 
     const [columnColorMap, setColumnColorMap] = useState({});
     const [datasetLabels, setDatasetLabels] = useState({});
+    const [hiddenDatasets, setHiddenDatasets] = useState({});
     // Single View Settings
     const [singleColumn, setSingleColumn] = useState('');
     const [singleLegendLabel, setSingleLegendLabel] = useState('Value');
@@ -434,6 +435,17 @@ const DistributionCurveTab = ({
     };
     const getDatasetLabel = (dataset) => {
         return datasetLabels[dataset.name] || dataset.name;
+    };
+
+    const toggleDataset = (datasetName) => {
+        setHiddenDatasets(prev => ({
+            ...prev,
+            [datasetName]: !prev[datasetName]
+        }));
+    };
+
+    const isDatasetHidden = (datasetName) => {
+        return !!hiddenDatasets[datasetName];
     };
 
     const theme = useTheme();
@@ -1130,22 +1142,49 @@ const DistributionCurveTab = ({
                             const colorValue = getDatasetColor(dataset, index);
                             const displayLabel = getDatasetLabel(dataset);
                             return (
-                                <Box key={index} sx={{
-                                    display: 'flex', alignItems: 'center', gap: 0.75,
-                                    bgcolor: 'grey.100', px: 1.5, py: 0.75, borderRadius: 2,
-                                    border: '1px solid', borderColor: 'grey.300'
-                                }}>
-                                    <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: colorValue, flexShrink: 0 }} />
-                                    <EditableLabel
-                                        value={displayLabel}
-                                        color={colorValue}
-                                        onChange={(newName) => {
-                                            setDatasetLabels(prev => ({
-                                                ...prev,
-                                                [dataset.name]: newName
-                                            }));
-                                        }}
-                                    />
+                                <Box
+                                    key={index}
+                                    onClick={() => toggleDataset(dataset.name)}
+                                    sx={{
+                                        display: 'flex', alignItems: 'center', gap: 0.75,
+                                        bgcolor: isDatasetHidden(dataset.name) ? 'grey.200' : 'grey.100',
+                                        px: 1.5, py: 0.75, borderRadius: 2,
+                                        border: '1px solid',
+                                        borderColor: isDatasetHidden(dataset.name) ? 'grey.400' : 'grey.300',
+                                        cursor: 'pointer',
+                                        opacity: isDatasetHidden(dataset.name) ? 0.5 : 1,
+                                        transition: 'all 0.2s ease',
+                                        userSelect: 'none',
+                                        '&:hover': {
+                                            borderColor: colorValue,
+                                            bgcolor: `${colorValue}11`
+                                        }
+                                    }}
+                                    title={isDatasetHidden(dataset.name) ? 'Click to show' : 'Click to hide'}
+                                >
+                                    <Box sx={{
+                                        width: 13, height: 13, borderRadius: '50%',
+                                        bgcolor: isDatasetHidden(dataset.name) ? 'grey.400' : colorValue,
+                                        flexShrink: 0,
+                                        transition: 'background-color 0.2s ease'
+                                    }} />
+                                    <Box onClick={e => e.stopPropagation()}>
+                                        <EditableLabel
+                                            value={displayLabel}
+                                            color={isDatasetHidden(dataset.name) ? '#999' : colorValue}
+                                            onChange={(newName) => {
+                                                setDatasetLabels(prev => ({
+                                                    ...prev,
+                                                    [dataset.name]: newName
+                                                }));
+                                            }}
+                                        />
+                                    </Box>
+                                    {isDatasetHidden(dataset.name) && (
+                                        <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.65rem' }}>
+                                            hidden
+                                        </Typography>
+                                    )}
                                 </Box>
                             );
                         })}
@@ -1188,7 +1227,7 @@ const DistributionCurveTab = ({
                         fillOpacity={areaOpacity}
                         name={`${column} — ${getDatasetLabel(dataset)}`}
                         dot={showDataPoints ? { r: 3, fill: colorValue, stroke: '#fff', strokeWidth: 1 } : false}
-                        hide={!showAreaChart}
+                        hide={!showAreaChart || isDatasetHidden(dataset.name)}
                         connectNulls
                     />
                 );
@@ -1203,6 +1242,7 @@ const DistributionCurveTab = ({
                             name={`Count — ${column} ${getDatasetLabel(dataset)}`}
                             barSize={6}
                             radius={[2, 2, 0, 0]}
+                            hide={isDatasetHidden(dataset.name)}
                         />
                     );
                 }
@@ -1235,6 +1275,37 @@ const DistributionCurveTab = ({
 
                     <ColorLegendBlock columns={selectedColumns} />
 
+                    {/* Logo at top of chart */}
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 1
+                    }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            Distribution Chart
+                        </Typography>
+                        <Box sx={{
+                            display: 'flex', alignItems: 'center', gap: 1,
+                            background: 'rgba(255,255,255,0.95)',
+                            padding: '4px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(0,0,0,0.1)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        }}>
+                            <img src={logo} alt="Abhitech Logo" style={{
+                                width: '28px', height: '28px',
+                                objectFit: 'contain', borderRadius: '50%'
+                            }} />
+                            <Box>
+                                <div style={{ fontSize: '9px', color: '#666', lineHeight: 1 }}>Powered by</div>
+                                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#1976d2', lineHeight: 1.2 }}>
+                                    Abhitech's AbhiStat
+                                </div>
+                            </Box>
+                        </Box>
+                    </Box>
+
                     <div ref={combinedChartRef} className="abhitech-plot-area" style={{ width: '100%', height: isMobile ? 340 : isTablet ? 390 : 460, position: 'relative' }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <ComposedChart data={combinedChartData} margin={{ top: 10, right: 70, left: 20, bottom: 70 }}>
@@ -1259,7 +1330,7 @@ const DistributionCurveTab = ({
                                 {bars}
                             </ComposedChart>
                         </ResponsiveContainer>
-                        <WatermarkContent />
+                        
                     </div>
                 </CardContent>
             </Card>
@@ -1298,6 +1369,34 @@ const DistributionCurveTab = ({
                             <MuiTooltip title="Download as PNG">
                                 <Button variant="outlined" color="primary" onClick={() => downloadChartAsPNG(chartRef, title)} startIcon={<DownloadIcon />} size="small" sx={{ textTransform: 'none', height: 32 }}>Download PNG</Button>
                             </MuiTooltip>
+                        </Box>
+                    </Box>
+
+                    {/* Logo at top */}
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        mb: 1
+                    }}>
+                        <Box sx={{
+                            display: 'flex', alignItems: 'center', gap: 1,
+                            background: 'rgba(255,255,255,0.95)',
+                            padding: '4px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(0,0,0,0.1)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        }}>
+                            <img src={logo} alt="Abhitech Logo" style={{
+                                width: '28px', height: '28px',
+                                objectFit: 'contain', borderRadius: '50%'
+                            }} />
+                            <Box>
+                                <div style={{ fontSize: '9px', color: '#666', lineHeight: 1 }}>Powered by</div>
+                                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#1976d2', lineHeight: 1.2 }}>
+                                    Abhitech's AbhiStat
+                                </div>
+                            </Box>
                         </Box>
                     </Box>
 
@@ -1341,7 +1440,7 @@ const DistributionCurveTab = ({
                                 />
                             </ComposedChart>
                         </ResponsiveContainer>
-                        <WatermarkContent />
+                        
                     </div>
                 </CardContent>
             </Card>
@@ -1394,6 +1493,29 @@ const DistributionCurveTab = ({
                     const globalMinMax = allValues.length
                         ? { min: Math.min(...allValues), max: Math.max(...allValues) }
                         : { min: 0, max: 0 };
+
+                    // skip hidden datasets in separate view
+                    if (isDatasetHidden(dataset.name)) {
+                        return (
+                            <Grid item xs={12} lg={6} key={index}>
+                                <Box sx={{
+                                    p: 3, border: '2px dashed', borderColor: 'grey.300',
+                                    borderRadius: 2, textAlign: 'center', color: 'text.disabled'
+                                }}>
+                                    <Typography variant="body2">
+                                        {getDatasetLabel(dataset)} is hidden
+                                    </Typography>
+                                    <Button
+                                        size="small"
+                                        onClick={() => toggleDataset(dataset.name)}
+                                        sx={{ mt: 1, textTransform: 'none' }}
+                                    >
+                                        Show
+                                    </Button>
+                                </Box>
+                            </Grid>
+                        );
+                    }
 
                     return (
                         <Grid item xs={12} lg={allDatasets.length === 1 ? 12 : 6} key={index}>
