@@ -1063,6 +1063,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     };
 
     const drawPairTrendLines = (pair, xSc, ySc, group, clipPathId = "plot-clip") => {
+      const pairClass = sanitizeClassName(pair.key);
       // Draw trend lines for each visible dataset and clip them to the plot area
       allDatasets.forEach((ds) => {
         if (!visibleDatasetNames.includes(ds.name)) return;
