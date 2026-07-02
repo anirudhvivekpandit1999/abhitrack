@@ -618,12 +618,12 @@ const DistributionCurveTab = ({
         return buildViewBins(data, singleColumn, singleYAxisColumn, yAggregation, binCount);
     }, [filteredWithProductData, filteredWithoutProductData, singleColumn, singleYAxisColumn, singleViewType, yAggregation, binCount]);
 
-    const withProductStats = useMemo(() => calculateDistributionStats(filteredWithProductData, separateColumn), [filteredWithProductData, separateColumn]);
-    const withoutProductStats = useMemo(() => calculateDistributionStats(filteredWithoutProductData, separateColumn), [filteredWithoutProductData, separateColumn]);
-    const withProductSkewness = useMemo(() => calculateSkewness(filteredWithProductData, separateColumn), [filteredWithProductData, separateColumn]);
-    const withoutProductSkewness = useMemo(() => calculateSkewness(filteredWithoutProductData, separateColumn), [filteredWithoutProductData, separateColumn]);
-    const withProductQuality = useMemo(() => assessDataQuality(filteredWithProductData, separateColumn), [filteredWithProductData, separateColumn]);
-    const withoutProductQuality = useMemo(() => assessDataQuality(filteredWithoutProductData, separateColumn), [filteredWithoutProductData, separateColumn]);
+    // const withProductStats = useMemo(() => calculateDistributionStats(filteredWithProductData, separateColumn), [filteredWithProductData, separateColumn]);
+    // const withoutProductStats = useMemo(() => calculateDistributionStats(filteredWithoutProductData, separateColumn), [filteredWithoutProductData, separateColumn]);
+    // const withProductSkewness = useMemo(() => calculateSkewness(filteredWithProductData, separateColumn), [filteredWithProductData, separateColumn]);
+    // const withoutProductSkewness = useMemo(() => calculateSkewness(filteredWithoutProductData, separateColumn), [filteredWithoutProductData, separateColumn]);
+    // const withProductQuality = useMemo(() => assessDataQuality(filteredWithProductData, separateColumn), [filteredWithProductData, separateColumn]);
+    // const withoutProductQuality = useMemo(() => assessDataQuality(filteredWithoutProductData, separateColumn), [filteredWithoutProductData, separateColumn]);
 
     const getDefaultYLabel = (yCol, agg) => {
         if (!yCol) return 'Frequency (count)';
@@ -733,8 +733,11 @@ const DistributionCurveTab = ({
     const combinedStats = useMemo(() => {
         if (selectedColumns.length === 0) return null;
         const firstColumn = selectedColumns[0];
-        const allData = [...filteredWithProductData, ...filteredWithoutProductData];
-        const values = allData.map(row => parseRowValue(row, firstColumn)).filter(v => v != null);
+        if (columnDateTimeMap[firstColumn]) return null;
+        const allData = allDatasets.flatMap(d => d.data || []);
+        const values = allData
+            .map(row => parseRowValue(row, firstColumn))
+            .filter(v => v != null && !isNaN(v));
         if (values.length === 0) return null;
         return {
             count: values.length,
@@ -772,7 +775,7 @@ const DistributionCurveTab = ({
                 <CardContent sx={{ p: 3 }}>
                     <Grid container spacing={2}>
                         {[
-                            { label: 'Total Data Points', value: combinedStats?.count || 0, sub: `${filteredWithProductData?.length || 0} with, ${filteredWithoutProductData?.length || 0} without`, icon: <AnalyticsIcon sx={{ mr: 1, fontSize: 20 }} />, bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+                            { label: 'Total Data Points', value: combinedStats?.count || 0, sub: allDatasets.map((d, i) => `${d.name}: ${d.data?.length || 0} rows`).join(' | '), icon: <AnalyticsIcon sx={{ mr: 1, fontSize: 20 }} />, bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
                             { label: 'Distribution Shape', value: combinedStats?.skewness?.interpretation?.split('-')[0] || 'N/A', sub: `${combinedStats?.skewness?.value || 'N/A'} skewness`, icon: <TrendingUpIcon sx={{ mr: 1, fontSize: 20 }} />, bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
                             { label: 'Tail Behavior', value: combinedStats?.kurtosis?.interpretation?.split('-')[0] || 'N/A', sub: `${combinedStats?.kurtosis?.value || 'N/A'} kurtosis`, icon: <BarChartIcon sx={{ mr: 1, fontSize: 20 }} />, bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
                             { label: 'Data Quality', value: combinedStats?.quality?.score || 'N/A', sub: `${combinedStats?.quality?.quality || 'N/A'} quality score`, icon: <InfoIcon sx={{ mr: 1, fontSize: 20 }} />, bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
@@ -794,39 +797,105 @@ const DistributionCurveTab = ({
     );
 
     const InsightsPanel = () => {
-        const allOutliers = detectOutliers([...filteredWithProductData, ...filteredWithoutProductData], separateColumn);
+        const allOutliers = detectOutliers(
+            allDatasets.flatMap(d => d.data || []),
+            separateColumn
+        );
+
         return (
             <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2, border: '1px solid', borderColor: 'primary.light' }}>
-                <Box sx={{ p: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: showInsights ? '1px solid' : 'none', borderColor: 'divider', '&:hover': { bgcolor: 'action.hover' } }} onClick={() => setShowInsights(!showInsights)}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><AnalyticsIcon color="primary" /><Typography variant="h6" sx={{ fontWeight: 500, color: 'primary.main' }}>Distribution Analysis</Typography></Box>
-                    <IconButton size="small" sx={{ transform: showInsights ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}><ExpandMoreIcon /></IconButton>
+                <Box sx={{
+                    p: 2, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderBottom: showInsights ? '1px solid' : 'none',
+                    borderColor: 'divider', '&:hover': { bgcolor: 'action.hover' }
+                }} onClick={() => setShowInsights(!showInsights)}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <AnalyticsIcon color="primary" />
+                        <Typography variant="h6" sx={{ fontWeight: 500, color: 'primary.main' }}>
+                            Distribution Analysis
+                        </Typography>
+                    </Box>
+                    <IconButton size="small" sx={{
+                        transform: showInsights ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.3s ease'
+                    }}>
+                        <ExpandMoreIcon />
+                    </IconButton>
                 </Box>
+
                 <Collapse in={showInsights} timeout={300}>
                     <CardContent sx={{ p: 3 }}>
                         <Grid container spacing={3}>
-                            <Grid item xs={12} md={6}>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'success.main' }}>With Product Analysis</Typography>
-                                <List dense>
-                                    <ListItem><ListItemIcon><TrendingUpIcon color="success" /></ListItemIcon><ListItemText primary="Mean" secondary={withProductStats?.mean || 'N/A'} /></ListItem>
-                                    <ListItem><ListItemIcon><BarChartIcon color="success" /></ListItemIcon><ListItemText primary="Standard Deviation" secondary={withProductStats?.std || 'N/A'} /></ListItem>
-                                    <ListItem><ListItemIcon><InfoIcon color="success" /></ListItemIcon><ListItemText primary="Skewness" secondary={withProductSkewness ? `${withProductSkewness.value} (${withProductSkewness.interpretation})` : 'N/A'} /></ListItem>
-                                    <ListItem><ListItemIcon><AnalyticsIcon color="success" /></ListItemIcon><ListItemText primary="Data Quality" secondary={withProductQuality ? `${withProductQuality.quality} (${withProductQuality.score}/100)` : 'N/A'} /></ListItem>
-                                </List>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'error.main' }}>Without Product Analysis</Typography>
-                                <List dense>
-                                    <ListItem><ListItemIcon><TrendingUpIcon color="error" /></ListItemIcon><ListItemText primary="Mean" secondary={withoutProductStats?.mean || 'N/A'} /></ListItem>
-                                    <ListItem><ListItemIcon><BarChartIcon color="error" /></ListItemIcon><ListItemText primary="Standard Deviation" secondary={withoutProductStats?.std || 'N/A'} /></ListItem>
-                                    <ListItem><ListItemIcon><InfoIcon color="error" /></ListItemIcon><ListItemText primary="Skewness" secondary={withoutProductSkewness ? `${withoutProductSkewness.value} (${withoutProductSkewness.interpretation})` : 'N/A'} /></ListItem>
-                                    <ListItem><ListItemIcon><AnalyticsIcon color="error" /></ListItemIcon><ListItemText primary="Data Quality" secondary={withoutProductQuality ? `${withoutProductQuality.quality} (${withoutProductQuality.score}/100)` : 'N/A'} /></ListItem>
-                                </List>
-                            </Grid>
+                            {allDatasets.map((dataset, index) => {
+                                const color = DATASET_COLORS[index % DATASET_COLORS.length];
+                                const stats = calculateDistributionStats(dataset.data || [], separateColumn);
+                                const skewness = calculateSkewness(dataset.data || [], separateColumn);
+                                const quality = assessDataQuality(dataset.data || [], separateColumn);
+
+                                return (
+                                    <Grid item xs={12} md={6} key={index}>
+                                        <Typography variant="subtitle2" sx={{
+                                            fontWeight: 600, mb: 2,
+                                            color: color.area
+                                        }}>
+                                            {dataset.name} Analysis
+                                        </Typography>
+                                        <List dense>
+                                            <ListItem>
+                                                <ListItemIcon>
+                                                    <TrendingUpIcon sx={{ color: color.area }} />
+                                                </ListItemIcon>
+                                                <ListItemText
+                                                    primary="Mean"
+                                                    secondary={stats?.mean || 'N/A'}
+                                                />
+                                            </ListItem>
+                                            <ListItem>
+                                                <ListItemIcon>
+                                                    <BarChartIcon sx={{ color: color.area }} />
+                                                </ListItemIcon>
+                                                <ListItemText
+                                                    primary="Standard Deviation"
+                                                    secondary={stats?.std || 'N/A'}
+                                                />
+                                            </ListItem>
+                                            <ListItem>
+                                                <ListItemIcon>
+                                                    <InfoIcon sx={{ color: color.area }} />
+                                                </ListItemIcon>
+                                                <ListItemText
+                                                    primary="Skewness"
+                                                    secondary={skewness
+                                                        ? `${skewness.value} (${skewness.interpretation})`
+                                                        : 'N/A'}
+                                                />
+                                            </ListItem>
+                                            <ListItem>
+                                                <ListItemIcon>
+                                                    <AnalyticsIcon sx={{ color: color.area }} />
+                                                </ListItemIcon>
+                                                <ListItemText
+                                                    primary="Data Quality"
+                                                    secondary={quality
+                                                        ? `${quality.quality} (${quality.score}/100)`
+                                                        : 'N/A'}
+                                                />
+                                            </ListItem>
+                                        </List>
+                                    </Grid>
+                                );
+                            })}
                         </Grid>
+
                         {allOutliers.length > 0 && (
                             <Box sx={{ mt: 2, p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'warning.dark' }}>⚠️ Outlier Detection</Typography>
-                                <Typography variant="body2" sx={{ color: 'warning.dark' }}>{allOutliers.length} outliers detected using IQR method (1.5 × IQR threshold)</Typography>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'warning.dark' }}>
+                                    ⚠️ Outlier Detection
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: 'warning.dark' }}>
+                                    {allOutliers.length} outliers detected using IQR method (1.5 × IQR threshold)
+                                </Typography>
                             </Box>
                         )}
                     </CardContent>
@@ -880,8 +949,8 @@ const DistributionCurveTab = ({
     // Combined X & Y Selection Card (side by side)
     // ========================================================================
     const CombinedAxisSelectionCard = () => {
-            const yCol = viewMode === 'combined' ? yAxisColumn : viewMode === 'single' ? singleYAxisColumn : separateYAxisColumn;
-            const setYCol = viewMode === 'combined' ? setYAxisColumn : viewMode === 'single' ? setSingleYAxisColumn : setSeparateYAxisColumn;
+            const yCol = viewMode === 'combined' ? yAxisColumn : separateYAxisColumn;
+            const setYCol = viewMode === 'combined' ? setYAxisColumn : setSeparateYAxisColumn;
         
         return (
             <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, border: '1px solid', borderColor: 'primary.light' }}>
@@ -1417,7 +1486,7 @@ const DistributionCurveTab = ({
                 {viewMode === 'separate' && renderSeparateCharts()}
 
                 {viewMode === 'combined' && selectedColumns.length > 0 && <SummaryCards />}
-                {(viewMode === 'separate' || viewMode === 'single') && <InsightsPanel />}
+                {viewMode === 'separate' && <InsightsPanel />}
             </div>
         </Box>
     );
