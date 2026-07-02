@@ -263,7 +263,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const [selectedXVars, setSelectedXVars] = useState([]);
   const [selectedYVars, setSelectedYVars] = useState([]);
   const [activePairs, setActivePairs] = useState([]);
-  const [datasetView, setDatasetView] = useState("both");
+  const [datasetView, setDatasetView] = useState("combined");
   const [showInsights, setShowInsights] = useState(false);
   const [showSummaryCards, setShowSummaryCards] = useState(false);
   const svgRef = useRef(null);
@@ -1693,12 +1693,15 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       <Collapse in={showSummaryCards} timeout={300} easing="ease-in-out">
         <CardContent sx={{ p: 3 }}>
           <Grid container spacing={2}>
-            {[
-              { label: "Total Points", value: allPoints.length, sub: `${withProductPoints.length} post, ${withoutProductPoints.length} pre`, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', icon: <AnalyticsIcon sx={{ mr: 1, fontSize: 20 }} /> },
-              { label: "Active Pairs", value: activePairs.length, sub: `out of ${allPairs.length} total pairs`, gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', icon: <TrendingUpIcon sx={{ mr: 1, fontSize: 20 }} /> },
-              { label: "X Variables", value: selectedXVars.length, sub: "selected for analysis", gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', icon: <BarChartIcon sx={{ mr: 1, fontSize: 20 }} /> },
-              { label: "Y Variables", value: selectedYVars.length, sub: "selected for analysis", gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', icon: <InfoIcon sx={{ mr: 1, fontSize: 20 }} /> },
-            ].map(({ label, value, sub, gradient, icon }) => (
+            {(() => {
+              const datasetCountsSummary = Object.entries(datasetPointsByName || {}).map(([name, pts]) => `${datasetLabels[name] || name}: ${pts.length}`).join(' | ');
+              return [
+                { label: "Total Points", value: allPoints.length, sub: datasetCountsSummary || 'No data', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', icon: <AnalyticsIcon sx={{ mr: 1, fontSize: 20 }} /> },
+                { label: "Active Pairs", value: activePairs.length, sub: `out of ${allPairs.length} total pairs`, gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', icon: <TrendingUpIcon sx={{ mr: 1, fontSize: 20 }} /> },
+                { label: "X Variables", value: selectedXVars.length, sub: "selected for analysis", gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', icon: <BarChartIcon sx={{ mr: 1, fontSize: 20 }} /> },
+                { label: "Y Variables", value: selectedYVars.length, sub: "selected for analysis", gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', icon: <InfoIcon sx={{ mr: 1, fontSize: 20 }} /> },
+              ];
+            })().map(({ label, value, sub, gradient, icon }) => (
               <Grid item xs={12} sm={6} md={3} key={label}>
                 <Card sx={{ height: '100%', background: gradient, color: 'white' }}>
                   <CardContent sx={{ p: 2 }}>
@@ -1910,10 +1913,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     );
   };
 
-  const showWithoutProduct = (datasetView === "both" || datasetView === "withoutProduct") && withoutProductPoints.length > 0;
-  const showWithProduct = (datasetView === "both" || datasetView === "withProduct") && withProductPoints.length > 0;
-  // Determine data availability from processed points (works for generic dataset names)
-  const hasData = (allPoints && allPoints.length > 0) || showWithProduct || showWithoutProduct;
+  const hasData = allPoints && allPoints.length > 0;
 
   // Get current pair label for display
   const currentPairLabel = currentPairKey ? currentPairKey.replace("__", " vs ") : "";
@@ -2020,9 +2020,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         <Grid item xs={12} sm={12} md={4}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'secondary.main' }}>Dataset View</Typography>
           <ToggleButtonGroup value={datasetView} exclusive onChange={(_, v) => { if (v) setDatasetView(v); }} color="primary" fullWidth sx={{ height: "48px", "& .MuiToggleButton-root": { textTransform: "none", px: 1.5, fontSize: "0.875rem", border: "1px solid", borderColor: "primary.main", "&.Mui-selected": { backgroundColor: "primary.main", color: "white", "&:hover": { backgroundColor: "primary.dark" } } } }}>
-            <ToggleButton value="both">Both</ToggleButton>
-            <ToggleButton value="withoutProduct">Without Product</ToggleButton>
-            <ToggleButton value="withProduct">With Product</ToggleButton>
+            <ToggleButton value="combined">Combined</ToggleButton>
+            <ToggleButton value="both">Sheets</ToggleButton>
           </ToggleButtonGroup>
         </Grid>
       </Grid>
