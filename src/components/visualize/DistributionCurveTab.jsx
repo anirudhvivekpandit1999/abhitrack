@@ -1235,6 +1235,37 @@ const DistributionCurveTab = ({
 
                     <ColorLegendBlock columns={selectedColumns} />
 
+                    {/* Logo at top of chart */}
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 1
+                    }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            Distribution Chart
+                        </Typography>
+                        <Box sx={{
+                            display: 'flex', alignItems: 'center', gap: 1,
+                            background: 'rgba(255,255,255,0.95)',
+                            padding: '4px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(0,0,0,0.1)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        }}>
+                            <img src={logo} alt="Abhitech Logo" style={{
+                                width: '28px', height: '28px',
+                                objectFit: 'contain', borderRadius: '50%'
+                            }} />
+                            <Box>
+                                <div style={{ fontSize: '9px', color: '#666', lineHeight: 1 }}>Powered by</div>
+                                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#1976d2', lineHeight: 1.2 }}>
+                                    Abhitech's AbhiStat
+                                </div>
+                            </Box>
+                        </Box>
+                    </Box>
+
                     <div ref={combinedChartRef} className="abhitech-plot-area" style={{ width: '100%', height: isMobile ? 340 : isTablet ? 390 : 460, position: 'relative' }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <ComposedChart data={combinedChartData} margin={{ top: 10, right: 70, left: 20, bottom: 70 }}>
@@ -1259,7 +1290,7 @@ const DistributionCurveTab = ({
                                 {bars}
                             </ComposedChart>
                         </ResponsiveContainer>
-                        <WatermarkContent />
+                        
                     </div>
                 </CardContent>
             </Card>
@@ -1298,6 +1329,34 @@ const DistributionCurveTab = ({
                             <MuiTooltip title="Download as PNG">
                                 <Button variant="outlined" color="primary" onClick={() => downloadChartAsPNG(chartRef, title)} startIcon={<DownloadIcon />} size="small" sx={{ textTransform: 'none', height: 32 }}>Download PNG</Button>
                             </MuiTooltip>
+                        </Box>
+                    </Box>
+
+                    {/* Logo at top */}
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        mb: 1
+                    }}>
+                        <Box sx={{
+                            display: 'flex', alignItems: 'center', gap: 1,
+                            background: 'rgba(255,255,255,0.95)',
+                            padding: '4px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(0,0,0,0.1)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        }}>
+                            <img src={logo} alt="Abhitech Logo" style={{
+                                width: '28px', height: '28px',
+                                objectFit: 'contain', borderRadius: '50%'
+                            }} />
+                            <Box>
+                                <div style={{ fontSize: '9px', color: '#666', lineHeight: 1 }}>Powered by</div>
+                                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#1976d2', lineHeight: 1.2 }}>
+                                    Abhitech's AbhiStat
+                                </div>
+                            </Box>
                         </Box>
                     </Box>
 
@@ -1341,7 +1400,7 @@ const DistributionCurveTab = ({
                                 />
                             </ComposedChart>
                         </ResponsiveContainer>
-                        <WatermarkContent />
+                        
                     </div>
                 </CardContent>
             </Card>
