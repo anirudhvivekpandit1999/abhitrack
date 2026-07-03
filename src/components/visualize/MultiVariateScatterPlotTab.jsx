@@ -1477,7 +1477,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               panelGroup.select(`.grid-y-${sanitized}`).call(d3.axisLeft(newY).ticks(4).tickSize(-plotWidth).tickFormat(""));
             });
           }
-          plotGroup.select(".x-axis").call(d3.axisBottom(newX).tickFormat(d => formatAxisValue(d)));
         });
 
       zoomRef.current = zoom;
@@ -1486,9 +1485,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         .style("fill", "none").style("pointer-events", "all")
         .call(zoom);
       zoomRectRef.current = zoomRect.node();
-
-      plotGroup.append("g").attr("class", "x-axis").attr("transform", `translate(0,${plotHeight})`).call(d3.axisBottom(xScale).tickFormat(d => formatAxisValue(d)));
-      plotGroup.append("g").attr("class", "y-axis").style("display", "none");
     } else {
       drawSinglePanel();
     }
