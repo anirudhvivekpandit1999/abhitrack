@@ -590,9 +590,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   }, [datasetColors, visibleDatasetNames]);
 
   const getPointColor = useCallback((pairKey, dataset) => {
-    // Use the pair base color so parameters (pairs) are visually distinct.
-    return getPairBaseColor(pairKey);
-  }, [getPairBaseColor]);
+    // Use the pair's dataset-specific shade so overlapping sheets remain visually
+    // distinguishable instead of collapsing into one indistinct blob of dots.
+    return getPairDatasetColor(pairKey, dataset);
+  }, [getPairDatasetColor]);
 
   const getTrendLineColor = useCallback((pairKey, dataset) => {
     // Use the pair base color for trend lines (parameter color)
@@ -1081,14 +1082,21 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     if (!svgRef.current || !containerRef.current) return;
     const width = containerRef.current.offsetWidth || 700;
     const height = 500;
-    const margin = { top: 80, right: 60, bottom: 80, left: 80 };
+    const baseMargin = { top: 80, right: 60, bottom: 80, left: 80 };
     d3.select(svgRef.current).selectAll("*").remove();
     const svg = d3.select(svgRef.current).attr("width", width).attr("height", height);
+
+    const activePairObjects = allPairs.filter(p => activePairs.includes(p.key));
+    // Dual Y-axis mode removed — it produced overlapping/misleading area fills and
+    // axis-label collisions when two Y variables with unrelated ranges shared one
+    // panel. All pairs now render on a single shared Y-axis instead.
+    const useDualYAxis = false;
+    const useStackedPanels = datasetView === "individual" && activePairObjects.length > 1;
+    // Increase left margin slightly when stacked/individual panels are used
+    const extraLeft = useStackedPanels ? 40 : 0;
+    const margin = { ...baseMargin, left: baseMargin.left + extraLeft };
     const plotWidth = width - margin.left - margin.right;
     const plotHeight = height - margin.top - margin.bottom;
-    const activePairObjects = allPairs.filter(p => activePairs.includes(p.key));
-    const useDualYAxis = selectedXVars.length === 1 && selectedYVars.length === 2;
-    const useStackedPanels = datasetView === "individual" && activePairObjects.length > 1;
     const { xMin, xMax, yMin, yMax } = getEffectiveRanges();
     const xScale = d3.scaleLinear().domain([xMin, xMax]).range([0, plotWidth]);
     const plotGroup = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`).attr("class", "plot-group");
@@ -1098,8 +1106,15 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
     const gridGroup = plotGroup.append("g").attr("class", "grid-group").attr("clip-path", "url(#plot-clip)");
     const tickCount = 8;
+    const PANEL_GAP = 40; // px of breathing room between stacked panels so axis labels don't collide
     const panelCount = useStackedPanels ? activePairObjects.length : 1;
-    const panelHeight = plotHeight / panelCount;
+    const panelHeight = useStackedPanels
+      ? (plotHeight - PANEL_GAP * (panelCount - 1)) / panelCount
+      : plotHeight;
+    // One tick roughly every 35–40px of panel height, with sane min/max bounds
+    const yTickCount = useStackedPanels
+      ? Math.max(2, Math.min(5, Math.floor(panelHeight / 35)))
+      : 8;
 
     const originalXScale = xScale.copy();
     let originalXScalePerPair = {};
@@ -1197,6 +1212,9 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         .style("stroke-width", 0.75);
     };
 
+    // Toggle: use canvas for plotting points to avoid SVG duplicates and improve performance
+    //const useCanvasForPoints = false; // set false so SVG points are visible
+
     const drawLinesAndAreas = (group, points, xSc, ySc, datasetColor, pairColor, dataset, pairKey) => {
       if (!points || points.length < 2) return;
 
@@ -1227,17 +1245,18 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           .append("rect").attr("x", 0).attr("y", 0).attr("width", plotWidth).attr("height", panelHeight);
         
         const panelClass = sanitizeClassName(pair.key);
-        const panelGroup = plotGroup.append("g").attr("transform", `translate(0,${index * panelHeight})`).attr("class", `panel-${panelClass}`);
+        const panelGroup = plotGroup.append("g")
+          .attr("transform", `translate(0,${index * (panelHeight + PANEL_GAP)})`)
+          .attr("class", `panel-${panelClass}`);
         const clippedGroup = panelGroup.append("g").attr("clip-path", `url(#${panelClipId})`);
 
         if (showLines || showArea || datasetView === "individual") {
           allDatasets.forEach((ds) => {
             if (!visibleDatasetNames.includes(ds.name)) return;
             const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-            drawLinesAndAreas(clippedGroup, pts, xScalePair, yScale, getPairDatasetColor(pair.key, ds.name), getPairBaseColor(pair.key), ds.name, pair.key);
-            if (datasetView === "individual") {
-              drawScatterPoints(clippedGroup, pts, xScalePair, yScale, getPointColor(pair.key, ds.name), 3, 0.8);
-            }
+            const datasetColorForDraw = (datasetView === 'individual' && scaleMode === 'perPair') ? getPairDatasetColor(pair.key, ds.name) : getDatasetColor(ds.name);
+            drawLinesAndAreas(clippedGroup, pts, xScalePair, yScale, datasetColorForDraw, getPairBaseColor(pair.key), ds.name, pair.key);
+            // Points are rendered exclusively by the canvas layer (updateCanvasPoints) to avoid duplicate/desynced dots.
           });
         }
 
@@ -1245,18 +1264,20 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           panelGroup.append("g").attr("class", `grid-x-${panelClass}`).attr("transform", `translate(0,${panelHeight})`)
             .call(d3.axisBottom(xScalePair).ticks(4).tickSize(-panelHeight).tickFormat(""))
             .selectAll("line").style("stroke-dasharray", "3,3").style("opacity", 0.15);
+    
           panelGroup.append("g").attr("class", `grid-y-${panelClass}`)
-            .call(d3.axisLeft(yScale).ticks(4).tickSize(-plotWidth).tickFormat(""))
+            .call(d3.axisLeft(yScale).ticks(yTickCount).tickSize(-plotWidth).tickFormat(""))
             .selectAll("line").style("stroke-dasharray", "3,3").style("opacity", 0.15);
         }
 
         panelGroup.append("g").attr("class", `y-axis y-axis-${panelClass}`)
-          .call(d3.axisLeft(yScale).tickFormat(d => formatAxisValue(d)));
+          .call(d3.axisLeft(yScale).ticks(yTickCount).tickFormat(d => formatAxisValue(d)).tickPadding(6))
+          .selectAll("text").style("font-size", "11px");
 
         panelGroup.append("g").attr("class", `x-axis x-axis-${panelClass}`).attr("transform", `translate(0,${panelHeight})`)
-          .call(d3.axisBottom(xScalePair).tickFormat(d => formatAxisValue(d)));
+          .call(d3.axisBottom(xScalePair).tickFormat(d => formatAxisValue(d))).selectAll("text").style("font-size", "11px");
 
-        panelGroup.append("text").attr("x", 0).attr("y", 14)
+        panelGroup.append("text").attr("x", 6).attr("y", 14)
           .style("font-size", "12px").style("font-weight", "600").style("fill", "#333")
           .text(`${pair.x} vs ${pair.y}`);
 
@@ -1269,7 +1290,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
     const drawSinglePanel = () => {
       // Check if we should use dual Y-axis (one X variable + exactly 2 Y variables)
-      const useDualYAxis = selectedXVars.length === 1 && selectedYVars.length === 2;
+      const useDualYAxis = false;
 
       if (useDualYAxis) {
         // Dual Y-axis mode: left for first Y var, right for second Y var
@@ -1294,23 +1315,18 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         // Add lines and areas first (so they are behind points)
         if (showLines || showArea || datasetView === "individual") {
           const pairsToDraw = (scaleMode === "perPair" && currentPairKey) ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
-          
-          for (const pair of pairsToDraw) {
-            if (!activePairs.includes(pair.key)) continue;
-            const isY1 = pair.y === yVar1;
-            const yScale = isY1 ? yScaleLeft : yScaleRight;
-            
-            // Draw lines/areas for each visible dataset
+          const activePairsToDraw = pairsToDraw.filter(p => activePairs.includes(p.key));
+          // Area fill only makes sense when one pair owns the shared scale — with
+          // several pairs combined on one panel, overlapping fills blend into an
+          // unreadable blob, so only shade area when exactly one pair is drawn here.
+          const showAreaInThisPanel = showArea && activePairsToDraw.length <= 1;
+
+          for (const pair of activePairsToDraw) {
             allDatasets.forEach((ds) => {
               if (!visibleDatasetNames.includes(ds.name)) return;
               const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-                // In combined view use dataset global color for shading so legend matches;
-                // in individual (stacked) view use pair-specific dataset variant.
-                const datasetColorForDraw = datasetView === 'individual' ? getPairDatasetColor(pair.key, ds.name) : getDatasetColor(ds.name);
-                drawLinesAndAreas(plotGroup, pts, xScale, yScale, datasetColorForDraw, getPairBaseColor(pair.key), ds.name, pair.key);
-              if (datasetView === "individual") {
-                drawScatterPoints(plotGroup, pts, xScale, yScale, getPointColor(pair.key, ds.name), 3, 0.8);
-              }
+              const datasetColorForDraw = (datasetView === 'individual' && scaleMode === 'perPair') ? getPairDatasetColor(pair.key, ds.name) : getDatasetColor(ds.name);
+              drawLinesAndAreas(plotGroup, pts, xScale, yScale, datasetColorForDraw, getPairBaseColor(pair.key), ds.name, pair.key, showAreaInThisPanel);
             });
           }
         }
@@ -1384,10 +1400,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             allDatasets.forEach((ds) => {
               if (!visibleDatasetNames.includes(ds.name)) return;
               const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              const datasetColorForDraw = datasetView === 'individual' ? getPairDatasetColor(pair.key, ds.name) : getDatasetColor(ds.name);
+              const datasetColorForDraw = (datasetView === 'individual' && scaleMode === 'perPair') ? getPairDatasetColor(pair.key, ds.name) : getDatasetColor(ds.name);
               drawLinesAndAreas(plotGroup, pts, xScale, yScale, datasetColorForDraw, getPairBaseColor(pair.key), ds.name, pair.key);
               if (datasetView === "individual") {
-                drawScatterPoints(plotGroup, pts, xScale, yScale, getPointColor(pair.key, ds.name), 3, 0.8);
+                if (!useCanvasForPoints) drawScatterPoints(plotGroup, pts, xScale, yScale, getPointColor(pair.key, ds.name), chartSettings.pointSize || 3, chartSettings.opacity || 0.85);
               }
             });
           }
@@ -1452,29 +1468,56 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           const { transform } = event;
           setCurrentTransform(transform);
           const newX = transform.rescaleX(originalXScale);
+  
           activePairObjects.forEach((pair) => {
             const sanitized = sanitizeClassName(pair.key);
             const yScale = originalYScales[pair.key];
             const newY = transform.rescaleY(yScale);
-            plotGroup.select(`.y-axis-${sanitized}`).call(d3.axisLeft(newY).tickFormat(d => formatAxisValue(d)));
+            const origX = (originalXScalePerPair && originalXScalePerPair[pair.key]) ? originalXScalePerPair[pair.key] : originalXScale;
+            const newXForPair = transform.rescaleX(origX);
+            const panelGroup = plotGroup.selectAll('g').filter(function() {
+              return this.classList && this.classList.contains(`panel-${sanitized}`);
+            });
+            const panelClipId = `panel-clip-${activePairObjects.findIndex(p => p.key === pair.key)}`;
+
+            plotGroup.selectAll('g').filter(function() {
+              return this.classList && this.classList.contains(`y-axis-${sanitized}`);
+            }).call(d3.axisLeft(newY).ticks(yTickCount).tickFormat(d => formatAxisValue(d)));
+
+            // Redraw lines and areas with the transformed scale — previously these were
+            // only ever drawn once at mount and never updated on zoom/pan, so they
+            // stayed frozen while canvas-rendered points (which do use currentTransform)
+            // moved independently, causing them to visually separate after any zoom.
+            panelGroup.selectAll(".connecting-line, .area-under-line").remove();
+            if (showLines || showArea) {
+              allDatasets.forEach((ds) => {
+                if (!visibleDatasetNames.includes(ds.name)) return;
+                const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
+                const datasetColorForDraw = (datasetView === 'individual' && scaleMode === 'perPair') ? getPairDatasetColor(pair.key, ds.name) : getDatasetColor(ds.name);
+                const clippedGroup = panelGroup.select(`g[clip-path="url(#${panelClipId})"]`);
+                drawLinesAndAreas(clippedGroup, pts, newXForPair, newY, datasetColorForDraw, getPairBaseColor(pair.key), ds.name, pair.key);
+              });
+            }
+
             plotGroup.selectAll(`.trend-line-${sanitized}`).remove();
             if (chartSettings.showTrendLines) {
-              const panelGroup = plotGroup.select(`.panel-${pair.key}`);
-              // compute panel-specific X scale after transform
-              const origX = (originalXScalePerPair && originalXScalePerPair[pair.key]) ? originalXScalePerPair[pair.key] : originalXScale;
-              const newXForPair = transform.rescaleX(origX);
-              const panelClipId = `panel-clip-${activePairObjects.findIndex(p => p.key === pair.key)}`;
               drawPairTrendLines(pair, newXForPair, newY, panelGroup, panelClipId);
             }
           });
           if (chartSettings.showGrid) {
             activePairObjects.forEach((pair) => {
               const sanitized = sanitizeClassName(pair.key);
-              const panelGroup = plotGroup.select(`.panel-${sanitized}`);
+              const panelGroup = plotGroup.selectAll('g').filter(function() {
+                return this.classList && this.classList.contains(`panel-${sanitized}`);
+              });
               const yScale = originalYScales[pair.key];
               const newY = transform.rescaleY(yScale);
-              panelGroup.select(`.grid-x-${sanitized}`).call(d3.axisBottom(newX).ticks(4).tickSize(-panelHeight).tickFormat(""));
-              panelGroup.select(`.grid-y-${sanitized}`).call(d3.axisLeft(newY).ticks(4).tickSize(-plotWidth).tickFormat(""));
+              panelGroup.selectAll('g').filter(function() {
+                return this.classList && this.classList.contains(`grid-x-${sanitized}`);
+              }).call(d3.axisBottom(newX).ticks(4).tickSize(-panelHeight).tickFormat(""));
+              panelGroup.selectAll('g').filter(function() {
+                return this.classList && this.classList.contains(`grid-y-${sanitized}`);
+              }).call(d3.axisLeft(newY).ticks(yTickCount).tickSize(-plotWidth).tickFormat(""));
             });
           }
         });
@@ -1492,30 +1535,32 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     plotGroup.append("text").attr("x", plotWidth / 2).attr("y", plotHeight + 40)
       .style("text-anchor", "middle").style("font-size", "14px").style("font-weight", "500").style("fill", "#666")
       .text(scaleMode === "perPair" && currentPairKey ? `X: ${currentPairKey.split("__")[0]}` : scaleMode === "perVariable" ? "X Variables (Per-Variable Scale)" : "X Variables (Dynamic Scale)");
-    plotGroup.append("text").attr("transform", "rotate(-90)").attr("x", -plotHeight / 2).attr("y", -50)
-      .style("text-anchor", "middle").style("font-size", "14px").style("font-weight", "500").style("fill", "#666")
-      .text(() => {
-        if (scaleMode === "perPair" && currentPairKey) {
-          return `Y: ${currentPairKey.split("__")[1]}`;
-        } else if (useDualYAxis) {
-          return `Y: ${selectedYVars[0]} (Left) / ${selectedYVars[1]} (Right)`;
-        } else if (scaleMode === "perVariable") {
-          return "Y Variables (Per-Variable Scale)";
-        } else {
-          return "Y Variables (Dynamic Scale)";
-        }
-      });
+    // Y-axis label: move outward and reduce font size to avoid overlapping ticks/labels
+    plotGroup.append("text").attr("transform", "rotate(-90)").attr("x", -plotHeight / 2).attr("y", -60)
+      .style("text-anchor", "middle").style("font-size", "13px").style("font-weight", "500").style("fill", "#666")
+    .text(() => {
+      if (datasetView === 'individual' && useStackedPanels) {
+        return "Y Variables (Individual Panels)";
+      } else if (scaleMode === "perPair" && currentPairKey) {
+        return `Y: ${currentPairKey.split("__")[1]}`;
+      } else if (scaleMode === "perVariable") {
+        return "Y Variables (Per-Variable Scale)";
+      } else {
+        return "Y Variables (Dynamic Scale)";
+      }
+    });
 
     svg.append("text").attr("x", width / 2).attr("y", 25).attr("text-anchor", "middle")
       .style("font-size", "18px").style("font-weight", "bold").style("fill", "#333")
       .text(() => {
         let title = "Multi-Variate Scatter Plot";
-        if (scaleMode === "perPair" && currentPairKey) {
+        if (datasetView === 'individual' && useStackedPanels) {
+          title += " — Individual Panels";
+        } else if (scaleMode === "perPair" && currentPairKey) {
           title += ` - ${currentPairKey.replace("__", " vs ")}`;
-        } else if (selectedYVars.length === 2 && !useStackedPanels) {
-          title += " (Dual Y-Axis)";
-        } else if (scaleMode === "global") {
-          title += " (Dynamic Scaling)";
+        } 
+        else if (scaleMode === "global") {
+          title += " (All Selected Pairs - Dynamic Scaling)";
         } else if (scaleMode === "perVariable") {
           title += " (Per-Variable Scaling)";
         }
@@ -1569,7 +1614,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     const plotWidth = width - margin.left - margin.right;
     const plotHeight = height - margin.top - margin.bottom;
     const activePairObjects = allPairs.filter(p => activePairs.includes(p.key));
-    const useDualYAxis = selectedXVars.length === 1 && selectedYVars.length === 2;
+    const useDualYAxis = false;
     const useStackedPanels = datasetView === "individual" && activePairObjects.length > 1;
     const { xMin, xMax, yMin, yMax } = getEffectiveRanges();
     const xScale = d3.scaleLinear().domain([xMin, xMax]).range([0, plotWidth]);
@@ -1580,8 +1625,9 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     let panelHeight = plotHeight;
     let pairIndexMap = {};
 
+    const PANEL_GAP = 40;
     if (useStackedPanels) {
-      panelHeight = plotHeight / activePairObjects.length;
+      panelHeight = (plotHeight - PANEL_GAP * (activePairObjects.length - 1)) / activePairObjects.length;
       activePairObjects.forEach((pair, index) => {
         const yDomain = perPairAutoRanges[pair.key] || { yMin: 0, yMax: 1 };
         const yScale = d3.scaleLinear().domain([yDomain.yMin, yDomain.yMax]).range([panelHeight, 0]);
@@ -1666,7 +1712,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         const pairIndex = pairIndexMap[d.pairKey];
         const yScale = transformedYScales[d.pairKey];
         if (pairIndex == null || !yScale) continue;
-        yPos = yScale(d.y) + pairIndex * panelHeight;
+        yPos = yScale(d.y) + pairIndex * (panelHeight + PANEL_GAP);
       } else {
         const yScale = transformedYScales.single;
         if (!yScale) continue;
@@ -1813,7 +1859,20 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         ctx.fillStyle = 'black';
         ctx.font = `${16 * scaleFactor}px Arial`;
         ctx.textAlign = 'center';
-        ctx.fillText(`Multi-Variate Scatter Plot (${scaleMode === "perPair" && currentPairKey ? currentPairKey.replace("__", " vs ") : activePairs.length + " pairs"})`, canvas.width / 2, 30 * scaleFactor);
+        // Build the export title matching the SVG title logic
+        let exportTitle = 'Multi-Variate Scatter Plot';
+        if (datasetView === 'individual' && activePairObjects && activePairObjects.length > 1) {
+          exportTitle += ' — Individual Panels';
+        } else if (scaleMode === "perPair" && currentPairKey) {
+          exportTitle += ` - ${currentPairKey.replace("__", " vs ")}`;
+        } else if (scaleMode === "global") {
+          exportTitle += ` (All Selected Pairs - Dynamic Scaling)`;
+        } else if (scaleMode === "perVariable") {
+          exportTitle += ` (Per-Variable Scaling)`;
+        } else {
+          exportTitle += ` (${activePairs.length} pairs)`;
+        }
+        ctx.fillText(exportTitle, canvas.width / 2, 30 * scaleFactor);
         ctx.drawImage(img, 0, 50 * scaleFactor, svgRect.width * scaleFactor, svgRect.height * scaleFactor);
         // Draw canvas points on top of SVG
         if (canvasRef.current) {
@@ -2118,12 +2177,14 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     // Choose a context pair key for legend shading when in individual/stacked view
     const contextPairKey = (datasetView === 'individual' && activePairs.length > 0) ? activePairs[0] : (scaleMode === 'perPair' && currentPairKey ? currentPairKey : null);
 
+    const activePairObjects = allPairs.filter(p => activePairs.includes(p.key));
+    const useStackedPanels = datasetView === "individual" && activePairObjects.length > 1;
     const datasetLegend = allDatasets.map((dataset, idx) => ({
       key: `dataset-${dataset.name}`,
       name: dataset.name,
       label: datasetLabels[dataset.name] || dataset.name,
-      // Always use the global dataset color in the legend so Combined and Individual match
-      color: getDatasetColor(dataset.name),
+      // If showing a single pair in per-pair Individual view, use the pair-specific dataset variant so swatch matches area
+      color: (datasetView === 'individual' && scaleMode === 'perPair' && currentPairKey && !useStackedPanels) ? getPairDatasetColor(currentPairKey, dataset.name) : getDatasetColor(dataset.name),
       visible: visibleDatasetNames.includes(dataset.name),
     }));
 
@@ -2163,6 +2224,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             ))}
           </Box>
         )}
+        
       </Box>
     );
   };
@@ -2469,8 +2531,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                       <canvas ref={canvasRef} width={containerRef.current?.offsetWidth || 700} height={500} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '500px', pointerEvents: 'none' }} />
                       <div
                         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '500px', zIndex: 10, pointerEvents: 'auto', background: 'transparent', cursor: isDragging ? 'grabbing' : 'grab' }}
-                        onWheel={(e) => { e.preventDefault(); if (zoomRef.current && zoomRectRef.current) { const zoomRect = d3.select(zoomRectRef.current); const rect = zoomRectRef.current.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top; const scale = e.deltaY > 0 ? 0.9 : 1.1; zoomRect.call(zoomRef.current.scaleBy, scale, [x, y]); } }}
-                        onMouseDown={(e) => { if (e.button === 0 && zoomRef.current && zoomRectRef.current) { setIsDragging(true); setDragStart({ x: e.clientX, y: e.clientY }); e.preventDefault(); } }}
+                        onWheel={(e) => { if (e.cancelable) e.preventDefault(); if (zoomRef.current && zoomRectRef.current) { const zoomRect = d3.select(zoomRectRef.current); const rect = zoomRectRef.current.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top; const scale = e.deltaY > 0 ? 0.9 : 1.1; zoomRect.call(zoomRef.current.scaleBy, scale, [x, y]); } }}
+                        onMouseDown={(e) => { if (e.button === 0 && zoomRef.current && zoomRectRef.current) { setIsDragging(true); setDragStart({ x: e.clientX, y: e.clientY }); if (e.cancelable) e.preventDefault(); } }}
                         onMouseMove={(e) => { handleCanvasMouseMove(e); if (isDragging && zoomRef.current && zoomRectRef.current) { const dx = e.clientX - dragStart.x; const dy = e.clientY - dragStart.y; if (Math.abs(dx) > 2 || Math.abs(dy) > 2) { const zoomRect = d3.select(zoomRectRef.current); const ct = d3.zoomTransform(zoomRectRef.current); const newTransform = ct.translate(dx / ct.k, dy / ct.k); zoomRect.call(zoomRef.current.transform, newTransform); setDragStart({ x: e.clientX, y: e.clientY }); } } }}
                         onMouseUp={() => setIsDragging(false)}
                         onMouseLeave={() => { setIsDragging(false); handleCanvasMouseOut(); }}
