@@ -96,6 +96,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
   const zoomRef = useRef(null)
   const plotGroupRef = useRef(null)
   const zoomRectRef = useRef(null)
+  const drawFrameRef = useRef(null)
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, data: null })
   const pageRef = useRef(null)
 
@@ -207,7 +208,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
     setFilterMax('')
   }
 
-  const processScatterData = (data, xKey, yKey) => {
+  const processScatterData = useCallback((data, xKey, yKey) => {
     if (!data || !Array.isArray(data) || data.length === 0) {
       return []
     }
@@ -220,37 +221,35 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
     const isXDateTime = isDateTimeColumn(allData, xKey)
     const isYDateTime = isDateTimeColumn(allData, yKey)
 
-    const processed = data
-      .filter((row) => row && typeof row === "object")
-      .map((row, index) => {
-        const xVal = row[xKey]
-        const yVal = row[yKey]
+    const processed = []
+    
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i]
+      if (!row || typeof row !== "object") continue
+      
+      const xVal = row[xKey]
+      const yVal = row[yKey]
 
-        if (xVal === undefined || yVal === undefined) {
-          return null
-        }
+      if (xVal === undefined || yVal === undefined) continue
 
-        const parsedX = parseValue(xVal, isXDateTime)
-        const parsedY = parseValue(yVal, isYDateTime)
+      const parsedX = parseValue(xVal, isXDateTime)
+      const parsedY = parseValue(yVal, isYDateTime)
 
-        if (parsedX === null || parsedY === null) {
-          return null
-        }
+      if (parsedX === null || parsedY === null) continue
 
-        return {
-          x: parsedX,
-          y: parsedY,
-          originalX: xVal,
-          originalY: yVal,
-          index: index,
-          isXDateTime,
-          isYDateTime,
-        }
+      processed.push({
+        x: parsedX,
+        y: parsedY,
+        originalX: xVal,
+        originalY: yVal,
+        index: i,
+        isXDateTime,
+        isYDateTime,
       })
-      .filter((item) => item !== null)
+    }
 
     return processed
-  }
+  }, [withProductData, withoutProductData, isDateTimeColumn, parseValue])
 
   const withProductScatterData = useMemo(() => {
     return processScatterData(filteredWithProductData, selectedIndependentVar, selectedDependentVar)
@@ -260,27 +259,37 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
     return processScatterData(filteredWithoutProductData, selectedIndependentVar, selectedDependentVar)
   }, [filteredWithoutProductData, selectedIndependentVar, selectedDependentVar])
 
-  const calculateCorrelation = (data) => {
+  const calculateCorrelation = useCallback((data) => {
     if (!data || data.length < 2) return null
 
     const n = data.length
-    const sumX = data.reduce((sum, point) => sum + point.x, 0)
-    const sumY = data.reduce((sum, point) => sum + point.y, 0)
-    const sumXY = data.reduce((sum, point) => sum + point.x * point.y, 0)
-    const sumX2 = data.reduce((sum, point) => sum + point.x * point.x, 0)
-    const sumY2 = data.reduce((sum, point) => sum + point.y * point.y, 0)
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0
+    
+    for (let i = 0; i < data.length; i++) {
+      const point = data[i]
+      sumX += point.x
+      sumY += point.y
+      sumXY += point.x * point.y
+      sumX2 += point.x * point.x
+      sumY2 += point.y * point.y
+    }
 
     const numerator = n * sumXY - sumX * sumY
     const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY))
 
     return denominator === 0 ? 0 : numerator / denominator
-  }
+  }, [])
 
-  const detectOutliers = (data, threshold = 1.5) => {
+  const detectOutliers = useCallback((data, threshold = 1.5) => {
     if (!data || data.length < 4) return []
 
-    const xValues = data.map(d => d.x)
-    const yValues = data.map(d => d.y)
+    const xValues = []
+    const yValues = []
+    
+    for (let i = 0; i < data.length; i++) {
+      xValues.push(data[i].x)
+      yValues.push(data[i].y)
+    }
 
     const xQ1 = d3.quantile(xValues, 0.25)
     const xQ3 = d3.quantile(xValues, 0.75)
@@ -294,20 +303,31 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
     const yLowerBound = yQ1 - threshold * yIQR
     const yUpperBound = yQ3 + threshold * yIQR
 
-    return data.filter(point =>
-      point.x < xLowerBound || point.x > xUpperBound ||
-      point.y < yLowerBound || point.y > yUpperBound
-    )
-  }
+    const outliers = []
+    for (let i = 0; i < data.length; i++) {
+      const point = data[i]
+      if (point.x < xLowerBound || point.x > xUpperBound ||
+          point.y < yLowerBound || point.y > yUpperBound) {
+        outliers.push(point)
+      }
+    }
+    
+    return outliers
+  }, [])
 
-  const calculateRegressionStats = (data) => {
+  const calculateRegressionStats = useCallback((data) => {
     if (!data || data.length < 2) return null
 
     const n = data.length
-    const sumX = data.reduce((sum, point) => sum + point.x, 0)
-    const sumY = data.reduce((sum, point) => sum + point.y, 0)
-    const sumXY = data.reduce((sum, point) => sum + point.x * point.y, 0)
-    const sumX2 = data.reduce((sum, point) => sum + point.x * point.x, 0)
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0
+    
+    for (let i = 0; i < data.length; i++) {
+      const point = data[i]
+      sumX += point.x
+      sumY += point.y
+      sumXY += point.x * point.y
+      sumX2 += point.x * point.x
+    }
 
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
     const intercept = (sumY - slope * sumX) / n
@@ -320,7 +340,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
       equation: `y = ${slope.toFixed(3)}x + ${intercept.toFixed(3)}`,
       rSquaredFormatted: (rSquared * 100).toFixed(1)
     }
-  }
+  }, [calculateCorrelation])
 
   const assessDataQuality = (data) => {
     if (!data || data.length === 0) return null
@@ -438,6 +458,14 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
   const withoutProductOutliers = useMemo(() => {
     return detectOutliers(withoutProductScatterData)
   }, [withoutProductScatterData, filterColumn, filterMin, filterMax])
+
+  const withProductOutlierLookup = useMemo(() => {
+    return new Set((withProductOutliers || []).map((outlier) => `${outlier.x}-${outlier.y}`))
+  }, [withProductOutliers])
+
+  const withoutProductOutlierLookup = useMemo(() => {
+    return new Set((withoutProductOutliers || []).map((outlier) => `${outlier.x}-${outlier.y}`))
+  }, [withoutProductOutliers])
 
   const withProductRegression = useMemo(() => {
     return calculateRegressionStats(withProductScatterData)
@@ -925,34 +953,26 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
         .attr("cx", (d) => xScale(d.x))
         .attr("cy", (d) => yScale(d.y))
         .attr("r", (d) => {
-          if (showOutliers && withoutProductOutliers.some(outlier =>
-            outlier.x === d.x && outlier.y === d.y
-          )) {
+          if (showOutliers && withoutProductOutlierLookup.has(`${d.x}-${d.y}`)) {
             return pointSize * 1.5
           }
           return pointSize
         })
         .style("fill", (d) => {
-          if (showOutliers && withoutProductOutliers.some(outlier =>
-            outlier.x === d.x && outlier.y === d.y
-          )) {
+          if (showOutliers && withoutProductOutlierLookup.has(`${d.x}-${d.y}`)) {
             return "#ff9800"
           }
           return scatterColors.withoutProduct
         })
         .style("fill-opacity", opacity)
         .style("stroke", (d) => {
-          if (showOutliers && withoutProductOutliers.some(outlier =>
-            outlier.x === d.x && outlier.y === d.y
-          )) {
+          if (showOutliers && withoutProductOutlierLookup.has(`${d.x}-${d.y}`)) {
             return "#ff9800"
           }
           return scatterColors.withoutProduct
         })
         .style("stroke-width", (d) => {
-          if (showOutliers && withoutProductOutliers.some(outlier =>
-            outlier.x === d.x && outlier.y === d.y
-          )) {
+          if (showOutliers && withoutProductOutlierLookup.has(`${d.x}-${d.y}`)) {
             return 2
           }
           return 1
@@ -970,9 +990,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
         })
         .on("mouseout", function () {
           d3.select(this).attr("r", (d) => {
-            if (showOutliers && withoutProductOutliers.some(outlier =>
-              outlier.x === d.x && outlier.y === d.y
-            )) {
+            if (showOutliers && withoutProductOutlierLookup.has(`${d.x}-${d.y}`)) {
               return pointSize * 1.5
             }
             return pointSize
@@ -991,34 +1009,26 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
         .attr("cx", (d) => xScale(d.x))
         .attr("cy", (d) => yScale(d.y))
         .attr("r", (d) => {
-          if (showOutliers && withProductOutliers.some(outlier =>
-            outlier.x === d.x && outlier.y === d.y
-          )) {
+          if (showOutliers && withProductOutlierLookup.has(`${d.x}-${d.y}`)) {
             return pointSize * 1.5
           }
           return pointSize
         })
         .style("fill", (d) => {
-          if (showOutliers && withProductOutliers.some(outlier =>
-            outlier.x === d.x && outlier.y === d.y
-          )) {
+          if (showOutliers && withProductOutlierLookup.has(`${d.x}-${d.y}`)) {
             return "#ff9800"
           }
           return scatterColors.withProduct
         })
         .style("fill-opacity", opacity)
         .style("stroke", (d) => {
-          if (showOutliers && withProductOutliers.some(outlier =>
-            outlier.x === d.x && outlier.y === d.y
-          )) {
+          if (showOutliers && withProductOutlierLookup.has(`${d.x}-${d.y}`)) {
             return "#ff9800"
           }
           return scatterColors.withProduct
         })
         .style("stroke-width", (d) => {
-          if (showOutliers && withProductOutliers.some(outlier =>
-            outlier.x === d.x && outlier.y === d.y
-          )) {
+          if (showOutliers && withProductOutlierLookup.has(`${d.x}-${d.y}`)) {
             return 2
           }
           return 1
@@ -1036,9 +1046,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
         })
         .on("mouseout", function () {
           d3.select(this).attr("r", (d) => {
-            if (showOutliers && withProductOutliers.some(outlier =>
-              outlier.x === d.x && outlier.y === d.y
-            )) {
+            if (showOutliers && withProductOutlierLookup.has(`${d.x}-${d.y}`)) {
               return pointSize * 1.5
             }
             return pointSize
@@ -1084,20 +1092,39 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
     combinedInsights,
     withProductOutliers,
     withoutProductOutliers,
+    withProductOutlierLookup,
+    withoutProductOutlierLookup,
   ])
 
-  useEffect(() => {
-    drawScatterPlot()
+  const scheduleDraw = useCallback(() => {
+    if (drawFrameRef.current) {
+      cancelAnimationFrame(drawFrameRef.current)
+    }
+
+    drawFrameRef.current = window.requestAnimationFrame(() => {
+      drawScatterPlot()
+      drawFrameRef.current = null
+    })
   }, [drawScatterPlot])
 
   useEffect(() => {
+    scheduleDraw()
+
+    return () => {
+      if (drawFrameRef.current) {
+        cancelAnimationFrame(drawFrameRef.current)
+      }
+    }
+  }, [scheduleDraw])
+
+  useEffect(() => {
     const handleResize = () => {
-      drawScatterPlot()
+      scheduleDraw()
     }
 
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
-  }, [drawScatterPlot])
+  }, [scheduleDraw])
 
   const downloadChartAsPNG = () => {
     if (!svgRef.current) return

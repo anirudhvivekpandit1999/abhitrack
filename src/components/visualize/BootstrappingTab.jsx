@@ -153,7 +153,7 @@ const BootstrappingTab = ({
         };
     }, []);
 
-    // Run bootstrap analysis for all columns
+    // Run bootstrap analysis for all columns with chunking to prevent UI blocking
     const runFullBootstrapAnalysis = useCallback(async () => {
         if (!availableColumns.length || !withProductData.length || !withoutProductData.length) {
             return;
@@ -161,21 +161,27 @@ const BootstrappingTab = ({
         
         setIsLoading(true);
         
-        // Simulate async operation to keep UI responsive
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
         const significantResults = [];
         const nonSignificantResults = [];
         
-        for (const column of availableColumns) {
-            const result = performBootstrapAnalysis(withProductData, withoutProductData, column);
-            if (result) {
-                if (result.is_significant) {
-                    significantResults.push(result);
-                } else {
-                    nonSignificantResults.push(result);
+        // Process columns in chunks to keep UI responsive
+        const CHUNK_SIZE = 5;
+        for (let i = 0; i < availableColumns.length; i += CHUNK_SIZE) {
+            const chunk = availableColumns.slice(i, i + CHUNK_SIZE);
+            
+            for (const column of chunk) {
+                const result = performBootstrapAnalysis(withProductData, withoutProductData, column);
+                if (result) {
+                    if (result.is_significant) {
+                        significantResults.push(result);
+                    } else {
+                        nonSignificantResults.push(result);
+                    }
                 }
             }
+            
+            // Yield to main thread after each chunk
+            await new Promise(resolve => setTimeout(resolve, 0));
         }
         
         // Sort significant by absolute mean difference (highest impact first)

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TextField } from '@mui/material';
 
 const DebouncedTextField = ({
@@ -8,25 +8,46 @@ const DebouncedTextField = ({
   ...props
 }) => {
   const [localValue, setLocalValue] = useState(value);
+  const debounceRef = useRef(null);
 
   useEffect(() => {
     setLocalValue(value);
   }, [value]);
 
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
   const handleChange = (e) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
-    if (typeof onChange === 'function') {
-      onChange({ target: { value: newValue } });
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
     }
+
+    debounceRef.current = setTimeout(() => {
+      if (typeof onChange === 'function') {
+        onChange({ target: { value: newValue } });
+      }
+    }, debounceTime);
   };
 
   const handleBlur = () => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+
     if (localValue !== value && typeof onChange === 'function') {
       onChange({ target: { value: localValue } });
     }
   };
-  
+
   const defaultSx = {
     '& .MuiOutlinedInput-root': {
       borderRadius: '8px',

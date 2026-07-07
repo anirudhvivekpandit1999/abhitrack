@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -18,13 +18,22 @@ import {
 
 import customTheme from '../theme/customTheme';
 import NavigationButtons from '../components/NavigationButtons';
-import DistributionCurveTab from '../components/visualize/DistributionCurveTab';
-import ScatterPlotTab from '../components/visualize/ScatterPlotTab';
-import BootstrappingTab from '../components/visualize/BootstrappingTab';
-import MultiVariateScatterPlotTab from '../components/visualize/MultiVariateScatterPlotTab';
-import CorrelationAnalysisTab from '../components/visualize/CorrelationAnalysisTab';
 import Assistant from '../components/Assistant';
-import IndustrialTrendViewTab from '../components/visualize/IndustrialTrendViewTab';
+
+const DistributionCurveTab = lazy(() => import('../components/visualize/DistributionCurveTab'));
+const ScatterPlotTab = lazy(() => import('../components/visualize/ScatterPlotTab'));
+const BootstrappingTab = lazy(() => import('../components/visualize/BootstrappingTab'));
+const MultiVariateScatterPlotTab = lazy(() => import('../components/visualize/MultiVariateScatterPlotTab'));
+const CorrelationAnalysisTab = lazy(() => import('../components/visualize/CorrelationAnalysisTab'));
+const IndustrialTrendViewTab = lazy(() => import('../components/visualize/IndustrialTrendViewTab'));
+
+const LazyTabFallback = () => (
+    <Box sx={{ py: 6, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Typography variant="body2" color="text.secondary">
+            Loading visualization...
+        </Typography>
+    </Box>
+);
 
 const safeArray = (arr) => Array.isArray(arr) ? arr : [];
 
@@ -93,48 +102,58 @@ const VisualizeData = () => {
     const excel_Data = safeArray(excelData);
     const sheets = safeArray(sheetNames);
 
-    const getSheetData = (sheetName) => {
+    const getSheetData = useCallback((sheetName) => {
         if (!sheetName) return [];
         // In single-sheet mode the data is passed directly as singleSheetData
         if (singleSheetMode && sheetName === singleSheetName) return safeArray(singleSheetData);
         const sheet = excel_Data.find(s => s?.sheetName === sheetName);
         return safeArray(sheet?.sheetData);
-    };
+    }, [singleSheetMode, singleSheetName, singleSheetData, excel_Data, preProductData, postProductData]);
 
-    const getSheetColumns = (sheetName) => {
+    const getSheetColumns = useCallback((sheetName) => {
         const data = getSheetData(sheetName);
         if (!data.length) return [];
         return Object.keys(data[0] || {});
-    };
+    }, [getSheetData]);
 
     /* ─── Data for tabs ─── */
     // In single-sheet mode: withProductData = current sheet, withoutProductData = []
-    const withProductData = singleSheetMode
-        ? safeArray(singleSheetData)
-        : (selectedSheetsList[0] ? getSheetData(selectedSheetsList[0]) : safeArray(preProductData));
+    const withProductData = useMemo(() => (
+        singleSheetMode
+            ? safeArray(singleSheetData)
+            : (selectedSheetsList[0] ? getSheetData(selectedSheetsList[0]) : safeArray(preProductData))
+    ), [singleSheetMode, singleSheetData, selectedSheetsList, getSheetData, preProductData]);
 
-    const withoutProductData = singleSheetMode
-        ? []
-        : (selectedSheetsList[1] ? getSheetData(selectedSheetsList[1]) : safeArray(postProductData));
+    const withoutProductData = useMemo(() => (
+        singleSheetMode
+            ? []
+            : (selectedSheetsList[1] ? getSheetData(selectedSheetsList[1]) : safeArray(postProductData))
+    ), [singleSheetMode, selectedSheetsList, getSheetData, postProductData]);
 
-    const additionalSheetsData = selectedSheetsList
-        .slice(2)
-        .map(name => ({ name, data: getSheetData(name) }))
-        .filter(s => s.data.length > 0);
+    const tabDatasets = useMemo(() => (
+        selectedSheetsList
+            .filter(name => name)
+            .map((name, index) => ({
+                name: `Data ${index + 1}`,
+                data: getSheetData(name)
+            }))
+    ), [selectedSheetsList, getSheetData]);
 
     /* ─── Available columns ─── */
-    const availableColumns = singleSheetMode
-        ? (singleSheetData.length > 0
-            ? Object.keys(singleSheetData[0])
-            : safeArray(availableCols))
-        : (selectedSheetsList[0] || selectedSheetsList[1]
-            ? Array.from(
-                new Set([
-                    ...safeArray(getSheetColumns(selectedSheetsList[0])),
-                    ...safeArray(getSheetColumns(selectedSheetsList[1]))
-                ])
-            )
-            : safeArray(availableCols));
+    const availableColumns = useMemo(() => (
+        singleSheetMode
+            ? (singleSheetData.length > 0
+                ? Object.keys(singleSheetData[0])
+                : safeArray(availableCols))
+            : (selectedSheetsList[0] || selectedSheetsList[1]
+                ? Array.from(
+                    new Set([
+                        ...safeArray(getSheetColumns(selectedSheetsList[0])),
+                        ...safeArray(getSheetColumns(selectedSheetsList[1]))
+                    ])
+                )
+                : safeArray(availableCols))
+    ), [singleSheetMode, singleSheetData, availableCols, selectedSheetsList, getSheetColumns]);
 
     const bootstrapAnalysis = bootstrap_analysis || {};
 
@@ -269,71 +288,67 @@ const VisualizeData = () => {
         switch (activeTab) {
             case 0:
                 return (
-                    <DistributionCurveTab
-                        availableColumns={availableColumns}
-                        withProductData={withProductData}
-                        withoutProductData={withoutProductData}
-                        datasets={[
-                            ...selectedSheetsList
-                                .filter(name => name)
-                                .map((name, index) => ({
-                                    name: `Data ${index + 1}`,
-                                    data: getSheetData(name)
-                                }))
-                        ]}
-                        clientName={clientName}
-                        plantName={plantName}
-                        productName={productName}
-                    />
+                    <Suspense fallback={<LazyTabFallback />}>
+                        <DistributionCurveTab
+                            availableColumns={availableColumns}
+                            withProductData={withProductData}
+                            withoutProductData={withoutProductData}
+                            datasets={tabDatasets}
+                            clientName={clientName}
+                            plantName={plantName}
+                            productName={productName}
+                        />
+                    </Suspense>
                 );
             case 1:
                 return (
-                    <MultiVariateScatterPlotTab
-                        availableColumns={availableColumns}
-                        withProductData={withProductData}
-                        withoutProductData={withoutProductData}
-                        datasets={[
-                            ...selectedSheetsList
-                                .filter(name => name)
-                                .map((name, index) => ({
-                                    name: `Data ${index + 1}`,
-                                    data: getSheetData(name)
-                                }))
-                        ]}
-                        clientName={clientName}
-                        plantName={plantName}
-                        productName={productName}
-                    />
+                    <Suspense fallback={<LazyTabFallback />}>
+                        <MultiVariateScatterPlotTab
+                            availableColumns={availableColumns}
+                            withProductData={withProductData}
+                            withoutProductData={withoutProductData}
+                            datasets={tabDatasets}
+                            clientName={clientName}
+                            plantName={plantName}
+                            productName={productName}
+                        />
+                    </Suspense>
                 );
             case 2:
                 return (
-                    <BootstrappingTab
-                        availableColumns={availableColumns}
-                        withProductData={withProductData}
-                        withoutProductData={withoutProductData}
-                        clientName={clientName}
-                        plantName={plantName}
-                        productName={productName}
-                    />
+                    <Suspense fallback={<LazyTabFallback />}>
+                        <BootstrappingTab
+                            availableColumns={availableColumns}
+                            withProductData={withProductData}
+                            withoutProductData={withoutProductData}
+                            clientName={clientName}
+                            plantName={plantName}
+                            productName={productName}
+                        />
+                    </Suspense>
                 );
             case 3:
                 return (
-                    <CorrelationAnalysisTab
-                        availableColumns={availableColumns}
-                        withProductData={withProductData}
-                        withoutProductData={withoutProductData}
-                        clientName={clientName}
-                        plantName={plantName}
-                        productName={productName}
-                    />
+                    <Suspense fallback={<LazyTabFallback />}>
+                        <CorrelationAnalysisTab
+                            availableColumns={availableColumns}
+                            withProductData={withProductData}
+                            withoutProductData={withoutProductData}
+                            clientName={clientName}
+                            plantName={plantName}
+                            productName={productName}
+                        />
+                    </Suspense>
                 );
             case 4:
                 return (
-                    <IndustrialTrendViewTab
-                        withProductData={withProductData}
-                        withoutProductData={withoutProductData}
-                        availableColumns={availableColumns}
-                    />
+                    <Suspense fallback={<LazyTabFallback />}>
+                        <IndustrialTrendViewTab
+                            withProductData={withProductData}
+                            withoutProductData={withoutProductData}
+                            availableColumns={availableColumns}
+                        />
+                    </Suspense>
                 );
             default:
                 return null;

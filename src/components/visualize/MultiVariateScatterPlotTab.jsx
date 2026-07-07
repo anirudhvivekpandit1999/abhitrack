@@ -683,25 +683,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       console.error('ScatterTab debug logging failed', err);
     }
   }, [allDatasets, availableColumns, selectedXVars, selectedYVars, allPairs, datasetPointsByName, allPoints]);
-  useEffect(() => {
-    try {
-      const datasetSummaries = allDatasets.map(ds => ({ name: ds.name, rows: (ds.data || []).length }));
-      const pointsCounts = Object.fromEntries(Object.entries(datasetPointsByName || {}).map(([k, pts]) => [k, pts.length]));
-      // eslint-disable-next-line no-console
-      console.debug('ScatterTab Debug:', {
-        datasetSummaries,
-        availableColumns: (availableColumns || []).slice(0, 20),
-        selectedXVars,
-        selectedYVars,
-        allPairs,
-        pointsCounts,
-        allPointsCount: (allPoints || []).length,
-      });
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('ScatterTab debug logging failed', err);
-    }
-  }, [allDatasets, availableColumns, selectedXVars, selectedYVars, allPairs, datasetPointsByName, allPoints]);
 
   // NEW: Get points filtered by current pair (for per-pair mode)
   const currentPairPoints = useMemo(() => {

@@ -624,74 +624,105 @@ const DistributionCurveTab = ({
     // ========================================================================
     const combinedChartData = useMemo(() => {
         if (selectedColumns.length === 0) return [];
-        let allXValues = [];
-        selectedColumns.forEach(column => {
-            allDatasets.forEach(dataset => {
-                (dataset.data || []).map(row => parseRowValue(row, column))
-                    .filter(v => v != null)
-                    .forEach(v => allXValues.push(v));
-            });
-        });
+        
+        // Collect all X values in a single pass
+        const allXValues = [];
+        const dataLength = selectedColumns.length * allDatasets.length;
+        allXValues.reserve = dataLength; // Hint for array allocation
+        
+        for (const column of selectedColumns) {
+            for (const dataset of allDatasets) {
+                const data = dataset.data || [];
+                for (let i = 0; i < data.length; i++) {
+                    const val = parseRowValue(data[i], column);
+                    if (val != null) allXValues.push(val);
+                }
+            }
+        }
+        
         if (allXValues.length === 0) return [];
+        
         const globalMin = Math.min(...allXValues);
         const globalMax = Math.max(...allXValues);
         if (globalMin === globalMax) return [];
+        
         const binWidth = (globalMax - globalMin) / binCount;
         const bins = Array.from({ length: binCount }, (_, i) => {
             const start = globalMin + i * binWidth;
             const end = i === binCount - 1 ? globalMax : globalMin + (i + 1) * binWidth;
             return { binStart: start, binEnd: end, binMiddle: parseFloat(((start + end) / 2).toFixed(4)), data: {} };
         });
-        selectedColumns.forEach(column => {
-            allDatasets.forEach((dataset, datasetIndex) => {
+        
+        // Build binned data for each column/dataset combination
+        for (const column of selectedColumns) {
+            for (let datasetIndex = 0; datasetIndex < allDatasets.length; datasetIndex++) {
+                const dataset = allDatasets[datasetIndex];
                 const vals = buildBinnedData(dataset.data || [], column, yAxisColumn, globalMin, globalMax, binCount, yAggregation);
                 const counts = buildBinnedData(dataset.data || [], column, null, globalMin, globalMax, binCount, 'frequency');
                 const key = `${column}_dataset${datasetIndex}`;
-                bins.forEach((bin, idx) => {
-                    bin.data[`${key}`] = vals[idx];
-                    bin.data[`${key}_count`] = counts[idx] ?? 0;
-                });
-            });
-        });
+                
+                for (let idx = 0; idx < bins.length; idx++) {
+                    bins[idx].data[`${key}`] = vals[idx];
+                    bins[idx].data[`${key}_count`] = counts[idx] ?? 0;
+                }
+            }
+        }
+        
         return bins;
-    }, [selectedColumns, filteredWithProductData, filteredWithoutProductData, binCount, yAxisColumn, yAggregation]);
+    }, [selectedColumns, filteredWithProductData, filteredWithoutProductData, binCount, yAxisColumn, yAggregation, allDatasets]);
 
     // ========================================================================
     // Single / Separate view bins
     // ========================================================================
-    const buildViewBins = (rows, xCol, yCol, aggregation, nBins) => {
+    const buildViewBins = useCallback((rows, xCol, yCol, aggregation, nBins) => {
         if (!rows.length || !xCol) return [];
-        const xValues = rows.map(row => parseRowValue(row, xCol)).filter(v => v != null);
+        
+        // Collect X values in a single pass
+        const xValues = [];
+        for (let i = 0; i < rows.length; i++) {
+            const val = parseRowValue(rows[i], xCol);
+            if (val != null) xValues.push(val);
+        }
+        
         if (!xValues.length) return [];
+        
         const globalMin = Math.min(...xValues);
         const globalMax = Math.max(...xValues);
         if (globalMin === globalMax) return [];
+        
         const binWidth = (globalMax - globalMin) / nBins;
         const bins = Array.from({ length: nBins }, (_, i) => {
             const start = globalMin + i * binWidth;
             const end = i === nBins - 1 ? globalMax : globalMin + (i + 1) * binWidth;
             return { binStart: start, binEnd: end, binMiddle: parseFloat(((start + end) / 2).toFixed(4)), yVals: [], count: 0 };
         });
-        rows.forEach(row => {
-            const xVal = parseRowValue(row, xCol);
-            if (xVal == null) return;
+        
+        // Populate bins in a single pass
+        for (let i = 0; i < rows.length; i++) {
+            const xVal = parseRowValue(rows[i], xCol);
+            if (xVal == null) continue;
             let idx = Math.floor((xVal - globalMin) / binWidth);
             if (idx >= nBins) idx = nBins - 1;
-            if (idx < 0) return;
+            if (idx < 0) continue;
             bins[idx].count++;
             if (yCol) {
-                const yVal = parseRowValue(row, yCol);
+                const yVal = parseRowValue(rows[i], yCol);
                 if (yVal != null) bins[idx].yVals.push(yVal);
             }
-        });
-        return bins.map(bin => {
+        }
+        
+        // Calculate final values
+        for (let i = 0; i < bins.length; i++) {
+            const bin = bins[i];
             let yValue;
             if (!yCol || aggregation === 'frequency') yValue = bin.count;
             else if (aggregation === 'sum') yValue = bin.yVals.length ? bin.yVals.reduce((a, b) => a + b, 0) : null;
             else yValue = bin.yVals.length ? bin.yVals.reduce((a, b) => a + b, 0) / bin.yVals.length : null;
-            return { binStart: bin.binStart, binEnd: bin.binEnd, binMiddle: bin.binMiddle, value: yValue, count: bin.count };
-        });
-    };
+            bins[i] = { binStart: bin.binStart, binEnd: bin.binEnd, binMiddle: bin.binMiddle, value: yValue, count: bin.count };
+        }
+        
+        return bins;
+    }, [parseRowValue]);
 
     const withProductDistribution = useMemo(() =>
         buildViewBins(filteredWithProductData, separateColumn, separateYAxisColumn, yAggregation, binCount),

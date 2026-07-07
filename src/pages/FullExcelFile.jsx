@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, forwardRef, useCallback } from "react";
+import { useEffect, useRef, useState, forwardRef, useCallback, useMemo } from "react";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import MicIcon from "@mui/icons-material/Mic";
 import Assistant from "../components/Assistant";
@@ -436,11 +436,15 @@ const FullExcelFile = () => {
   const recognitionRef = useRef(null);
   const feedbackRef = useRef(null);
   const fileObjectsRef = useRef({});
+  
+  // Pagination for large datasets
+  const [mainTablePage, setMainTablePage] = useState(0);
+  const [previewTablePage, setPreviewTablePage] = useState(0);
+  const ROWS_PER_PAGE = 50;
 
   const navigation = useNavigate();
 
   useEffect(() => {
-    localStorage.clear();
     const saved = localStorage.getItem("recentFiles");
     if (saved) {
       try {
@@ -490,6 +494,7 @@ const FullExcelFile = () => {
   useEffect(() => {
     const found = excelData.find((s) => s.sheetName === selectedSheet);
     setSelectedSheetData(found ? found.sheetData : []);
+    setMainTablePage(0); // Reset pagination when sheet changes
   }, [selectedSheet, excelData]);
 
   useEffect(() => {
@@ -692,27 +697,36 @@ const FullExcelFile = () => {
         throw new Error("No sheets found in response");
       }
 
-      const formattedSheets = sheetNames.map(name => ({
-        sheetName: name,
-        sheetData: sheetsDataObj[name]?.data || []
-      }));
+      // Defer heavy processing to prevent blocking
+      const processWithCallback = () => {
+        const formattedSheets = sheetNames.map(name => ({
+          sheetName: name,
+          sheetData: sheetsDataObj[name]?.data || []
+        }));
 
-      setExcelData(formattedSheets);
-      setSheetNames(sheetNames);
+        // Batch state updates to reduce re-renders
+        const firstSheet = sheetNames[0];
+        const firstSheetData = sheetsDataObj[firstSheet]?.data || [];
+        
+        setExcelData(formattedSheets);
+        setSheetNames(sheetNames);
+        setSelectedSheet(firstSheet);
+        setSelectedSheetData(firstSheetData);
+        setCols(
+          sheetsDataObj[firstSheet]?.columns ||
+          (firstSheetData.length ? Object.keys(firstSheetData[0]) : [])
+        );
 
-      const firstSheet = sheetNames[0];
-      setSelectedSheet(firstSheet);
+        console.log("Loaded sheets:", sheetNames);
+        console.log("First sheet rows:", firstSheetData.length);
+      };
 
-      const firstSheetData = sheetsDataObj[firstSheet]?.data || [];
-      setSelectedSheetData(firstSheetData);
-
-      setCols(
-        sheetsDataObj[firstSheet]?.columns ||
-        (firstSheetData.length ? Object.keys(firstSheetData[0]) : [])
-      );
-
-      console.log("Loaded sheets:", sheetNames);
-      console.log("First sheet rows:", firstSheetData.length);
+      // Use requestIdleCallback with setTimeout fallback
+      if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(processWithCallback);
+      } else {
+        setTimeout(processWithCallback, 0);
+      }
 
     } catch (error) {
       console.error("Upload Error:", error);
@@ -780,21 +794,21 @@ useEffect(() => {
 
   useEffect(()=>{if(debounceRef.current)clearTimeout(debounceRef.current);debounceRef.current=setTimeout(()=>buildTempSlices(),300);return()=>clearTimeout(debounceRef.current);},[rowRanges,newSheetName,copyFromSheet,selectedSheet,excelData]);
 
-  const escapeRegExp=(string)=>String(string).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
-  const evaluateFormulaForRow=(formula,row)=>{
+  const escapeRegExp=useCallback((string)=>String(string).replace(/[.*+?^${}()|[\]\\]/g,"\\$&"), []);
+  const evaluateFormulaForRow=useCallback((formula,row)=>{
     if(!formula||typeof formula!=="string")return"";const cs=Object.keys(row).sort((a,b)=>b.length-a.length);let expr=formula;
     cs.forEach(col=>{const val=row[col];const num=Number(val);const replacement=`(${isNaN(num)?0:num})`;const pattern=new RegExp(escapeRegExp(col),"g");expr=expr.replace(pattern,replacement);});
     try{const fn=new Function(`return (${expr});`);const result=fn();return result===undefined||result===null?"":result;}catch(e){return"";}
-  };
-  const resolvePendingValue=(pc,row,globalIndex)=>{
+  }, [escapeRegExp]);
+  const resolvePendingValue=useCallback((pc,row,globalIndex)=>{
     if(!pc)return"";if(Array.isArray(pc.values)&&typeof globalIndex==="number"){if(globalIndex>=0&&globalIndex<pc.values.length)return pc.values[globalIndex];}
     if(pc.value!==undefined)return pc.value;if(pc.formula&&typeof pc.formula==="string")return evaluateFormulaForRow(pc.formula,row);if(pc.expression&&typeof pc.expression==="string")return evaluateFormulaForRow(pc.expression,row);return"";
-  };
-  const getPendingColumns=()=>{try{const raw=sessionStorage.getItem("pendingColumnsToAdd");if(!raw)return[];const parsed=JSON.parse(raw);if(Array.isArray(parsed))return parsed;return[];}catch(e){return[];}};
-  const applyPendingColumnsToRows=(rows)=>{
+  }, [evaluateFormulaForRow]);
+  const getPendingColumns=useCallback(()=>{try{const raw=sessionStorage.getItem("pendingColumnsToAdd");if(!raw)return[];const parsed=JSON.parse(raw);if(Array.isArray(parsed))return parsed;return[];}catch(e){return[];}}, []);
+  const applyPendingColumnsToRows=useCallback((rows)=>{
     if(!Array.isArray(rows)||rows.length===0)return rows||[];const pending=getPendingColumns();if(!pending||pending.length===0)return rows;
     return rows.map((row,idx)=>{const nr={...row};pending.forEach(pc=>{if(pc&&pc.name){const val=resolvePendingValue(pc,row,idx);nr[pc.name]=val;}});return nr;});
-  };
+  }, [getPendingColumns, resolvePendingValue]);
 
   const handleAddSheetSubmit=async()=>{
     setError(null);let trimmed=newSheetName.trim();if(!trimmed){trimmed=localStorage.getItem("newSheetName");if(!trimmed){setError("Please enter a name");return;}}
@@ -826,16 +840,16 @@ useEffect(() => {
     setRowRanges(prev=>prev.map((r,i)=>{if(i!==idx)return r;const updated={...r,[field]:value};if(field==="startRange"){updated.startDisplay="";setPreProduct(name+"-"+updated.name);}if(field==="endRange"){updated.endDisplay="";setPostProduct(name+"-"+updated.name);}return updated;}));
   };
 
-  const getNumeric=(row,col)=>{const n=Number(row[col]);if(!isNaN(n))return n;const alt=row[`__num__${col}`];if(typeof alt==="number")return alt;const dt=new Date(row[col]);if(!isNaN(dt.getTime()))return dt.getTime();return NaN;};
+  const getNumeric=useCallback((row,col)=>{const n=Number(row[col]);if(!isNaN(n))return n;const alt=row[`__num__${col}`];if(typeof alt==="number")return alt;const dt=new Date(row[col]);if(!isNaN(dt.getTime()))return dt.getTime();return NaN;}, []);
 
-  const previewSheet=excelData.find(s=>s.sheetName===(copyFromSheet||selectedSheet))||{sheetData:[]};
-  const previewSheetWithPending={...previewSheet,sheetData:applyPendingColumnsToRows(previewSheet.sheetData||[])};
-  const previewHeaders=previewSheetWithPending.sheetData&&previewSheetWithPending.sheetData.length?Object.keys(previewSheetWithPending.sheetData[0]):[];
+  const previewSheet=useMemo(()=>excelData.find(s=>s.sheetName===(copyFromSheet||selectedSheet))||{sheetData:[]}, [excelData, copyFromSheet, selectedSheet]);
+  const previewSheetWithPending=useMemo(()=>({...previewSheet,sheetData:applyPendingColumnsToRows(previewSheet.sheetData||[])}), [previewSheet, applyPendingColumnsToRows]);
+  const previewHeaders=useMemo(()=>previewSheetWithPending.sheetData&&previewSheetWithPending.sheetData.length?Object.keys(previewSheetWithPending.sheetData[0]):[], [previewSheetWithPending]);
 
-  useEffect(()=>{if(!pendingVoiceAction)return;if(!previewHeaders||previewHeaders.length===0)return;const{axis,candidate}=pendingVoiceAction;const found=findHeaderMatch(candidate);if(found){if(axis==="x")setXAxis(found);else setYAxis(found);setColumnNames(prev=>(prev.includes(found)?prev:[...prev,found]));setSelectedColumns(prev=>(prev.includes(found)?prev:(prev[0]===""?[found,...prev.slice(1)]:[...prev,found])));setVoiceFeedback(`${axis.toUpperCase()} axis set to: ${found}`);setPendingVoiceAction(null);setTimeout(()=>setVoiceFeedback(""),3000);}},[previewHeaders,pendingVoiceAction]);
+  const normalize=useCallback((s)=>String(s||"").toLowerCase().replace(/[_\-]/g," ").replace(/[^\w\s]/g," ").replace(/\s+/g," ").trim(), []);
+  const findHeaderMatch=useCallback((text,headers=previewHeaders)=>{if(!text)return null;const cleaned=normalize(text);const source=Array.isArray(headers)?headers:[];let found=source.find(h=>normalize(h)===cleaned||h.toLowerCase()===text.toLowerCase());if(found)return found;found=source.find(h=>cleaned.includes(normalize(h))||normalize(h).includes(cleaned));if(found)return found;const tokens=cleaned.split(/\s+/).filter(Boolean);for(const t of tokens){const f=source.find(h=>normalize(h).includes(t)||t.includes(normalize(h)));if(f)return f;}for(const col of columnNames){if(normalize(col)===cleaned)return col;}return null;}, [normalize, previewHeaders, columnNames]);
 
-  const normalize=(s)=>String(s||"").toLowerCase().replace(/[_\-]/g," ").replace(/[^\w\s]/g," ").replace(/\s+/g," ").trim();
-  const findHeaderMatch=(text,headers=previewHeaders)=>{if(!text)return null;const cleaned=normalize(text);const source=Array.isArray(headers)?headers:[];let found=source.find(h=>normalize(h)===cleaned||h.toLowerCase()===text.toLowerCase());if(found)return found;found=source.find(h=>cleaned.includes(normalize(h))||normalize(h).includes(cleaned));if(found)return found;const tokens=cleaned.split(/\s+/).filter(Boolean);for(const t of tokens){const f=source.find(h=>normalize(h).includes(t)||t.includes(normalize(h)));if(f)return f;}for(const col of columnNames){if(normalize(col)===cleaned)return col;}return null;};
+  useEffect(()=>{if(!pendingVoiceAction)return;if(!previewHeaders||previewHeaders.length===0)return;const{axis,candidate}=pendingVoiceAction;const found=findHeaderMatch(candidate);if(found){if(axis==="x")setXAxis(found);else setYAxis(found);setColumnNames(prev=>(prev.includes(found)?prev:[...prev,found]));setSelectedColumns(prev=>(prev.includes(found)?prev:(prev[0]===""?[found,...prev.slice(1)]:[...prev,found])));setVoiceFeedback(`${axis.toUpperCase()} axis set to: ${found}`);setPendingVoiceAction(null);setTimeout(()=>setVoiceFeedback(""),3000);}},[previewHeaders,pendingVoiceAction, findHeaderMatch]);
 
   const RANGE_COLORS = [
     { full: 'rgba(76, 175, 80, 0.2)',   single: 'rgba(76, 175, 80, 0.6)',   border: '#16a34a' },
@@ -850,7 +864,7 @@ useEffect(() => {
     { full: 'rgba(249, 115, 22, 0.2)',  single: 'rgba(249, 115, 22, 0.6)',  border: '#f97316' },
   ];
 
-  const getRowHighlightStyle = (rowIndex) => {
+  const getRowHighlightStyle = useCallback((rowIndex) => {
     const currentRowNum = rowIndex + 1;
 
     for (let i = 0; i < rowRanges.length; i++) {
@@ -882,7 +896,7 @@ useEffect(() => {
     }
 
     return {};
-  };
+  }, [rowRanges]);
   
   const getPreviewRowDate=(rowIndex)=>{const row=previewSheetWithPending.sheetData&&previewSheetWithPending.sheetData[rowIndex];if(!row)return"";const dateKey=previewHeaders.find(h=>h.toLowerCase().includes("date"))||previewHeaders.find(h=>h.toLowerCase().includes("time"))||previewHeaders[0];return formatDate(row[dateKey]);};
 
@@ -1026,7 +1040,7 @@ useEffect(() => {
   const handleVoiceFileUpload=(text)=>{const uploadMatch=text.toLowerCase().match(/upload\s+(.+)/);const searchTerm=uploadMatch?uploadMatch[1].trim():text.replace("upload","").trim();const matches=recentFiles.filter(file=>file.toLowerCase().includes(searchTerm));if(matches.length>0){const file=fileObjectsRef.current[matches[0]];if(file){processFile(file);}else{setLastVoiceFileCommand(searchTerm);fileInputRef.current?.click();}}else{setLastVoiceFileCommand(searchTerm);fileInputRef.current?.click();}};
   const handleDirectFileSelection=(fileName)=>{const file=fileObjectsRef.current[fileName]||fileObjectsRef.current[fileName.split(".")[0]];if(file){processFile(file);setShowFileSearchModal(false);setLastVoiceFileCommand("");}else{fileInputRef.current?.click();setShowFileSearchModal(false);}};
   const handleBrowseMoreFiles=()=>{setShowFileSearchModal(false);setTimeout(()=>fileInputRef.current?.click(),300);};
-  const displayedSelectedSheetData=applyPendingColumnsToRows(selectedSheetData||[]);
+  const displayedSelectedSheetData=useMemo(()=>applyPendingColumnsToRows(selectedSheetData||[]), [selectedSheetData, applyPendingColumnsToRows]);
 
   /* ── Handler: Continue with Current Sheet (single-sheet mode) ── */
   const handleContinueWithCurrentSheet = () => {
@@ -1314,33 +1328,111 @@ useEffect(() => {
                   <span>Preview — {copyFromSheet||selectedSheet||"No sheet"}</span>
                   <span className="badge">CLICK ROW = SET RANGE</span>
                 </div>
-                <div style={{flex:1,overflow:"auto"}}>
+                <div style={{flex:1,overflow:"hidden"}}>
                   {previewSheetWithPending.sheetData?.length>0?(
-                    <table className="xf-table" ref={previewTableRef}>
-                      <thead>
-                        <tr>
-                          {previewHeaders.map(key=>(
-                            <th key={key} className={isColumnSelected(key)?"selected":""} onClick={()=>{setYAxis(key);toggleColumnSelection(key);}} style={{cursor:"pointer"}}>{key}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {previewSheetWithPending.sheetData.map((row,i)=>(
-                          <tr
+                    <>
+                      {/* Header */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          background: "var(--ink)",
+                          borderBottom: "1.5px solid var(--ink-20)",
+                        }}
+                      >
+                        {previewHeaders.map(key=>(
+                          <div
+                            key={key}
+                            onClick={()=>{setYAxis(key);toggleColumnSelection(key);}}
+                            style={{
+                              flex: 1,
+                              padding: "10px 14px",
+                              textAlign: "left",
+                              fontFamily: "'Syne', sans-serif",
+                              fontWeight: 600,
+                              fontSize: "0.74rem",
+                              letterSpacing: "0.04em",
+                              textTransform: "uppercase",
+                              whiteSpace: "nowrap",
+                              color: isColumnSelected(key) ? "#86efac" : "var(--gold-light)",
+                              cursor: "pointer",
+                              minWidth: "120px",
+                            }}
+                          >
+                            {key}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Paginated body */}
+                      <div style={{ overflowY: "auto", maxHeight: "300px" }}>
+                        {previewSheetWithPending.sheetData
+                          .slice(previewTablePage * ROWS_PER_PAGE, (previewTablePage + 1) * ROWS_PER_PAGE)
+                          .map((row, i) => (
+                            <div
                               key={i}
-                              onClick={()=>activeTarget && handlePreviewRowClick(i)}
+                              onClick={()=>activeTarget && handlePreviewRowClick(previewTablePage * ROWS_PER_PAGE + i)}
                               style={{
+                                display: 'flex',
                                 cursor: activeTarget ? "pointer" : "default",
-                                ...getRowHighlightStyle(i)
+                                ...getRowHighlightStyle(previewTablePage * ROWS_PER_PAGE + i),
+                                background: (previewTablePage * ROWS_PER_PAGE + i) % 2 === 0 ? "#fff" : "var(--paper)",
+                                borderBottom: "1px solid var(--paper-2)",
                               }}
                             >
-                            {previewHeaders.map((k,j)=>(
-                              <td key={j} className={isColumnSelected(k)?"selected":""}>{renderCellValue(row[k])}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                              {previewHeaders.map((k, j) => (
+                                <div
+                                  key={j}
+                                  style={{
+                                    flex: 1,
+                                    padding: "9px 14px",
+                                    color: isColumnSelected(k) ? "var(--green)" : "var(--ink)",
+                                    background: isColumnSelected(k) ? "#f0fdf4" : "transparent",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    minWidth: "120px",
+                                  }}
+                                >
+                                  {renderCellValue(row[k])}
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                      </div>
+                      
+                      {/* Pagination controls */}
+                      {previewSheetWithPending.sheetData.length > ROWS_PER_PAGE && (
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            gap: "12px",
+                            padding: "12px",
+                            borderTop: "1.5px solid var(--ink-20)",
+                            background: "var(--paper)",
+                          }}
+                        >
+                          <button
+                            className="xf-btn xf-btn-ghost xf-btn-sm"
+                            onClick={() => setPreviewTablePage(p => Math.max(0, p - 1))}
+                            disabled={previewTablePage === 0}
+                          >
+                            ← Previous
+                          </button>
+                          <span style={{ fontSize: "0.8rem", color: "var(--ink-60)" }}>
+                            Page {previewTablePage + 1} of {Math.ceil(previewSheetWithPending.sheetData.length / ROWS_PER_PAGE)}
+                          </span>
+                          <button
+                            className="xf-btn xf-btn-ghost xf-btn-sm"
+                            onClick={() => setPreviewTablePage(p => Math.min(Math.ceil(previewSheetWithPending.sheetData.length / ROWS_PER_PAGE) - 1, p + 1))}
+                            disabled={previewTablePage >= Math.ceil(previewSheetWithPending.sheetData.length / ROWS_PER_PAGE) - 1}
+                          >
+                            Next →
+                          </button>
+                        </div>
+                      )}
+                    </>
                   ):(
                     <div className="xf-empty" style={{margin:"16px"}}>No data to preview.<br/>Select a base sheet above.</div>
                   )}
@@ -1468,69 +1560,107 @@ useEffect(() => {
                     style={{
                       width: "100%",
                       maxHeight: "500px",
-                      overflowY: "auto",
-                      overflowX: "auto",
                       border: "1.5px solid var(--ink-20)",
                       borderRadius: "10px",
+                      overflow: "hidden",
                     }}
                   >
-                    <table
+                    {/* Header */}
+                    <div
                       style={{
-                        minWidth: "100%",
-                        borderCollapse: "collapse",
-                        fontSize: "0.8rem",
+                        display: 'flex',
+                        background: "var(--ink)",
+                        borderBottom: "1.5px solid var(--ink-20)",
                       }}
                     >
-                      <thead>
-                        <tr>
-                          {Object.keys(displayedSelectedSheetData[0]).map((key) => (
-                            <th
-                              key={key}
-                              style={{
-                                position: "sticky",
-                                top: 0,
-                                zIndex: 2,
-                                padding: "10px 14px",
-                                textAlign: "left",
-                                fontFamily: "'Syne', sans-serif",
-                                fontWeight: 600,
-                                fontSize: "0.74rem",
-                                letterSpacing: "0.04em",
-                                textTransform: "uppercase",
-                                whiteSpace: "nowrap",
-                                background: "var(--ink)",
-                                color: isColumnSelected(key) ? "#86efac" : "var(--gold-light)",
-                              }}
-                            >
-                              {key}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {displayedSelectedSheetData.map((row, i) => (
-                          <tr
+                      {Object.keys(displayedSelectedSheetData[0]).map((key) => (
+                        <div
+                          key={key}
+                          style={{
+                            flex: 1,
+                            padding: "10px 14px",
+                            textAlign: "left",
+                            fontFamily: "'Syne', sans-serif",
+                            fontWeight: 600,
+                            fontSize: "0.74rem",
+                            letterSpacing: "0.04em",
+                            textTransform: "uppercase",
+                            whiteSpace: "nowrap",
+                            color: isColumnSelected(key) ? "#86efac" : "var(--gold-light)",
+                            minWidth: "120px",
+                          }}
+                        >
+                          {key}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Paginated body */}
+                    <div style={{ overflowY: "auto", maxHeight: "400px" }}>
+                      {displayedSelectedSheetData
+                        .slice(mainTablePage * ROWS_PER_PAGE, (mainTablePage + 1) * ROWS_PER_PAGE)
+                        .map((row, i) => (
+                          <div
                             key={i}
-                            style={{ background: i % 2 === 0 ? "#fff" : "var(--paper)" }}
+                            style={{
+                              display: 'flex',
+                              background: (mainTablePage * ROWS_PER_PAGE + i) % 2 === 0 ? "#fff" : "var(--paper)",
+                              borderBottom: "1px solid var(--paper-2)",
+                            }}
                           >
                             {Object.keys(displayedSelectedSheetData[0]).map((k, j) => (
-                              <td
+                              <div
                                 key={j}
                                 style={{
+                                  flex: 1,
                                   padding: "9px 14px",
-                                  borderBottom: "1px solid var(--paper-2)",
                                   color: isColumnSelected(k) ? "var(--green)" : "var(--ink)",
                                   background: isColumnSelected(k) ? "#f0fdf4" : "transparent",
                                   whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  minWidth: "120px",
                                 }}
                               >
                                 {renderCellValue(row[k])}
-                              </td>
+                              </div>
                             ))}
-                          </tr>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
+                    </div>
+                    
+                    {/* Pagination controls */}
+                    {displayedSelectedSheetData.length > ROWS_PER_PAGE && (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          gap: "12px",
+                          padding: "12px",
+                          borderTop: "1.5px solid var(--ink-20)",
+                          background: "var(--paper)",
+                        }}
+                      >
+                        <button
+                          className="xf-btn xf-btn-ghost xf-btn-sm"
+                          onClick={() => setMainTablePage(p => Math.max(0, p - 1))}
+                          disabled={mainTablePage === 0}
+                        >
+                          ← Previous
+                        </button>
+                        <span style={{ fontSize: "0.8rem", color: "var(--ink-60)" }}>
+                          Page {mainTablePage + 1} of {Math.ceil(displayedSelectedSheetData.length / ROWS_PER_PAGE)}
+                        </span>
+                        <button
+                          className="xf-btn xf-btn-ghost xf-btn-sm"
+                          onClick={() => setMainTablePage(p => Math.min(Math.ceil(displayedSelectedSheetData.length / ROWS_PER_PAGE) - 1, p + 1))}
+                          disabled={mainTablePage >= Math.ceil(displayedSelectedSheetData.length / ROWS_PER_PAGE) - 1}
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="xf-empty">No data available for this sheet.</div>
