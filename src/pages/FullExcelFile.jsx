@@ -777,20 +777,50 @@ useEffect(() => {
     const rowNumber = parseInt(lastRange, 10);
     if (isNaN(rowNumber)) return;
 
-    // find the row element in the preview table and scroll to center
-    requestAnimationFrame(() => {
-      const table = previewTableRef.current;
-      if (!table) return;
-      const rows = table.querySelectorAll("tbody tr");
-      const targetRow = rows[rowNumber - 1];
-      if (targetRow) {
-        targetRow.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      }
-    });
-  }, [rowRanges]);
+    // Calculate which page the row is on
+    const targetPageIndex = Math.floor((rowNumber - 1) / ROWS_PER_PAGE);
+    
+    // Update to the correct page if needed
+    if (targetPageIndex !== previewTablePage) {
+      setPreviewTablePage(targetPageIndex);
+      
+      // Scroll after page change completes (with delay for re-render)
+      setTimeout(() => {
+        const container = previewTableRef.current;
+        if (!container) return;
+        
+        // Find the row element in the paginated structure
+        const rows = container.querySelectorAll('div[style*="display: flex"]');
+        const rowIndexInPage = (rowNumber - 1) % ROWS_PER_PAGE;
+        const targetRow = rows[rowIndexInPage];
+        
+        if (targetRow) {
+          targetRow.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }, 100);
+    } else {
+      // Already on correct page, scroll immediately
+      requestAnimationFrame(() => {
+        const container = previewTableRef.current;
+        if (!container) return;
+        
+        // Find the row element in the paginated structure
+        const rows = container.querySelectorAll('div[style*="display: flex"]');
+        const rowIndexInPage = (rowNumber - 1) % ROWS_PER_PAGE;
+        const targetRow = rows[rowIndexInPage];
+        
+        if (targetRow) {
+          targetRow.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      });
+    }
+  }, [rowRanges, previewTablePage]);
 
   useEffect(()=>{if(debounceRef.current)clearTimeout(debounceRef.current);debounceRef.current=setTimeout(()=>buildTempSlices(),300);return()=>clearTimeout(debounceRef.current);},[rowRanges,newSheetName,copyFromSheet,selectedSheet,excelData]);
 
@@ -1364,7 +1394,7 @@ useEffect(() => {
                       </div>
                       
                       {/* Paginated body */}
-                      <div style={{ overflowY: "auto", maxHeight: "300px" }}>
+                      <div ref={previewTableRef} style={{ overflowY: "auto", maxHeight: "300px" }}>
                         {previewSheetWithPending.sheetData
                           .slice(previewTablePage * ROWS_PER_PAGE, (previewTablePage + 1) * ROWS_PER_PAGE)
                           .map((row, i) => (
