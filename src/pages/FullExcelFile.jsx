@@ -1367,6 +1367,7 @@ useEffect(() => {
                           display: 'flex',
                           background: "var(--ink)",
                           borderBottom: "1.5px solid var(--ink-20)",
+                          overflowX: "auto",
                         }}
                       >
                         {previewHeaders.map(key=>(
@@ -1374,7 +1375,7 @@ useEffect(() => {
                             key={key}
                             onClick={()=>{setYAxis(key);toggleColumnSelection(key);}}
                             style={{
-                              flex: 1,
+                              flex: "0 0 auto",
                               padding: "10px 14px",
                               textAlign: "left",
                               fontFamily: "'Syne', sans-serif",
@@ -1394,7 +1395,7 @@ useEffect(() => {
                       </div>
                       
                       {/* Paginated body */}
-                      <div ref={previewTableRef} style={{ overflowY: "auto", maxHeight: "300px" }}>
+                      <div ref={previewTableRef} style={{ overflowY: "auto", maxHeight: "300px", overflowX: "auto" }}>
                         {previewSheetWithPending.sheetData
                           .slice(previewTablePage * ROWS_PER_PAGE, (previewTablePage + 1) * ROWS_PER_PAGE)
                           .map((row, i) => (
@@ -1407,19 +1408,18 @@ useEffect(() => {
                                 ...getRowHighlightStyle(previewTablePage * ROWS_PER_PAGE + i),
                                 background: (previewTablePage * ROWS_PER_PAGE + i) % 2 === 0 ? "#fff" : "var(--paper)",
                                 borderBottom: "1px solid var(--paper-2)",
+                                minWidth: "fit-content",
                               }}
                             >
                               {previewHeaders.map((k, j) => (
                                 <div
                                   key={j}
                                   style={{
-                                    flex: 1,
+                                    flex: "0 0 auto",
                                     padding: "9px 14px",
                                     color: isColumnSelected(k) ? "var(--green)" : "var(--ink)",
                                     background: isColumnSelected(k) ? "#f0fdf4" : "transparent",
                                     whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
                                     minWidth: "120px",
                                   }}
                                 >
@@ -1595,68 +1595,68 @@ useEffect(() => {
                       overflow: "hidden",
                     }}
                   >
-                    {/* Header */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        background: "var(--ink)",
-                        borderBottom: "1.5px solid var(--ink-20)",
-                      }}
-                    >
-                      {Object.keys(displayedSelectedSheetData[0]).map((key) => (
-                        <div
-                          key={key}
-                          style={{
-                            flex: 1,
-                            padding: "10px 14px",
-                            textAlign: "left",
-                            fontFamily: "'Syne', sans-serif",
-                            fontWeight: 600,
-                            fontSize: "0.74rem",
-                            letterSpacing: "0.04em",
-                            textTransform: "uppercase",
-                            whiteSpace: "nowrap",
-                            color: isColumnSelected(key) ? "#86efac" : "var(--gold-light)",
-                            minWidth: "120px",
-                          }}
-                        >
-                          {key}
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Paginated body */}
-                    <div style={{ overflowY: "auto", maxHeight: "400px" }}>
-                      {displayedSelectedSheetData
-                        .slice(mainTablePage * ROWS_PER_PAGE, (mainTablePage + 1) * ROWS_PER_PAGE)
-                        .map((row, i) => (
-                          <div
-                            key={i}
-                            style={{
-                              display: 'flex',
-                              background: (mainTablePage * ROWS_PER_PAGE + i) % 2 === 0 ? "#fff" : "var(--paper)",
-                              borderBottom: "1px solid var(--paper-2)",
-                            }}
-                          >
-                            {Object.keys(displayedSelectedSheetData[0]).map((k, j) => (
-                              <div
-                                key={j}
+                    <div style={{ overflowY: "auto", maxHeight: "450px", overflowX: "auto" }}>
+                      <table
+                        style={{
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          fontSize: "0.8rem",
+                        }}
+                      >
+                        <thead>
+                          <tr>
+                            {Object.keys(displayedSelectedSheetData[0]).map((key) => (
+                              <th
+                                key={key}
                                 style={{
-                                  flex: 1,
-                                  padding: "9px 14px",
-                                  color: isColumnSelected(k) ? "var(--green)" : "var(--ink)",
-                                  background: isColumnSelected(k) ? "#f0fdf4" : "transparent",
+                                  position: "sticky",
+                                  top: 0,
+                                  zIndex: 2,
+                                  padding: "10px 14px",
+                                  textAlign: "left",
+                                  fontFamily: "'Syne', sans-serif",
+                                  fontWeight: 600,
+                                  fontSize: "0.74rem",
+                                  letterSpacing: "0.04em",
+                                  textTransform: "uppercase",
                                   whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
+                                  background: "var(--ink)",
+                                  color: isColumnSelected(key) ? "#86efac" : "var(--gold-light)",
                                   minWidth: "120px",
                                 }}
                               >
-                                {renderCellValue(row[k])}
-                              </div>
+                                {key}
+                              </th>
                             ))}
-                          </div>
-                        ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {displayedSelectedSheetData
+                            .slice(mainTablePage * ROWS_PER_PAGE, (mainTablePage + 1) * ROWS_PER_PAGE)
+                            .map((row, i) => (
+                              <tr
+                                key={i}
+                                style={{ background: (mainTablePage * ROWS_PER_PAGE + i) % 2 === 0 ? "#fff" : "var(--paper)" }}
+                              >
+                                {Object.keys(displayedSelectedSheetData[0]).map((k, j) => (
+                                  <td
+                                    key={j}
+                                    style={{
+                                      padding: "9px 14px",
+                                      borderBottom: "1px solid var(--paper-2)",
+                                      color: isColumnSelected(k) ? "var(--green)" : "var(--ink)",
+                                      background: isColumnSelected(k) ? "#f0fdf4" : "transparent",
+                                      whiteSpace: "nowrap",
+                                      minWidth: "120px",
+                                    }}
+                                  >
+                                    {renderCellValue(row[k])}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
                     </div>
                     
                     {/* Pagination controls */}
