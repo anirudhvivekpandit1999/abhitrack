@@ -386,40 +386,62 @@ function injectStyles() {
 const FullExcelFile = () => {
   injectStyles();
 
-  const [fileName, setFileName] = useState("");
+  // Initialize state from localStorage if available
+  const getInitialState = () => {
+    try {
+      const saved = localStorage.getItem("fullExcelSession");
+      if (saved) {
+        const sessionData = JSON.parse(saved);
+        // Check if session is too old (24 hours)
+        if (Date.now() - sessionData.timestamp > 24 * 60 * 60 * 1000) {
+          localStorage.removeItem("fullExcelSession");
+          return {};
+        }
+        console.log("📊 Initializing state from localStorage:", sessionData);
+        return sessionData;
+      }
+    } catch (e) {
+      console.warn("Failed to load initial state:", e);
+    }
+    return {};
+  };
+
+  const initialState = getInitialState();
+
+  const [fileName, setFileName] = useState(initialState.fileName || "");
   const [newColumnName, setNewColumnName] = useState("");
-  const [sheetNames, setSheetNames] = useState([]);
-  const [selectedSheet, setSelectedSheet] = useState("");
+  const [sheetNames, setSheetNames] = useState(initialState.sheetNames || []);
+  const [selectedSheet, setSelectedSheet] = useState(initialState.selectedSheet || "");
   const [selectedSheetData, setSelectedSheetData] = useState([]);
-  const [excelData, setExcelData] = useState([]);
+  const [excelData, setExcelData] = useState(initialState.excelData || []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showAddPanel, setShowAddPanel] = useState(false);
-  const [newSheetName, setNewSheetName] = useState("");
-  const [copyFromSheet, setCopyFromSheet] = useState("");
+  const [newSheetName, setNewSheetName] = useState(initialState.newSheetName || "");
+  const [copyFromSheet, setCopyFromSheet] = useState(initialState.copyFromSheet || "");
   const [addLoading, setAddLoading] = useState(false);
   const [columnNames, setColumnNames] = useState([]);
-  const [selectedColumns, setSelectedColumns] = useState([""]);
-  const [xAxis, setXAxis] = useState("");
-  const [yAxis, setYAxis] = useState("");
-  const [bifurcateSlices, setBifurcateSlices] = useState([]);
-  const [headerRowIndex, setHeaderRowIndex] = useState(null);
+  const [selectedColumns, setSelectedColumns] = useState(initialState.selectedColumns || [""]);
+  const [xAxis, setXAxis] = useState(initialState.xAxis || "");
+  const [yAxis, setYAxis] = useState(initialState.yAxis || "");
+  const [bifurcateSlices, setBifurcateSlices] = useState(initialState.bifurcateSlices || []);
+  const [headerRowIndex, setHeaderRowIndex] = useState(initialState.headerRowIndex !== null ? initialState.headerRowIndex : null);
   const fileInputRef = useRef(null);
   const debounceRef = useRef(null);
   const addGridRef = useRef(null);
   const previewTableRef = useRef(null);
   const [addGridHeight, setAddGridHeight] = useState(560);
-  const [rowRanges, setRowRanges] = useState([
+  const [rowRanges, setRowRanges] = useState(initialState.rowRanges || [
     { name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" },
     { name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" },
   ]);
   const [activeTarget, setActiveTarget] = useState(null);
-  const [preProduct, setPreProduct] = useState("");
-  const [postProduct, setPostProduct] = useState("");
-  const [cols, setCols] = useState([]);
-  const [clientName, setClientName] = useState("");
-  const [plantName, setPlantName] = useState("");
-  const [productName, setProductName] = useState("");
+  const [preProduct, setPreProduct] = useState(initialState.preProduct || "");
+  const [postProduct, setPostProduct] = useState(initialState.postProduct || "");
+  const [cols, setCols] = useState(initialState.cols || []);
+  const [clientName, setClientName] = useState(initialState.clientName || "");
+  const [plantName, setPlantName] = useState(initialState.plantName || "");
+  const [productName, setProductName] = useState(initialState.productName || "");
   const [showColumnBuilder, setShowColumnBuilder] = useState(false);
   const [builderRows, setBuilderRows] = useState([]);
   const [isListening, setIsListening] = useState(false);
@@ -443,6 +465,91 @@ const FullExcelFile = () => {
   const ROWS_PER_PAGE = 50;
 
   const navigation = useNavigate();
+
+  // ─── SESSION STATE PERSISTENCE ───
+  const SESSION_KEY = "fullExcelSession";
+
+  const saveSessionState = useCallback(() => {
+    try {
+      const sessionData = {
+        fileName,
+        sheetNames,
+        selectedSheet,
+        excelData: excelData.map(sheet => ({
+          sheetName: sheet.sheetName,
+          sheetData: sheet.sheetData.slice(0, 1000) // Limit data size for storage
+        })),
+        cols,
+        clientName,
+        plantName,
+        productName,
+        selectedColumns,
+        xAxis,
+        yAxis,
+        preProduct,
+        postProduct,
+        rowRanges,
+        bifurcateSlices,
+        newSheetName,
+        copyFromSheet,
+        headerRowIndex,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+      console.log("✅ Session state saved");
+    } catch (e) {
+      console.warn("Failed to save session state:", e);
+    }
+  }, [
+    fileName, sheetNames, selectedSheet, excelData, cols,
+    clientName, plantName, productName, selectedColumns,
+    xAxis, yAxis, preProduct, postProduct, rowRanges,
+    bifurcateSlices, newSheetName, copyFromSheet, headerRowIndex
+  ]);
+
+  const clearSessionState = useCallback(() => {
+    try {
+      localStorage.removeItem(SESSION_KEY);
+      console.log("🗑 Session state cleared");
+    } catch (e) {
+      console.warn("Failed to clear session state:", e);
+    }
+  }, []);
+
+  // Restore selectedSheetData if we have the data
+  useEffect(() => {
+    console.log("🔄 Component mounted, checking initial state");
+    console.log("📊 Initial state check - fileName:", fileName, "sheetNames:", sheetNames, "excelData length:", excelData.length);
+    
+    // Restore selectedSheetData if we have the data
+    if (selectedSheet && excelData.length > 0) {
+      const found = excelData.find(s => s.sheetName === selectedSheet);
+      if (found && found.sheetData) {
+        console.log("📋 Restoring selectedSheetData for sheet:", selectedSheet);
+        setSelectedSheetData(found.sheetData);
+      }
+    }
+  }, [selectedSheet, excelData]);
+
+  // Save session state when critical state changes
+  useEffect(() => {
+    saveSessionState();
+  }, [saveSessionState]);
+
+  // Save state before unmount (when navigating away)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      console.log("💾 Saving state before unload");
+      saveSessionState();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      console.log("🧹 Component unmounting, saving state");
+      saveSessionState();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [saveSessionState]);
 
   useEffect(() => {
     const saved = localStorage.getItem("recentFiles");
@@ -1079,6 +1186,18 @@ useEffect(() => {
     const currentCols =
       currentSheetData.length > 0 ? Object.keys(currentSheetData[0]) : [];
 
+    console.log("🚀 Continuing with current sheet, saving state...");
+    console.log("📊 State to save:", { fileName, sheetNames, selectedSheet, excelDataLength: excelData.length });
+    
+    // Save session state before navigation
+    saveSessionState();
+    
+    // Verify it was saved
+    setTimeout(() => {
+      const saved = localStorage.getItem(SESSION_KEY);
+      console.log("✅ Verification - State saved:", !!saved);
+    }, 100);
+
     navigation("/visualize-data", {
       state: {
         singleSheetMode: true,
@@ -1567,6 +1686,13 @@ useEffect(() => {
                   >
                     Continue with Current Sheet
                   </button>
+                  <button
+                    className="xf-btn xf-btn-ghost xf-btn-sm"
+                    onClick={clearSessionState}
+                    title="Clear session data"
+                  >
+                    🗑 Clear Session
+                  </button>
                 </div>
               </div>
 
@@ -1710,7 +1836,9 @@ useEffect(() => {
                   try{
                     const preSheetData=(excelData.find(s=>s.sheetName===preProduct))?.sheetData;
                     const postSheetData=(excelData.find(s=>s.sheetName===postProduct))?.sheetData;
-                    navigation("/visualize-data",{state:{availableCols:Array.from(new Set(cols||[])),preProductData:preSheetData,postProductData:postSheetData,excelData,sheetNames,preSheetName:preProduct,postSheetName:postProduct}});
+                    // Save session state before navigation
+                    saveSessionState();
+                    navigation("/visualize-data",{state:{availableCols:Array.from(new Set(cols||[])),preProductData:preSheetData,postProductData:postSheetData,excelData,sheetNames,preSheetName:preProduct,postSheetName:postProduct,clientName,plantName,productName}});
                   }catch(e){console.error(e);}
                 }}
               >
