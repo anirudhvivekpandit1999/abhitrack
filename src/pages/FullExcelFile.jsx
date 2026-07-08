@@ -425,16 +425,45 @@ const FullExcelFile = () => {
   const [xAxis, setXAxis] = useState(initialState.xAxis || "");
   const [yAxis, setYAxis] = useState(initialState.yAxis || "");
   const [bifurcateSlices, setBifurcateSlices] = useState(initialState.bifurcateSlices || []);
-  const [headerRowIndex, setHeaderRowIndex] = useState(initialState.headerRowIndex !== null ? initialState.headerRowIndex : null);
+  const [headerRowIndex, setHeaderRowIndex] = useState(initialState.headerRowIndex ?? null);
   const fileInputRef = useRef(null);
   const debounceRef = useRef(null);
   const addGridRef = useRef(null);
   const previewTableRef = useRef(null);
   const [addGridHeight, setAddGridHeight] = useState(560);
-  const [rowRanges, setRowRanges] = useState(initialState.rowRanges || [
-    { name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" },
-    { name: "", startRange: "", endRange: "", startDisplay: "", endDisplay: "" },
-  ]);
+  const makeEmptyRange = useCallback((index = 0) => ({
+    name: `Range ${index + 1}`,
+    startRange: "",
+    endRange: "",
+    startDisplay: "",
+    endDisplay: ""
+  }), []);
+  const makeSheetRangeConfig = useCallback((name, ranges) => ({
+    name,
+    ranges: Array.isArray(ranges) && ranges.length ? ranges : [makeEmptyRange(0)]
+  }), [makeEmptyRange]);
+  const getInitialGeneratedSheetConfigs = useCallback(() => {
+    if (Array.isArray(initialState.generatedSheetConfigs) && initialState.generatedSheetConfigs.length) {
+      return initialState.generatedSheetConfigs.map((config, idx) => makeSheetRangeConfig(
+        config?.name || (idx === 0 ? "Pre" : idx === 1 ? "Post" : `Sheet ${idx + 1}`),
+        config?.ranges
+      ));
+    }
+    if (Array.isArray(initialState.rowRanges) && initialState.rowRanges.length) {
+      return [makeSheetRangeConfig(initialState.newSheetName || "Pre", initialState.rowRanges)];
+    }
+    return [
+      makeSheetRangeConfig("Pre", [makeEmptyRange(0)]),
+      makeSheetRangeConfig("Post", [makeEmptyRange(0)])
+    ];
+  }, [initialState.generatedSheetConfigs, initialState.newSheetName, initialState.rowRanges, makeEmptyRange, makeSheetRangeConfig]);
+  const [generatedSheetConfigs, setGeneratedSheetConfigs] = useState(getInitialGeneratedSheetConfigs);
+  const rowRanges = useMemo(() => generatedSheetConfigs.flatMap(sheetConfig => (
+    (sheetConfig.ranges || []).map(range => ({
+      ...range,
+      sheetName: sheetConfig.name
+    }))
+  )), [generatedSheetConfigs]);
   const [activeTarget, setActiveTarget] = useState(null);
   const [preProduct, setPreProduct] = useState(initialState.preProduct || "");
   const [postProduct, setPostProduct] = useState(initialState.postProduct || "");
@@ -489,6 +518,7 @@ const FullExcelFile = () => {
         preProduct,
         postProduct,
         rowRanges,
+        generatedSheetConfigs,
         bifurcateSlices,
         newSheetName,
         copyFromSheet,
@@ -504,7 +534,7 @@ const FullExcelFile = () => {
     fileName, sheetNames, selectedSheet, excelData, cols,
     clientName, plantName, productName, selectedColumns,
     xAxis, yAxis, preProduct, postProduct, rowRanges,
-    bifurcateSlices, newSheetName, copyFromSheet, headerRowIndex
+    generatedSheetConfigs, bifurcateSlices, newSheetName, copyFromSheet, headerRowIndex
   ]);
 
   const clearSessionState = useCallback(() => {
@@ -661,7 +691,7 @@ const FullExcelFile = () => {
         const preSheetName=preProduct??"";const sheet=sheetNames??{};
         const postSheetData=(excelData?.find(s=>s?.sheetName===postProduct))?.sheetData;
         const postSheetName=postProduct??"";
-        navigation("/visualize-data",{state:{availableCols:Array.from(new Set(cols||[])),preProductData:preSheetData??{},postProductData:postSheetData??{},excelData:excelData??{},sheetNames:sheet??"",preSheetName:preSheetName??"",postSheetName:postSheetName??''}});continue;
+        navigation("/visualize-data",{state:{availableCols:Array.from(new Set(cols||[])),preProductData:preSheetData??{},postProductData:postSheetData??{},excelData:excelData??{},sheetNames:sheet??"",preSheetName:preSheetName??"",postSheetName:postSheetName??'',rowRanges,generatedSheetConfigs}});continue;
       }
       if(intent==="add_formula_column"){
         const clauseMatch=originalText.match(/(add|create|make).*?formula column.*?(?=\.|,| then | and |$)/i);
@@ -687,12 +717,12 @@ const FullExcelFile = () => {
       if(intent==="set_pre_sheet_name"){
         const patterns=[/set\s+(?:the\s+)?preprocessing\s+sheet\s+(?:name\s+)?(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,/rename\s+(?:the\s+)?preprocessing\s+sheet\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,/call\s+(?:the\s+)?preprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,/preprocessing\s+sheet\s+(?:as|to)\s+["']?([^"'.!,\n]+)["']?/i];
         let sheetName=null;for(let p of patterns){const m=originalText.match(p);if(m&&m[1]){sheetName=m[1].trim();}}
-        if(sheetName){sheetName=sheetName.replace(/\b(before|after|then|and)\b.*$/i,"").trim();handleRowRangeChange(0,"name",sheetName,"");continue;}
+        if(sheetName){sheetName=sheetName.replace(/\b(before|after|then|and)\b.*$/i,"").trim();updateGeneratedSheetName(0,sheetName);continue;}
       }
       if(intent==="set_post_sheet_name"){
         const patterns=[/set\s+(?:the\s+)?postprocessing\s+sheet\s+(?:name\s+)?(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,/rename\s+(?:the\s+)?postprocessing\s+sheet\s+(?:to\s+)?["']?([^"'.!,\n]+)["']?/i,/call\s+(?:the\s+)?postprocessing\s+sheet\s+["']?([^"'.!,\n]+)["']?/i,/postprocessing\s+sheet\s+(?:as|to)\s+["']?([^"'.!,\n]+)["']?/i];
         let sheetName=null;for(let p of patterns){const m=originalText.match(p);if(m&&m[1]){sheetName=m[1].trim();}}
-        if(sheetName){sheetName=sheetName.replace(/\b(before|after|then|and)\b.*$/i,"").trim();handleRowRangeChange(1,"name",sheetName,"");continue;}
+        if(sheetName){sheetName=sheetName.replace(/\b(before|after|then|and)\b.*$/i,"").trim();updateGeneratedSheetName(1,sheetName);continue;}
       }
       if(intent==="set_y_axis"){
         const patterns=[/set\s+(?:the\s+)?y\s*axis\s+(?:to|as)\s+["']?([^"'.!,\n]+)["']?/i,/y\s*axis\s+should\s+be\s+["']?([^"'.!,\n]+)["']?/i,/use\s+["']?([^"'.!,\n]+)["']?\s+as\s+y\s*axis/i];
@@ -855,23 +885,73 @@ const FullExcelFile = () => {
     const baseSheet=excelData.find(s=>s.sheetName===(copyFromSheet||selectedSheet));
     const sheetRows=baseSheet&&Array.isArray(baseSheet.sheetData)?baseSheet.sheetData:[];
     const emojiColors=["🟢","🔴","🟡","🔵","🟣"];const hexMap={"🟢":"#10b981","🔴":"#ef4444","🟡":"#f59e0b","🔵":"#3b82f6","🟣":"#8b5cf6"};
-    const slices=rowRanges.map((rr,idx)=>{
-      if(!rr.name)return null;const range=parseRange(rr.startRange,rr.endRange);const rows=range?sheetRows.slice(range[0],range[1]+1):sheetRows;if(!rows.length)return null;
-      const cs=rows.length>0?Object.keys(rows[0]):[];const emoji=emojiColors[idx%emojiColors.length];
-      if(idx===0)setPreProduct(`${baseName}-${rr.name.trim()}`);if(idx===1)setPostProduct(`${baseName}-${rr.name.trim()}`);
-      return{name:rr.name.trim(),start:range?range[0]:0,end:range?range[1]:sheetRows.length-1,rows,cols:cs,colorEmoji:emoji,colorHex:hexMap[emoji],fullName:`${baseName}-${rr.name.trim()}`};
-    }).filter(Boolean);
+    
+    const slices = [];
+    generatedSheetConfigs.forEach((sheetConfig, sheetIdx) => {
+      const combinedRows = [];
+      const allRanges = [];
+
+      (sheetConfig.ranges || []).forEach((rr, rangeIdx) => {
+        if (!rr.startRange) return;
+
+        const parsedRange = parseRange(rr.startRange, rr.endRange);
+        const rangeRows = parsedRange ? sheetRows.slice(parsedRange[0], parsedRange[1] + 1) : [];
+
+        if (rangeRows.length > 0) {
+          combinedRows.push(...rangeRows);
+          allRanges.push({
+            name: rr.name || `Range ${rangeIdx + 1}`,
+            start: parsedRange[0],
+            end: parsedRange[1],
+            startDisplay: rr.startDisplay || "",
+            endDisplay: rr.endDisplay || ""
+          });
+        }
+      });
+
+      if (!combinedRows.length) return;
+
+      const cs = Object.keys(combinedRows[0] || {});
+      const emoji = emojiColors[sheetIdx % emojiColors.length];
+      const sliceName = (sheetConfig.name || `Sheet ${sheetIdx + 1}`).trim();
+      const fullName = normalizeSheetName(`${baseName}-${sliceName}`);
+
+      slices.push({
+        name: sliceName,
+        start: 0,
+        end: combinedRows.length - 1,
+        rows: combinedRows,
+        cols: cs,
+        colorEmoji: emoji,
+        colorHex: hexMap[emoji],
+        fullName: fullName,
+        ranges: allRanges
+      });
+    });
+
+    if (slices.length > 0) {
+      const firstSheetName = slices[0]?.fullName || "";
+      const secondSheetName = slices[1]?.fullName || firstSheetName;
+      setPreProduct(firstSheetName);
+      setPostProduct(secondSheetName);
+    } else if (showAddPanel) {
+      setPreProduct("");
+      setPostProduct("");
+    }
+    
     setBifurcateSlices(slices);
     try{localStorage.setItem(`temp_bifurcate_${baseName}`,JSON.stringify(slices));}catch(e){}
     const unionCols=new Set();if(baseSheet&&baseSheet.sheetData&&baseSheet.sheetData.length)Object.keys(baseSheet.sheetData[0]).forEach(c=>unionCols.add(c));slices.forEach(s=>s.cols.forEach(c=>unionCols.add(c)));
     try{const pending=sessionStorage.getItem("pendingColumnsToAdd");if(pending){const parsed=JSON.parse(pending);if(Array.isArray(parsed))parsed.forEach(p=>{if(p&&p.name)unionCols.add(p.name);});}}catch(e){}
     setColumnNames(Array.from(unionCols));
+    return slices;
   };
 
   // AUTO SCROLL — focus selected row to center of preview
 useEffect(() => {
     // collect ALL range values from ALL ranges dynamically
     const allRanges = [];
+    
     rowRanges.forEach(range => {
       if (range?.startRange) allRanges.push(range.startRange);
       if (range?.endRange) allRanges.push(range.endRange);
@@ -929,7 +1009,7 @@ useEffect(() => {
     }
   }, [rowRanges, previewTablePage]);
 
-  useEffect(()=>{if(debounceRef.current)clearTimeout(debounceRef.current);debounceRef.current=setTimeout(()=>buildTempSlices(),300);return()=>clearTimeout(debounceRef.current);},[rowRanges,newSheetName,copyFromSheet,selectedSheet,excelData]);
+  useEffect(()=>{if(debounceRef.current)clearTimeout(debounceRef.current);debounceRef.current=setTimeout(()=>buildTempSlices(),300);return()=>clearTimeout(debounceRef.current);},[generatedSheetConfigs,newSheetName,copyFromSheet,selectedSheet,excelData,showAddPanel]);
 
   const escapeRegExp=useCallback((string)=>String(string).replace(/[.*+?^${}()|[\]\\]/g,"\\$&"), []);
   const evaluateFormulaForRow=useCallback((formula,row)=>{
@@ -949,32 +1029,54 @@ useEffect(() => {
 
   const handleAddSheetSubmit=async()=>{
     setError(null);let trimmed=newSheetName.trim();if(!trimmed){trimmed=localStorage.getItem("newSheetName");if(!trimmed){setError("Please enter a name");return;}}
-    const finalName=normalizeSheetName(trimmed);const collision=bifurcateSlices.some(s=>sheetNames.includes(`${finalName}-${s.name}`));if(collision){setError("A sheet with that name already exists");return;}
+    const finalName=normalizeSheetName(trimmed);
+    const slicesForSubmit=buildTempSlices();
+    const sourceSlices=slicesForSubmit.length?slicesForSubmit:bifurcateSlices;
+    const collision=sourceSlices.some(s=>sheetNames.includes(normalizeSheetName(`${finalName}-${s.name}`)));if(collision){setError("A sheet with that name already exists");return;}
     setAddLoading(true);
     try{
       let pendingCols=[];try{const pendingRaw=sessionStorage.getItem("pendingColumnsToAdd");if(pendingRaw)pendingCols=JSON.parse(pendingRaw);}catch(e){pendingCols=[];}
-      if(bifurcateSlices&&bifurcateSlices.length>0){
-        const newSheets=bifurcateSlices.map(s=>{const picks=selectedColumns.filter(c=>c&&c!=="");let sheetRows=s.rows;
+      let createdSheetNames=[];
+      if(sourceSlices&&sourceSlices.length>0){
+        const newSheets=sourceSlices.map(s=>{const picks=selectedColumns.filter(c=>c&&c!=="");let sheetRows=s.rows;
           if(picks.length>0){sheetRows=sheetRows.map((row,idx)=>{const nr={};picks.forEach(k=>nr[k]=row[k]);pendingCols.forEach(pc=>{if(pc&&pc.name){const globalIndex=s.start+idx;const val=resolvePendingValue(pc,row,globalIndex);nr[pc.name]=val;}});return nr;});}
           else{sheetRows=sheetRows.map((row,idx)=>{const nr={...row};pendingCols.forEach(pc=>{if(pc&&pc.name){const globalIndex=s.start+idx;const val=resolvePendingValue(pc,row,globalIndex);nr[pc.name]=val;}});return nr;});}
-          return{sheetName:`${finalName}-${s.name}`,sheetData:sheetRows};});
+          return{sheetName:normalizeSheetName(`${finalName}-${s.name.trim()}`),sheetData:sheetRows,ranges:s.ranges || []};});
+        createdSheetNames=newSheets.map(ns=>ns.sheetName);
         setSheetNames(prev=>[...prev,...newSheets.map(ns=>ns.sheetName)]);setExcelData(prev=>[...prev,...newSheets]);
       }else if(copyFromSheet){
         const found=excelData.find(s=>s.sheetName===copyFromSheet);const sourceData=found?found.sheetData||[]:[];const picks=selectedColumns.filter(c=>c&&c!=="");let dataToCopy=[];
         if(picks.length>0&&sourceData.length>0){dataToCopy=sourceData.map((row,idx)=>{const newRow={};picks.forEach(k=>newRow[k]=row[k]);pendingCols.forEach(pc=>{if(pc&&pc.name){const val=resolvePendingValue(pc,row,idx);newRow[pc.name]=val;}});return newRow;});}
         else{dataToCopy=sourceData.map((row,idx)=>{const nr={...row};pendingCols.forEach(pc=>{if(pc&&pc.name){const val=resolvePendingValue(pc,row,idx);nr[pc.name]=val;}});return nr;});}
-        const sheetObj={sheetName:finalName,sheetData:dataToCopy};setSheetNames(prev=>[...prev,finalName]);setExcelData(prev=>[...prev,sheetObj]);
-      }else{const sheetObj={sheetName:finalName,sheetData:[]};setSheetNames(prev=>[...prev,finalName]);setExcelData(prev=>[...prev,sheetObj]);}
-      setSelectedSheet(finalName);setShowAddPanel(false);setNewSheetName("");setCopyFromSheet("");setCols(Array.from(new Set(selectedColumns||[])));setColumnNames([]);setSelectedColumns([""]);setRowRanges([{name:"",startRange:"",endRange:"",startDisplay:"",endDisplay:""}]);setBifurcateSlices([]);
+        const sheetObj={sheetName:finalName,sheetData:dataToCopy};createdSheetNames=[finalName];setSheetNames(prev=>[...prev,finalName]);setExcelData(prev=>[...prev,sheetObj]);
+      }else{const sheetObj={sheetName:finalName,sheetData:[]};createdSheetNames=[finalName];setSheetNames(prev=>[...prev,finalName]);setExcelData(prev=>[...prev,sheetObj]);}
+      if(createdSheetNames.length){setPreProduct(createdSheetNames[0]);setPostProduct(createdSheetNames[1] || createdSheetNames[0]);}
+      setSelectedSheet(createdSheetNames[0] || finalName);setShowAddPanel(false);setNewSheetName("");setCopyFromSheet("");setCols(Array.from(new Set(selectedColumns||[])));setColumnNames([]);setSelectedColumns([""]);setGeneratedSheetConfigs([makeSheetRangeConfig("Pre",[makeEmptyRange(0)]),makeSheetRangeConfig("Post",[makeEmptyRange(0)])]);setBifurcateSlices([]);
       try{localStorage.removeItem(`temp_bifurcate_${finalName}`);}catch(e){}try{sessionStorage.removeItem("pendingColumnsToAdd");}catch(e){}
     }catch(e){console.error(e);setError("Failed to create file");}finally{setAddLoading(false);}
   };
 
   const toggleColumnSelection=(col)=>{setSelectedColumns(prev=>{if(prev.includes(col)){const idx=prev.indexOf(col);const next=[...prev];next[idx]="";return next;}else{const idx=prev.indexOf("");if(idx!==-1){const next=[...prev];next[idx]=col;return next;}else return[...prev,col];}});};
-  const addRowRange=()=>setRowRanges(prev=>[...prev,{name:"",startRange:"",endRange:"",startDisplay:"",endDisplay:""}]);
-  const removeRowRange=(idx)=>setRowRanges(prev=>prev.filter((_,i)=>i!==idx));
-  const handleRowRangeChange=(idx,field,value,name)=>{
-    setRowRanges(prev=>prev.map((r,i)=>{if(i!==idx)return r;const updated={...r,[field]:value};if(field==="startRange"){updated.startDisplay="";setPreProduct(name+"-"+updated.name);}if(field==="endRange"){updated.endDisplay="";setPostProduct(name+"-"+updated.name);}return updated;}));
+  const updateGeneratedSheetName=(sheetIdx,value)=>{
+    setGeneratedSheetConfigs(prev=>prev.map((sheetConfig,i)=>i===sheetIdx?{...sheetConfig,name:value}:sheetConfig));
+  };
+  const addGeneratedSheet=()=>setGeneratedSheetConfigs(prev=>[...prev,makeSheetRangeConfig(`Sheet ${prev.length+1}`,[makeEmptyRange(0)])]);
+  const removeGeneratedSheet=(sheetIdx)=>setGeneratedSheetConfigs(prev=>prev.filter((_,i)=>i!==sheetIdx));
+  const addRowRange=(sheetIdx)=>setGeneratedSheetConfigs(prev=>prev.map((sheetConfig,i)=>{
+    if(i!==sheetIdx)return sheetConfig;
+    const ranges=sheetConfig.ranges||[];
+    return{...sheetConfig,ranges:[...ranges,makeEmptyRange(ranges.length)]};
+  }));
+  const removeRowRange=(sheetIdx,rangeIdx)=>setGeneratedSheetConfigs(prev=>prev.map((sheetConfig,i)=>{
+    if(i!==sheetIdx)return sheetConfig;
+    const nextRanges=(sheetConfig.ranges||[]).filter((_,idx)=>idx!==rangeIdx);
+    return{...sheetConfig,ranges:nextRanges.length?nextRanges:[makeEmptyRange(0)]};
+  }));
+  const handleRowRangeChange=(sheetIdx,rangeIdx,field,value)=>{
+    setGeneratedSheetConfigs(prev=>prev.map((sheetConfig,i)=>{
+      if(i!==sheetIdx)return sheetConfig;
+      return{...sheetConfig,ranges:(sheetConfig.ranges||[]).map((range,idx)=>idx===rangeIdx?{...range,[field]:value}:range)};
+    }));
   };
 
   const getNumeric=useCallback((row,col)=>{const n=Number(row[col]);if(!isNaN(n))return n;const alt=row[`__num__${col}`];if(typeof alt==="number")return alt;const dt=new Date(row[col]);if(!isNaN(dt.getTime()))return dt.getTime();return NaN;}, []);
@@ -1008,25 +1110,27 @@ useEffect(() => {
       const range = rowRanges[i];
       if (!range?.startRange) continue;
 
-      const start = parseInt(range.startRange, 10);
-      const end = range.endRange ? parseInt(range.endRange, 10) : null;
+      const startValue = parseInt(range.startRange, 10);
+      const endValue = range.endRange ? parseInt(range.endRange, 10) : null;
       const color = RANGE_COLORS[i % RANGE_COLORS.length];
 
-      if (!end && currentRowNum === start) {
+      if (!endValue && currentRowNum === startValue) {
         return {
           backgroundColor: color.single,
           borderLeft: `4px solid ${color.border}`
         };
       }
 
-      if (end) {
-        if (currentRowNum === start) {
+      if (endValue) {
+        const start = Math.min(startValue, endValue);
+        const end = Math.max(startValue, endValue);
+        if (currentRowNum === startValue || currentRowNum === endValue) {
           return {
             backgroundColor: color.single,
             borderLeft: `4px solid ${color.border}`
           };
         }
-        if (currentRowNum > start && currentRowNum <= end) {
+        if (currentRowNum > start && currentRowNum < end) {
           return { backgroundColor: color.full };
         }
       }
@@ -1137,26 +1241,24 @@ useEffect(() => {
   }
 
   // EXISTING: date range selection (unchanged)
-  const { idx, field } = activeTarget;
+  const { sheetIdx = 0, rangeIdx = activeTarget.idx || 0, field } = activeTarget;
   const dateStr = getPreviewRowDate(rowIndex);
-  setRowRanges(prev => prev.map((r, i) => {
-    if (i !== idx) return r;
-    if (field === "startRange") return {
-      ...r,
-      startRange: String(rowIndex + 1),
-      startDisplay: dateStr || ""
+  setGeneratedSheetConfigs(prev => prev.map((sheetConfig, i) => {
+    if (i !== sheetIdx) return sheetConfig;
+    return {
+      ...sheetConfig,
+      ranges: (sheetConfig.ranges || []).map((range, j) => {
+        if (j !== rangeIdx) return range;
+        if (field === "startRange") return { ...range, startRange: String(rowIndex + 1), startDisplay: dateStr || "" };
+        if (field === "endRange") return { ...range, endRange: String(rowIndex + 1), endDisplay: dateStr || "" };
+        return range;
+      })
     };
-    if (field === "endRange") return {
-      ...r,
-      endRange: String(rowIndex + 1),
-      endDisplay: dateStr || ""
-    };
-    return r;
   }));
   setActiveTarget(null);
   setVoiceFeedback(
     `${field === "startRange" ? "Start" : "End"} of
-     ${idx === 0 ? "PRE" : "POST"} range set to row ${rowIndex + 1}`
+     ${generatedSheetConfigs[sheetIdx]?.name || `Sheet ${sheetIdx + 1}`} range ${rangeIdx + 1} set to row ${rowIndex + 1}`
   );
   setTimeout(() => setVoiceFeedback(""), 2000);
 };
@@ -1216,6 +1318,9 @@ useEffect(() => {
         postProductData: [],
         preSheetName: selectedSheet,
         postSheetName: "",
+        // Pass rowRanges with sub-ranges for multi-range support
+        rowRanges: rowRanges,
+        generatedSheetConfigs,
       },
     });
   };
@@ -1321,141 +1426,119 @@ useEffect(() => {
 
                   <div className="xf-group" style={{ marginTop: "20px" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                      <label className="xf-label" style={{ margin: 0 }}>Row Ranges</label>
-                      <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={addRowRange}>+ Add Range</button>
+                      <label className="xf-label" style={{ margin: 0 }}>Generated Sheets & Data Ranges</label>
+                      <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={addGeneratedSheet}>+ Add Sheet</button>
                     </div>
 
-                    <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
-                      <span style={{ flex: "1.2", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>Name</span>
-                      <span style={{ flex: 1, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>Start Date</span>
-                      <span style={{ flex: 1, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>End Date</span>
-                    </div>
-
-                    {rowRanges.map((rr, idx) => (
-                      <div key={idx} className="xf-range-row">
-                        <input
-                          value={rr.name}
-                          onChange={e => handleRowRangeChange(idx, "name", e.target.value, newSheetName)}
-                          placeholder="Enter range name"
-                          style={{ flex: "1.2" }}
-                        />
-
-                        {/* Start date input */}
-                        <input
-                          type="date"
-                          value={rr.startDisplay || ""}
-                          onChange={e => {
-                            const dateVal = e.target.value;
-                            const dateKey = previewHeaders.find(h => h.toLowerCase().includes("date"))
-                              || previewHeaders.find(h => h.toLowerCase().includes("time"))
-                              || previewHeaders[0];
-
-                            let matchedRowIndex = -1;
-                            if (dateKey && previewSheetWithPending.sheetData?.length) {
-                              matchedRowIndex = previewSheetWithPending.sheetData.findIndex(row => {
-                                const cellVal = formatDate(row[dateKey]);
-                                const cellNorm = String(cellVal || "").replace(/-0/g, "-");
-                                const inputNorm = dateVal.replace(/-0(\d)/g, "-$1");
-                                return cellNorm === inputNorm || String(cellVal) === dateVal;
-                              });
-                            }
-
-                            setRowRanges(prev => prev.map((r, i) => {
-                              if (i !== idx) return r;
-                              return {
-                                ...r,
-                                startRange: matchedRowIndex !== -1 ? String(matchedRowIndex + 1) : "",
-                                startDisplay: dateVal,
-                              };
-                            }));
-
-                            if (matchedRowIndex === -1 && dateVal) {
-                              setRowRanges(prev => prev.map((r, i) => {
-                                if (i !== idx) return r;
-                                return { ...r, startDisplay: dateVal, startRange: "" };
-                              }));
-                            }
-                          }}
-                          style={{
-                            flex: 1,
-                            background: "var(--paper)",
-                            border: `1.5px solid ${rr.startRange ? "var(--green)" : "var(--ink-20)"}`,
-                            borderRadius: "8px",
-                            padding: "8px 10px",
-                            fontFamily: "'DM Sans', sans-serif",
-                            fontSize: "0.82rem",
-                            color: "var(--ink)",
-                            outline: "none",
-                          }}
-                        />
-
-                        {/* End date input */}
-                        <input
-                          type="date"
-                          value={rr.endDisplay || ""}
-                          onChange={e => {
-                            const dateVal = e.target.value;
-                            const dateKey = previewHeaders.find(h => h.toLowerCase().includes("date"))
-                              || previewHeaders.find(h => h.toLowerCase().includes("time"))
-                              || previewHeaders[0];
-
-                            let matchedRowIndex = -1;
-                            if (dateKey && previewSheetWithPending.sheetData?.length) {
-                              const data = previewSheetWithPending.sheetData;
-                              for (let i = data.length - 1; i >= 0; i--) {
-                                const cellVal = formatDate(data[i][dateKey]);
-                                const cellNorm = String(cellVal || "").replace(/-0/g, "-");
-                                const inputNorm = dateVal.replace(/-0(\d)/g, "-$1");
-                                if (cellNorm === inputNorm || String(cellVal) === dateVal) {
-                                  matchedRowIndex = i;
-                                  break;
-                                }
-                              }
-
-                              if (matchedRowIndex === -1) {
-                                const inputMs = new Date(dateVal).getTime();
-                                for (let i = data.length - 1; i >= 0; i--) {
-                                  const cellVal = formatDate(data[i][dateKey]);
-                                  const cellMs = new Date(String(cellVal)).getTime();
-                                  if (!isNaN(cellMs) && cellMs <= inputMs) {
-                                    matchedRowIndex = i;
-                                    break;
-                                  }
-                                }
-                              }
-                            }
-
-                            setRowRanges(prev => prev.map((r, i) => {
-                              if (i !== idx) return r;
-                              return {
-                                ...r,
-                                endRange: matchedRowIndex !== -1 ? String(matchedRowIndex + 1) : "",
-                                endDisplay: dateVal,
-                              };
-                            }));
-                          }}
-                          style={{
-                            flex: 1,
-                            background: "var(--paper)",
-                            border: `1.5px solid ${rr.endRange ? "var(--green)" : "var(--ink-20)"}`,
-                            borderRadius: "8px",
-                            padding: "8px 10px",
-                            fontFamily: "'DM Sans', sans-serif",
-                            fontSize: "0.82rem",
-                            color: "var(--ink)",
-                            outline: "none",
-                          }}
-                        />
-
-                        <div style={{ fontSize: "0.68rem", color: "var(--ink-60)", minWidth: "80px", textAlign: "center", display: "flex", flexDirection: "column", gap: "2px" }}>
-                          {rr.startRange && <span style={{ color: "var(--green)", fontWeight: 600 }}>▶ row {rr.startRange}</span>}
-                          {rr.endRange && <span style={{ color: "var(--green)", fontWeight: 600 }}>◀ row {rr.endRange}</span>}
-                          {(rr.startDisplay && !rr.startRange) && <span style={{ color: "var(--red)", fontSize: "0.65rem" }}>No match</span>}
+                    {generatedSheetConfigs.map((sheetConfig, sheetIdx) => (
+                      <div key={sheetIdx} style={{ border: "1.5px solid var(--ink-20)", borderRadius: "8px", padding: "12px", marginBottom: "12px", background: "#fff" }}>
+                        <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "10px" }}>
+                          <input
+                            value={sheetConfig.name}
+                            onChange={e => updateGeneratedSheetName(sheetIdx, e.target.value)}
+                            placeholder="Generated sheet name"
+                            style={{ flex: 1, background: "var(--paper)", border: "1.5px solid var(--ink-20)", borderRadius: "8px", padding: "8px 10px", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: "var(--ink)", outline: "none" }}
+                          />
+                          <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={() => addRowRange(sheetIdx)}>+ Range</button>
+                          {generatedSheetConfigs.length > 1 && (
+                            <button className="xf-btn xf-btn-danger xf-btn-sm" onClick={() => removeGeneratedSheet(sheetIdx)}>Remove</button>
+                          )}
                         </div>
 
-                        {rowRanges.length > 1 && (
-                          <button className="xf-btn xf-btn-danger xf-btn-sm" onClick={() => removeRowRange(idx)}>✕</button>
-                        )}
+                        <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
+                          <span style={{ flex: "1.2", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>Range Name</span>
+                          <span style={{ flex: 1, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>Start Date</span>
+                          <span style={{ flex: 1, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>End Date</span>
+                        </div>
+
+                        {(sheetConfig.ranges || []).map((rr, rangeIdx) => (
+                          <div key={rangeIdx} className="xf-range-row">
+                            <input
+                              value={rr.name}
+                              onChange={e => handleRowRangeChange(sheetIdx, rangeIdx, "name", e.target.value)}
+                              placeholder="Range name"
+                              style={{ flex: "1.2" }}
+                            />
+
+                            <input
+                              type="date"
+                              value={rr.startDisplay || ""}
+                              onChange={e => {
+                                const dateVal = e.target.value;
+                                const dateKey = previewHeaders.find(h => h.toLowerCase().includes("date"))
+                                  || previewHeaders.find(h => h.toLowerCase().includes("time"))
+                                  || previewHeaders[0];
+
+                                let matchedRowIndex = -1;
+                                if (dateKey && previewSheetWithPending.sheetData?.length) {
+                                  matchedRowIndex = previewSheetWithPending.sheetData.findIndex(row => {
+                                    const cellVal = formatDate(row[dateKey]);
+                                    const cellNorm = String(cellVal || "").replace(/-0/g, "-");
+                                    const inputNorm = dateVal.replace(/-0(\d)/g, "-$1");
+                                    return cellNorm === inputNorm || String(cellVal) === dateVal;
+                                  });
+                                }
+
+                                handleRowRangeChange(sheetIdx, rangeIdx, "startRange", matchedRowIndex !== -1 ? String(matchedRowIndex + 1) : "");
+                                handleRowRangeChange(sheetIdx, rangeIdx, "startDisplay", dateVal);
+                              }}
+                              style={{ flex: 1, background: "var(--paper)", border: `1.5px solid ${rr.startRange ? "var(--green)" : "var(--ink-20)"}`, borderRadius: "8px", padding: "8px 10px", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: "var(--ink)", outline: "none" }}
+                            />
+
+                            <input
+                              type="date"
+                              value={rr.endDisplay || ""}
+                              onChange={e => {
+                                const dateVal = e.target.value;
+                                const dateKey = previewHeaders.find(h => h.toLowerCase().includes("date"))
+                                  || previewHeaders.find(h => h.toLowerCase().includes("time"))
+                                  || previewHeaders[0];
+
+                                let matchedRowIndex = -1;
+                                if (dateKey && previewSheetWithPending.sheetData?.length) {
+                                  const data = previewSheetWithPending.sheetData;
+                                  for (let i = data.length - 1; i >= 0; i--) {
+                                    const cellVal = formatDate(data[i][dateKey]);
+                                    const cellNorm = String(cellVal || "").replace(/-0/g, "-");
+                                    const inputNorm = dateVal.replace(/-0(\d)/g, "-$1");
+                                    if (cellNorm === inputNorm || String(cellVal) === dateVal) {
+                                      matchedRowIndex = i;
+                                      break;
+                                    }
+                                  }
+
+                                  if (matchedRowIndex === -1) {
+                                    const inputMs = new Date(dateVal).getTime();
+                                    for (let i = data.length - 1; i >= 0; i--) {
+                                      const cellVal = formatDate(data[i][dateKey]);
+                                      const cellMs = new Date(String(cellVal)).getTime();
+                                      if (!isNaN(cellMs) && cellMs <= inputMs) {
+                                        matchedRowIndex = i;
+                                        break;
+                                      }
+                                    }
+                                  }
+                                }
+
+                                handleRowRangeChange(sheetIdx, rangeIdx, "endRange", matchedRowIndex !== -1 ? String(matchedRowIndex + 1) : "");
+                                handleRowRangeChange(sheetIdx, rangeIdx, "endDisplay", dateVal);
+                              }}
+                              style={{ flex: 1, background: "var(--paper)", border: `1.5px solid ${rr.endRange ? "var(--green)" : "var(--ink-20)"}`, borderRadius: "8px", padding: "8px 10px", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: "var(--ink)", outline: "none" }}
+                            />
+
+                            <div style={{ fontSize: "0.68rem", color: "var(--ink-60)", minWidth: "80px", textAlign: "center", display: "flex", flexDirection: "column", gap: "2px" }}>
+                              {rr.startRange && <span style={{ color: "var(--green)", fontWeight: 600 }}>row {rr.startRange}</span>}
+                              {rr.endRange && <span style={{ color: "var(--green)", fontWeight: 600 }}>row {rr.endRange}</span>}
+                              {(rr.startDisplay && !rr.startRange) && <span style={{ color: "var(--red)", fontSize: "0.65rem" }}>No match</span>}
+                            </div>
+
+                            <button className="xf-btn xf-btn-ghost xf-btn-sm" onClick={() => setActiveTarget({ sheetIdx, rangeIdx, field: "startRange" })}>Pick Start</button>
+                            <button className="xf-btn xf-btn-ghost xf-btn-sm" onClick={() => setActiveTarget({ sheetIdx, rangeIdx, field: "endRange" })}>Pick End</button>
+                            {(sheetConfig.ranges || []).length > 1 && (
+                              <button className="xf-btn xf-btn-danger xf-btn-sm" onClick={() => removeRowRange(sheetIdx, rangeIdx)}>X</button>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>
@@ -1524,8 +1607,8 @@ useEffect(() => {
                               style={{
                                 display: 'flex',
                                 cursor: activeTarget ? "pointer" : "default",
-                                ...getRowHighlightStyle(previewTablePage * ROWS_PER_PAGE + i),
                                 background: (previewTablePage * ROWS_PER_PAGE + i) % 2 === 0 ? "#fff" : "var(--paper)",
+                                ...getRowHighlightStyle(previewTablePage * ROWS_PER_PAGE + i),
                                 borderBottom: "1px solid var(--paper-2)",
                                 minWidth: "fit-content",
                               }}
@@ -1838,7 +1921,7 @@ useEffect(() => {
                     const postSheetData=(excelData.find(s=>s.sheetName===postProduct))?.sheetData;
                     // Save session state before navigation
                     saveSessionState();
-                    navigation("/visualize-data",{state:{availableCols:Array.from(new Set(cols||[])),preProductData:preSheetData,postProductData:postSheetData,excelData,sheetNames,preSheetName:preProduct,postSheetName:postProduct,clientName,plantName,productName}});
+                    navigation("/visualize-data",{state:{availableCols:Array.from(new Set(cols||[])),preProductData:preSheetData,postProductData:postSheetData,excelData,sheetNames,preSheetName:preProduct,postSheetName:postProduct,clientName,plantName,productName,rowRanges:rowRanges,generatedSheetConfigs}});
                   }catch(e){console.error(e);}
                 }}
               >

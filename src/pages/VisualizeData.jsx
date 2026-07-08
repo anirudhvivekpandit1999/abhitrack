@@ -53,7 +53,6 @@ const VisualizeData = () => {
     const [selectedSheet, setSelectedSheet] = useState("");
     const [selectedSheetData, setSelectedSheetData] = useState([]);
     const [columnNames, setColumnNames] = useState([]);
-
     const {
         // ── single-sheet mode flags ──
         singleSheetMode = false,
@@ -74,15 +73,34 @@ const VisualizeData = () => {
         excelData = [],
         preProductName = '',
         postProductName = '',
-        sheetNames = []
+        preSheetName = '',
+        postSheetName = '',
+        sheetNames = [],
+        // ── multi-range support ──
+        rowRanges = [],
+        generatedSheetConfigs = []
     } = location.state || {};
+
+    const normalizedRangeConfig = useMemo(() => (
+        Array.isArray(generatedSheetConfigs) && generatedSheetConfigs.length
+            ? generatedSheetConfigs
+            : safeArray(rowRanges)
+    ), [generatedSheetConfigs, rowRanges]);
+
+    // Store rowRanges for multi-range display
+    const [multiRangeConfig, setMultiRangeConfig] = useState(normalizedRangeConfig);
+    
+    // Update multiRangeConfig when ranges change from navigation
+    useEffect(() => {
+        setMultiRangeConfig(normalizedRangeConfig);
+    }, [normalizedRangeConfig]);
 
     /* ─── Derive pre/post sheet selections ─── */
     // In single-sheet mode we only have one sheet and no post-sheet selector.
     const [selectedSheetsList, setSelectedSheetsList] = useState(
         singleSheetMode
             ? [singleSheetName]
-            : [preProductName || '', postProductName || '']
+            : [preProductName || preSheetName || '', postProductName || postSheetName || '']
     );
     const updateSheetAtIndex = (index, value) => {
         setSelectedSheetsList(prev => {
@@ -297,6 +315,7 @@ const VisualizeData = () => {
                             clientName={clientName}
                             plantName={plantName}
                             productName={productName}
+                            multiRangeConfig={multiRangeConfig}
                         />
                     </Suspense>
                 );
@@ -311,6 +330,7 @@ const VisualizeData = () => {
                             clientName={clientName}
                             plantName={plantName}
                             productName={productName}
+                            multiRangeConfig={multiRangeConfig}
                         />
                     </Suspense>
                 );
@@ -324,6 +344,7 @@ const VisualizeData = () => {
                             clientName={clientName}
                             plantName={plantName}
                             productName={productName}
+                            multiRangeConfig={multiRangeConfig}
                         />
                     </Suspense>
                 );
@@ -337,6 +358,7 @@ const VisualizeData = () => {
                             clientName={clientName}
                             plantName={plantName}
                             productName={productName}
+                            multiRangeConfig={multiRangeConfig}
                         />
                     </Suspense>
                 );
