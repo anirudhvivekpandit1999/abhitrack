@@ -1532,8 +1532,7 @@ useEffect(() => {
                               {(rr.startDisplay && !rr.startRange) && <span style={{ color: "var(--red)", fontSize: "0.65rem" }}>No match</span>}
                             </div>
 
-                            <button className="xf-btn xf-btn-ghost xf-btn-sm" onClick={() => setActiveTarget({ sheetIdx, rangeIdx, field: "startRange" })}>Pick Start</button>
-                            <button className="xf-btn xf-btn-ghost xf-btn-sm" onClick={() => setActiveTarget({ sheetIdx, rangeIdx, field: "endRange" })}>Pick End</button>
+                            
                             {(sheetConfig.ranges || []).length > 1 && (
                               <button className="xf-btn xf-btn-danger xf-btn-sm" onClick={() => removeRowRange(sheetIdx, rangeIdx)}>X</button>
                             )}
