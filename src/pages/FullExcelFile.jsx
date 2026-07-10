@@ -1457,7 +1457,19 @@ useEffect(() => {
                               value={rr.name}
                               onChange={e => handleRowRangeChange(sheetIdx, rangeIdx, "name", e.target.value)}
                               placeholder="Range name"
-                              style={{ flex: "1.2" }}
+                              style={{ 
+                                flex: "1.2",
+                                background: "var(--paper)",
+                                border: "1.5px solid var(--ink-20)",
+                                borderRadius: "8px",
+                                padding: "8px 10px",
+                                fontFamily: "'DM Sans', sans-serif",
+                                fontSize: "0.82rem",
+                                color: "var(--ink)",
+                                outline: "none",
+                                height: "38px",
+                                boxSizing: "border-box"
+                              }}
                             />
 
                             <input
@@ -1482,7 +1494,19 @@ useEffect(() => {
                                 handleRowRangeChange(sheetIdx, rangeIdx, "startRange", matchedRowIndex !== -1 ? String(matchedRowIndex + 1) : "");
                                 handleRowRangeChange(sheetIdx, rangeIdx, "startDisplay", dateVal);
                               }}
-                              style={{ flex: 1, background: "var(--paper)", border: `1.5px solid ${rr.startRange ? "var(--green)" : "var(--ink-20)"}`, borderRadius: "8px", padding: "8px 10px", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: "var(--ink)", outline: "none" }}
+                              style={{
+                                flex: 1,
+                                background: "var(--paper)",
+                                border: `1.5px solid ${rr.startRange ? "var(--green)" : "var(--ink-20)"}`,
+                                borderRadius: "8px",
+                                padding: "8px 10px",
+                                fontFamily: "'DM Sans', sans-serif",
+                                fontSize: "0.82rem",
+                                color: "var(--ink)",
+                                outline: "none",
+                                height: "38px",
+                                boxSizing: "border-box"
+                              }}
                             />
 
                             <input
@@ -1523,7 +1547,19 @@ useEffect(() => {
                                 handleRowRangeChange(sheetIdx, rangeIdx, "endRange", matchedRowIndex !== -1 ? String(matchedRowIndex + 1) : "");
                                 handleRowRangeChange(sheetIdx, rangeIdx, "endDisplay", dateVal);
                               }}
-                              style={{ flex: 1, background: "var(--paper)", border: `1.5px solid ${rr.endRange ? "var(--green)" : "var(--ink-20)"}`, borderRadius: "8px", padding: "8px 10px", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: "var(--ink)", outline: "none" }}
+                              style={{
+                                flex: 1,
+                                background: "var(--paper)",
+                                border: `1.5px solid ${rr.endRange ? "var(--green)" : "var(--ink-20)"}`,
+                                borderRadius: "8px",
+                                padding: "8px 10px",
+                                fontFamily: "'DM Sans', sans-serif",
+                                fontSize: "0.82rem",
+                                color: "var(--ink)",
+                                outline: "none",
+                                height: "38px",
+                                boxSizing: "border-box"
+                              }}
                             />
 
                             <div style={{ fontSize: "0.68rem", color: "var(--ink-60)", minWidth: "80px", textAlign: "center", display: "flex", flexDirection: "column", gap: "2px" }}>
