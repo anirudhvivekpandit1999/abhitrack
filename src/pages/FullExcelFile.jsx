@@ -1428,7 +1428,6 @@ useEffect(() => {
                   <div className="xf-group" style={{ marginTop: "20px" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
                       <label className="xf-label" style={{ margin: 0 }}>Generated Sheets & Data Ranges</label>
-                      <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={addGeneratedSheet}>+ Add Sheet</button>
                     </div>
 
                     {generatedSheetConfigs.map((sheetConfig, sheetIdx) => (
@@ -1548,6 +1547,7 @@ useEffect(() => {
                   </div>
 
                   {error && <div style={{padding:"10px 14px",background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:"10px",fontSize:"0.8rem",color:"var(--red)",marginTop:"12px"}}>{error}</div>}
+                  <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={addGeneratedSheet}>+ Add Sheet</button>
 
                   <div style={{display:"flex",gap:"8px",marginTop:"20px"}}>
                     <button id="submit-excel-btn" className="xf-btn xf-btn-primary" style={{borderRadius:"10px",padding:"11px 24px",fontSize:"0.84rem"}} onClick={handleAddSheetSubmit} disabled={addLoading}>
