@@ -826,7 +826,8 @@ const FullExcelFile = () => {
 
     try {
       const result = await apiClient.post("/process-file", formData);
-
+      console.log("result", result);
+      
       const sheetNames = result?.file_info?.sheets || [];
       const sheetsDataObj = result?.file_info?.sheets_data || {};
 
@@ -1439,7 +1440,6 @@ useEffect(() => {
                             placeholder="Generated sheet name"
                             style={{ flex: 1, background: "var(--paper)", border: "1.5px solid var(--ink-20)", borderRadius: "8px", padding: "8px 10px", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", color: "var(--ink)", outline: "none" }}
                           />
-                          <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={() => addRowRange(sheetIdx)}>+ Range</button>
                           {generatedSheetConfigs.length > 1 && (
                             <button className="xf-btn xf-btn-danger xf-btn-sm" onClick={() => removeGeneratedSheet(sheetIdx)}>Remove</button>
                           )}
@@ -1449,6 +1449,7 @@ useEffect(() => {
                           <span style={{ flex: "1.2", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>Range Name</span>
                           <span style={{ flex: 1, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>Start Date</span>
                           <span style={{ flex: 1, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}>End Date</span>
+                          
                         </div>
 
                         {(sheetConfig.ranges || []).map((rr, rangeIdx) => (
@@ -1536,8 +1537,12 @@ useEffect(() => {
                             {(sheetConfig.ranges || []).length > 1 && (
                               <button className="xf-btn xf-btn-danger xf-btn-sm" onClick={() => removeRowRange(sheetIdx, rangeIdx)}>X</button>
                             )}
+                            
                           </div>
+                          
                         ))}
+                                                  <button className="xf-btn xf-btn-gold xf-btn-sm" onClick={() => addRowRange(sheetIdx)}>+ Range</button>
+
                       </div>
                     ))}
                   </div>
