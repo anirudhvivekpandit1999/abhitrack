@@ -27,6 +27,7 @@ const ChartSettingsModal = ({
   colorSection = true,
   title = "Chart Settings",
   description = "Customize your visualization appearance",
+  colorSectionTitle,
   minHeight = 600,
   maxWidth = "lg",
   multiDatasetColors = false,
@@ -58,7 +59,7 @@ const ChartSettingsModal = ({
             <Card sx={{ borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
-                  {multiDatasetColors ? 'Dataset Colors by Variable Pair' : 'Variable Pair Colors'}
+                  {colorSectionTitle || (multiDatasetColors ? 'Dataset Colors by Variable Pair' : 'Variable Pair Colors')}
                 </Typography>
                 {colorPairs.length === 0 ? (
                   <Box sx={{ textAlign: 'center', py: 4, backgroundColor: '#f5f5f5', borderRadius: '8px', border: '2px dashed #ddd' }}>

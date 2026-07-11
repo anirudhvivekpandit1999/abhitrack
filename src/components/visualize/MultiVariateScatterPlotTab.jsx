@@ -590,10 +590,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   }, [datasetColors, visibleDatasetNames]);
 
   const getPointColor = useCallback((pairKey, dataset) => {
-    // Use the pair's dataset-specific shade so overlapping sheets remain visually
-    // distinguishable instead of collapsing into one indistinct blob of dots.
-    return getPairDatasetColor(pairKey, dataset);
-  }, [getPairDatasetColor]);
+    // Use the editable per-sheet color map for dots. Areas use this same helper,
+    // keeping sheet differentiation and point/area color consistency together.
+    return getDatasetColor(dataset) || getPairDatasetColor(pairKey, dataset);
+  }, [getDatasetColor, getPairDatasetColor]);
 
   const getTrendLineColor = useCallback((pairKey, dataset) => {
     // Use the pair base color for trend lines (parameter color)
@@ -1235,7 +1235,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           allDatasets.forEach((ds) => {
             if (!visibleDatasetNames.includes(ds.name)) return;
             const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-            const datasetColorForDraw = (datasetView === 'individual' && scaleMode === 'perPair') ? getPairDatasetColor(pair.key, ds.name) : getDatasetColor(ds.name);
+            const datasetColorForDraw = getPointColor(pair.key, ds.name);
             drawLinesAndAreas(clippedGroup, pts, xScalePair, yScale, datasetColorForDraw, getPairBaseColor(pair.key), ds.name, pair.key);
             // Points are rendered exclusively by the canvas layer (updateCanvasPoints) to avoid duplicate/desynced dots.
           });
@@ -1306,7 +1306,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             allDatasets.forEach((ds) => {
               if (!visibleDatasetNames.includes(ds.name)) return;
               const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              const datasetColorForDraw = (datasetView === 'individual' && scaleMode === 'perPair') ? getPairDatasetColor(pair.key, ds.name) : getDatasetColor(ds.name);
+              const datasetColorForDraw = getPointColor(pair.key, ds.name);
               drawLinesAndAreas(plotGroup, pts, xScale, yScale, datasetColorForDraw, getPairBaseColor(pair.key), ds.name, pair.key, showAreaInThisPanel);
             });
           }
@@ -1381,7 +1381,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             allDatasets.forEach((ds) => {
               if (!visibleDatasetNames.includes(ds.name)) return;
               const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-              const datasetColorForDraw = (datasetView === 'individual' && scaleMode === 'perPair') ? getPairDatasetColor(pair.key, ds.name) : getDatasetColor(ds.name);
+              const datasetColorForDraw = getPointColor(pair.key, ds.name);
               drawLinesAndAreas(plotGroup, pts, xScale, yScale, datasetColorForDraw, getPairBaseColor(pair.key), ds.name, pair.key);
               if (datasetView === "individual") {
                 if (!useCanvasForPoints) drawScatterPoints(plotGroup, pts, xScale, yScale, getPointColor(pair.key, ds.name), chartSettings.pointSize || 3, chartSettings.opacity || 0.85);
@@ -1474,7 +1474,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               allDatasets.forEach((ds) => {
                 if (!visibleDatasetNames.includes(ds.name)) return;
                 const pts = (datasetPointsByName[ds.name] || []).filter(p => p.pairKey === pair.key).sort((a, b) => a.x - b.x);
-                const datasetColorForDraw = (datasetView === 'individual' && scaleMode === 'perPair') ? getPairDatasetColor(pair.key, ds.name) : getDatasetColor(ds.name);
+                const datasetColorForDraw = getPointColor(pair.key, ds.name);
                 const clippedGroup = panelGroup.select(`g[clip-path="url(#${panelClipId})"]`);
                 drawLinesAndAreas(clippedGroup, pts, newXForPair, newY, datasetColorForDraw, getPairBaseColor(pair.key), ds.name, pair.key);
               });
@@ -1584,7 +1584,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     // });
 
   }, [getEffectiveRanges, formatAxisValue, chartSettings.showGrid, datasetView,
-    chartSettings.showTrendLines, chartSettings.trendLineMode, trendLinesData, allPairs, getTrendLineColor, pairColorMap, perPairAutoRanges, activePairs, scaleMode, currentPairKey, showLines, showArea, areaOpacity, lineWidth, datasetPointsByName, datasetColors, allDatasets, visibleDatasetNames, selectedYVars]);
+    chartSettings.showTrendLines, chartSettings.trendLineMode, trendLinesData, allPairs, getTrendLineColor, getPointColor, pairColorMap, perPairAutoRanges, activePairs, scaleMode, currentPairKey, showLines, showArea, areaOpacity, lineWidth, datasetPointsByName, datasetColors, allDatasets, visibleDatasetNames, selectedYVars]);
 
   // Update canvas points
   const updateCanvasPoints = useCallback(() => {
@@ -1886,11 +1886,30 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   };
 
   // Settings Modal
-  const openSettingsModal = () => { setDraftSettings({ ...chartSettings }); setSettingsModalOpen(true); };
+  const getDefaultDatasetColors = useCallback(() => {
+    const next = {};
+    allDatasets.forEach((dataset, index) => {
+      next[dataset.name] = datasetColors[dataset.name] || BASE_COLORS[(index + 6) % BASE_COLORS.length] || BASE_COLORS[index % BASE_COLORS.length];
+    });
+    return next;
+  }, [allDatasets, datasetColors]);
+
+  const openSettingsModal = () => { setDraftSettings({ ...chartSettings, datasetColors: getDefaultDatasetColors() }); setSettingsModalOpen(true); };
   const handleSettingsModalClose = () => { setSettingsModalOpen(false); setDraftSettings(null); };
-  const handleSettingsSave = () => { if (!draftSettings) return; setChartSettings(draftSettings); setSettingsModalOpen(false); setDraftSettings(null); };
+  const handleSettingsSave = () => {
+    if (!draftSettings) return;
+    const { datasetColors: nextDatasetColors, ...nextChartSettings } = draftSettings;
+    setChartSettings(nextChartSettings);
+    if (nextDatasetColors) setDatasetColors({ ...nextDatasetColors });
+    setSettingsModalOpen(false);
+    setDraftSettings(null);
+  };
   const resetSettings = () => {
-    setDraftSettings({ pointSize: 8, opacity: 0.7, showGrid: true, showTrendLines: true, trendLineMode: 'average', showOutliers: false, showCorrelation: false, withProductColorOverride: {}, withoutProductColorOverride: {} });
+    const nextColors = {};
+    allDatasets.forEach((dataset, index) => {
+      nextColors[dataset.name] = BASE_COLORS[(index + 6) % BASE_COLORS.length] || BASE_COLORS[index % BASE_COLORS.length];
+    });
+    setDraftSettings({ pointSize: 8, opacity: 0.7, showGrid: true, showTrendLines: true, trendLineMode: 'average', showOutliers: false, showCorrelation: false, withProductColorOverride: {}, withoutProductColorOverride: {}, datasetColors: nextColors });
 };
 
   const SummaryCards = () => (
@@ -2112,13 +2131,17 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     ];
 
 
-    const colorPairs = allPairs.map(pair => ({
-      key: pair.key,
-      label: `${pair.x} vs ${pair.y}`,
-      withProductColor: draftSettings?.withProductColorOverride?.[pair.key] || pairColorMap[pair.key]?.post || "#1565c0",
-      withoutProductColor: draftSettings?.withoutProductColorOverride?.[pair.key] || pairColorMap[pair.key]?.pre || "#90caf9",
-      onWithProductColorChange: (color) => setDraftSettings(ds => ({ ...ds, withProductColorOverride: { ...ds.withProductColorOverride, [pair.key]: color } })),
-      onWithoutProductColorChange: (color) => setDraftSettings(ds => ({ ...ds, withoutProductColorOverride: { ...ds.withoutProductColorOverride, [pair.key]: color } }))
+    const colorPairs = allDatasets.map((dataset, index) => ({
+      key: dataset.name,
+      label: datasetLabels[dataset.name] || dataset.name || `Sheet ${index + 1}`,
+      value: draftSettings?.datasetColors?.[dataset.name] || datasetColors[dataset.name] || BASE_COLORS[(index + 6) % BASE_COLORS.length],
+      onChange: (color) => setDraftSettings(ds => ({
+        ...ds,
+        datasetColors: {
+          ...ds?.datasetColors,
+          [dataset.name]: color,
+        }
+      }))
     }));
 
     return (
@@ -2133,12 +2156,13 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         colorPairs={colorPairs}
         colorOptions={BASE_COLORS}
         featureSections={featureSections}
-        colorSection={allPairs.length > 0}
+        colorSection={allDatasets.length > 0}
         title="Chart Settings"
-        description="Customize your multivariate scatter plot appearance"
+        description="Customize your multivariate scatter plot appearance and per-sheet colors"
+        colorSectionTitle="Sheet Colors"
         minHeight={600}
         maxWidth="lg"
-        multiDatasetColors={true}
+        multiDatasetColors={false}
       />
     );
   };

@@ -43,6 +43,24 @@ import html2canvas from "html2canvas"
 import ChartSettingsModal from '../ChartSettingsModal'
 import SaveVisualizationButton from '../SaveVisualizationButton'
 
+const SCATTER_DEFAULT_COLORS = {
+  withProduct: '#2563EB',
+  withoutProduct: '#DC2626',
+}
+
+const SCATTER_COLOR_OPTIONS = [
+  '#2563EB',
+  '#DC2626',
+  '#059669',
+  '#D97706',
+  '#7C3AED',
+  '#DB2777',
+  '#0891B2',
+  '#EA580C',
+  '#4338CA',
+  '#0D9488',
+]
+
 const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', plantName = '', productName = '' }) => {
   const location = useLocation()
   const { dependentVariables = [], independentVariables = [] } = location.state || {}
@@ -64,8 +82,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
   const [scatterXAxisLabel, setScatterXAxisLabel] = useState('')
   const [scatterYAxisLabel, setScatterYAxisLabel] = useState('')
   const [scatterColors, setScatterColors] = useState({
-    withProduct: '#4caf50',
-    withoutProduct: '#f44336',
+    ...SCATTER_DEFAULT_COLORS,
   })
 
   const [showTrendLines, setShowTrendLines] = useState(true)
@@ -1814,13 +1831,13 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
     const colorPairs = [
       {
         key: 'withProduct',
-        value: draftSettings?.scatterColors?.withProduct || '#4caf50',
+        value: draftSettings?.scatterColors?.withProduct || SCATTER_DEFAULT_COLORS.withProduct,
         onChange: (color) => setDraftSettings(ds => ({ ...ds, scatterColors: { ...ds.scatterColors, withProduct: color } })),
         label: 'With Product Color'
       },
       {
         key: 'withoutProduct',
-        value: draftSettings?.scatterColors?.withoutProduct || '#f44336',
+        value: draftSettings?.scatterColors?.withoutProduct || SCATTER_DEFAULT_COLORS.withoutProduct,
         onChange: (color) => setDraftSettings(ds => ({ ...ds, scatterColors: { ...ds.scatterColors, withoutProduct: color } })),
         label: 'Without Product Color'
       }
@@ -1836,7 +1853,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
         draftSettings={draftSettings}
         setDraftSettings={setDraftSettings}
         colorPairs={colorPairs}
-        colorOptions={['#4caf50', '#f44336', '#2196f3', '#ff9800', '#9c27b0', '#00bcd4', '#e91e63', '#607d8b', '#ffc107', '#3f51b5']}
+        colorOptions={SCATTER_COLOR_OPTIONS}
         featureSections={featureSections}
         colorSection={true}
         title="Chart Settings"
