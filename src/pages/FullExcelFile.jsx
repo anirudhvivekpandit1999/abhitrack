@@ -487,7 +487,8 @@ const FullExcelFile = () => {
   const recognitionRef = useRef(null);
   const feedbackRef = useRef(null);
   const fileObjectsRef = useRef({});
-  
+  const processFileRequestIdRef = useRef(0);
+
   // Pagination for large datasets
   const [mainTablePage, setMainTablePage] = useState(0);
   const [previewTablePage, setPreviewTablePage] = useState(0);
@@ -631,8 +632,11 @@ const FullExcelFile = () => {
   useEffect(() => {
     const found = excelData.find((s) => s.sheetName === selectedSheet);
     setSelectedSheetData(found ? found.sheetData : []);
-    setMainTablePage(0); // Reset pagination when sheet changes
   }, [selectedSheet, excelData]);
+
+  useEffect(() => {
+    setMainTablePage(0);
+  }, [selectedSheet]); // only reset page on an actual sheet switch, not every streamed batch
 
   useEffect(() => {
     if (!copyFromSheet) {
@@ -817,25 +821,45 @@ const FullExcelFile = () => {
     setIsLoading(true);
     setError(null);
 
+    const requestId = ++processFileRequestIdRef.current;
+
     const formData = new FormData();
     formData.append("file", file);
-
-    if (sheet) {
-      formData.append("sheet", sheet);
-    }
+    if (sheet) formData.append("sheet", sheet);
 
     try {
       const result = await apiClient.post("/process-file", formData);
-      console.log("result", result);
-      
-      const sheetNames = result?.file_info?.sheets || [];
+      if (requestId !== processFileRequestIdRef.current) return;
+
+      const sheetNamesResp = result?.file_info?.sheets || [];
       const sheetsDataObj = result?.file_info?.sheets_data || {};
-      
-      for (const name of sheetNames) {
+
+      if (!sheetNamesResp.length) {
+        throw new Error("No sheets found in response");
+      }
+
+      // ── 1) PAINT IMMEDIATELY with first batch ──
+      const formattedSheets = sheetNamesResp.map(name => ({
+        sheetName: name,
+        sheetData: sheetsDataObj[name]?.data || []
+      }));
+      const firstSheet = sheetNamesResp[0];
+      const firstSheetData = sheetsDataObj[firstSheet]?.data || [];
+
+      setExcelData(formattedSheets);
+      setSheetNames(sheetNamesResp);
+      setSelectedSheet(firstSheet);
+      setCols(
+        sheetsDataObj[firstSheet]?.columns ||
+        (firstSheetData.length ? Object.keys(firstSheetData[0]) : [])
+      );
+      setIsLoading(false);
+
+      // ── 2) STREAM remaining pages, appending as they arrive ──
+      for (const name of sheetNamesResp) {
         const sheetInfo = sheetsDataObj[name];
         if (!sheetInfo) continue;
 
-        let allData = [...(sheetInfo.data || [])];
         let done = sheetInfo.done;
         let nextOffset = sheetInfo.next_offset;
         const jobId = sheetInfo.job_id;
@@ -844,58 +868,27 @@ const FullExcelFile = () => {
           const nextBatch = await apiClient.get(
             `/process-file?job_id=${jobId}&offset=${nextOffset}&limit=10000`
           );
-          allData = [...allData, ...(nextBatch.data || [])];
+          if (requestId !== processFileRequestIdRef.current) return;
+
+          const newRows = nextBatch.data || [];
+          setExcelData(prev =>
+            prev.map(s =>
+              s.sheetName === name
+                ? { ...s, sheetData: [...s.sheetData, ...newRows] }
+                : s
+            )
+          );
+
           done = nextBatch.done;
           nextOffset = nextBatch.next_offset;
         }
-
-        sheetsDataObj[name].data = allData;
       }
-
-      if (!sheetNames.length) {
-        throw new Error("No sheets found in response");
-      }
-
-      // Defer heavy processing to prevent blocking
-      const processWithCallback = () => {
-        const formattedSheets = sheetNames.map(name => ({
-          sheetName: name,
-          sheetData: sheetsDataObj[name]?.data || []
-        }));
-
-        // Batch state updates to reduce re-renders
-        const firstSheet = sheetNames[0];
-        const firstSheetData = sheetsDataObj[firstSheet]?.data || [];
-        
-        setExcelData(formattedSheets);
-        setSheetNames(sheetNames);
-        setSelectedSheet(firstSheet);
-        setSelectedSheetData(firstSheetData);
-        setCols(
-          sheetsDataObj[firstSheet]?.columns ||
-          (firstSheetData.length ? Object.keys(firstSheetData[0]) : [])
-        );
-
-        console.log("Loaded sheets:", sheetNames);
-        console.log("First sheet rows:", firstSheetData.length);
-      };
-
-      // Use requestIdleCallback with setTimeout fallback
-      if (typeof requestIdleCallback !== 'undefined') {
-        requestIdleCallback(processWithCallback);
-      } else {
-        setTimeout(processWithCallback, 0);
-      }
-
     } catch (error) {
+      if (requestId !== processFileRequestIdRef.current) return;
       console.error("Upload Error:", error);
-      const message =
-        error?.error ||
-        error?.message ||
-        "Server error. Please try again.";
-      setError(message);
+      setError(error?.error || error?.message || "Server error. Please try again.");
     } finally {
-      setIsLoading(false);
+      if (requestId === processFileRequestIdRef.current) setIsLoading(false);
     }
   }, [apiClient]);
 
