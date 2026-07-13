@@ -50,20 +50,18 @@ import ChartSettingsModal from '../ChartSettingsModal';
 import SaveVisualizationButton from '../SaveVisualizationButton';
 import Draggable from 'react-draggable';
 
-// Base palette — one hue per pair
+// Base palette — matching DistributionCurveTab DATASET_COLORS
 const BASE_COLORS = [
-  "#2196f3", // blue
-  "#ff9800", // orange
-  "#4caf50", // green
-  "#9c27b0", // purple
-  "#00bcd4", // cyan
-  "#f44336", // red
-  "#009688", // teal
-  "#ff5722", // deep-orange
-  "#3f51b5", // indigo
-  "#ffb300", // gold
-  "#7b1fa2", // deep purple
-  "#388e3c", // dark green
+  "#2563EB", // Blue
+  "#DC2626", // Red
+  "#059669", // Green
+  "#D97706", // Amber
+  "#7C3AED", // Purple
+  "#DB2777", // Pink
+  "#0891B2", // Cyan
+  "#EA580C", // Orange
+  "#4338CA", // Indigo
+  "#0D9488", // Teal
 ];
 
 // Lighten a hex color by blending toward white by `amount` (0–1)
@@ -1515,7 +1513,15 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
     plotGroup.append("text").attr("x", plotWidth / 2).attr("y", plotHeight + 40)
       .style("text-anchor", "middle").style("font-size", "14px").style("font-weight", "500").style("fill", "#666")
-      .text(scaleMode === "perPair" && currentPairKey ? `X: ${currentPairKey.split("__")[0]}` : scaleMode === "perVariable" ? "X Variables (Per-Variable Scale)" : "X Variables (Dynamic Scale)");
+      .text(() => {
+        if (scaleMode === "perPair" && currentPairKey) {
+          return `X: ${currentPairKey.split("__")[0]}`;
+        } else if (selectedXVars.length > 0) {
+          return `X: ${selectedXVars.join(", ")}`;
+        } else {
+          return "X Variables";
+        }
+      });
     // Y-axis label: move outward and reduce font size to avoid overlapping ticks/labels
     plotGroup.append("text").attr("transform", "rotate(-90)").attr("x", -plotHeight / 2).attr("y", -60)
       .style("text-anchor", "middle").style("font-size", "13px").style("font-weight", "500").style("fill", "#666")
@@ -1524,10 +1530,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         return "Y Variables (Individual Panels)";
       } else if (scaleMode === "perPair" && currentPairKey) {
         return `Y: ${currentPairKey.split("__")[1]}`;
-      } else if (scaleMode === "perVariable") {
-        return "Y Variables (Per-Variable Scale)";
+      } else if (selectedYVars.length > 0) {
+        return `Y: ${selectedYVars.join(", ")}`;
       } else {
-        return "Y Variables (Dynamic Scale)";
+        return "Y Variables";
       }
     });
 
@@ -2357,6 +2363,34 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               )}
             </Box>
           </Paper>
+        </CardContent>
+      </Card>
+
+      {/* Dataset Color Customization */}
+      <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
+        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Dataset Colors</Typography>
+          <Grid container spacing={2}>
+            {allDatasets.map((ds, idx) => (
+              <Grid item xs={12} sm={6} md={4} key={ds.name}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, bgcolor: 'white', borderRadius: 2, border: '1px solid', borderColor: 'grey.200' }}>
+                  <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], border: `2px solid ${darkenColor(datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], 0.25)}` }} />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>{ds.name}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <input
+                        type="color"
+                        value={datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length]}
+                        onChange={(e) => setDatasetColors(prev => ({ ...prev, [ds.name]: e.target.value }))}
+                        style={{ width: 40, height: 28, border: '1px solid #ccc', borderRadius: 4, cursor: 'pointer' }}
+                      />
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>Click to edit</Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
         </CardContent>
       </Card>
 
