@@ -1527,7 +1527,9 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       .style("text-anchor", "middle").style("font-size", "13px").style("font-weight", "500").style("fill", "#666")
     .text(() => {
       if (datasetView === 'individual' && useStackedPanels) {
-        return "Y Variables (Individual Panels)";
+        return selectedYVars.length > 0 
+            ? `Y: ${selectedYVars.join(" / ")}` 
+            : "Y Variables (Individual Panels)";
       } else if (scaleMode === "perPair" && currentPairKey) {
         return `Y: ${currentPairKey.split("__")[1]}`;
       } else if (selectedYVars.length > 0) {
