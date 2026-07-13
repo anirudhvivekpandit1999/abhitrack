@@ -830,6 +830,27 @@ const FullExcelFile = () => {
       
       const sheetNames = result?.file_info?.sheets || [];
       const sheetsDataObj = result?.file_info?.sheets_data || {};
+      
+      for (const name of sheetNames) {
+        const sheetInfo = sheetsDataObj[name];
+        if (!sheetInfo) continue;
+
+        let allData = [...(sheetInfo.data || [])];
+        let done = sheetInfo.done;
+        let nextOffset = sheetInfo.next_offset;
+        const jobId = sheetInfo.job_id;
+
+        while (!done && nextOffset !== null && jobId) {
+          const nextBatch = await apiClient.get(
+            `/process-file?job_id=${jobId}&offset=${nextOffset}&limit=10000`
+          );
+          allData = [...allData, ...(nextBatch.data || [])];
+          done = nextBatch.done;
+          nextOffset = nextBatch.next_offset;
+        }
+
+        sheetsDataObj[name].data = allData;
+      }
 
       if (!sheetNames.length) {
         throw new Error("No sheets found in response");
