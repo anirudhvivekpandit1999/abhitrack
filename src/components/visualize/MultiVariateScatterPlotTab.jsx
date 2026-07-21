@@ -294,9 +294,9 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const pageRef = useRef(null);
   
   // New settings for line and area display
-  const [showLines, setShowLines] = useState(true);
-  const [showArea, setShowArea] = useState(true);
-  const [areaOpacity, setAreaOpacity] = useState(0.3);
+  const [showLines, setShowLines] = useState(false);
+  const [showArea, setShowArea] = useState(false);
+  const [areaOpacity, setAreaOpacity] = useState(0.15);
   const [lineWidth, setLineWidth] = useState(2);
   
   // Axis scaling mode
@@ -304,8 +304,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const [currentPairKey, setCurrentPairKey] = useState(null); // For per-pair mode, which pair to show
 
   const [chartSettings, setChartSettings] = useState({
-    pointSize: 8,
-    opacity: 0.7,
+    pointSize: 6,
+    opacity: 0.5,
     showGrid: true,
     showTrendLines: true,
     trendLineMode: 'average', // 'average' | 'curve'
@@ -1175,7 +1175,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     };
 
     // Helper to draw lines and areas for a dataset
-    const drawScatterPoints = (group, points, xSc, ySc, color, size = 3, opacity = 0.85) => {
+    const drawScatterPoints = (group, points, xSc, ySc, color, size = 2, opacity = 0.4) => {
       if (!points || points.length === 0) return;
       group.selectAll(null)
         .data(points)
@@ -1187,8 +1187,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         .attr("r", size)
         .style("fill", color)
         .style("fill-opacity", opacity)
-        .style("stroke", darkenColor(color, 0.35))
-        .style("stroke-width", 0.75);
+        .style("stroke", "none");
     };
 
     // Toggle: use canvas for plotting points to avoid SVG duplicates and improve performance
@@ -1333,7 +1332,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         };
 
         const zoom = d3.zoom()
-          .scaleExtent([0.1, 50])
+          .scaleExtent([0.5, 50])
           .extent([[0, 0], [plotWidth, plotHeight]])
           .on("zoom", (event) => {
             const { transform } = event;
@@ -1407,7 +1406,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         };
 
         const zoom = d3.zoom()
-          .scaleExtent([0.1, 50])
+          .scaleExtent([0.5, 50])
           .extent([[0, 0], [plotWidth, plotHeight]])
           .on("zoom", (event) => {
             const { transform } = event;
@@ -1441,7 +1440,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       drawStackedPanels();
 
       const zoom = d3.zoom()
-        .scaleExtent([0.1, 50])
+        .scaleExtent([0.5, 50])
         .extent([[0, 0], [plotWidth, plotHeight]])
         .on("zoom", (event) => {
           const { transform } = event;
