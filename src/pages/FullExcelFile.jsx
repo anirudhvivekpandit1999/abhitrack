@@ -1296,49 +1296,33 @@ useEffect(() => {
   const handleBrowseMoreFiles=()=>{setShowFileSearchModal(false);setTimeout(()=>fileInputRef.current?.click(),300);};
   const displayedSelectedSheetData=useMemo(()=>applyPendingColumnsToRows(selectedSheetData||[]), [selectedSheetData, applyPendingColumnsToRows]);
 
-  /* ── Handler: Continue with Current Sheet (single-sheet mode) ── */
-  const handleContinueWithCurrentSheet = () => {
+/* ── Handler: Continue with Current Sheet (single-sheet mode) ── */
+const handleContinueWithCurrentSheet = () => {
     const currentSheetObj = excelData.find(s => s.sheetName === selectedSheet);
     const currentSheetData = currentSheetObj ? currentSheetObj.sheetData || [] : [];
-    const currentCols =
-      currentSheetData.length > 0 ? Object.keys(currentSheetData[0]) : [];
 
-    console.log("🚀 Continuing with current sheet, saving state...");
-    console.log("📊 State to save:", { fileName, sheetNames, selectedSheet, excelDataLength: excelData.length });
-    
     // Save session state before navigation
     saveSessionState();
-    
-    // Verify it was saved
-    setTimeout(() => {
-      const saved = localStorage.getItem(SESSION_KEY);
-      console.log("✅ Verification - State saved:", !!saved);
-    }, 100);
 
     navigation("/visualize-data", {
-      state: {
-        singleSheetMode: true,
-        singleSheetName: selectedSheet,
-        singleSheetData: currentSheetData,
-        availableCols: currentCols,
-        // still pass excelData and sheetNames so the page has full context if needed
-        excelData: excelData,
-        sheetNames: sheetNames,
-        clientName,
-        plantName,
-        productName,
-        // preProductData / postProductData not needed in single-sheet mode
-        // but set them both to the same sheet so child tabs don't break
-        preProductData: currentSheetData,
-        postProductData: [],
-        preSheetName: selectedSheet,
-        postSheetName: "",
-        // Pass rowRanges with sub-ranges for multi-range support
-        rowRanges: rowRanges,
-        generatedSheetConfigs,
-      },
+        state: {
+            // NO singleSheetMode flag — opens full visualization page
+            preProductData: currentSheetData,
+            postProductData: currentSheetData,
+            preSheetName: selectedSheet,
+            postSheetName: selectedSheet,
+            preProductName: selectedSheet,
+            postProductName: selectedSheet,
+            excelData: excelData,
+            sheetNames: sheetNames,
+            clientName,
+            plantName,
+            productName,
+            rowRanges: rowRanges,
+            generatedSheetConfigs,
+        },
     });
-  };
+};
 
   /* ─── RENDER ─── */
   return (
