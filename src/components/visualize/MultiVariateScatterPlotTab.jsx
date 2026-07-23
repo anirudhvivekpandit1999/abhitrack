@@ -1191,7 +1191,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     };
 
     // Toggle: use canvas for plotting points to avoid SVG duplicates and improve performance
-    //const useCanvasForPoints = false; // set false so SVG points are visible
+    const useCanvasForPoints = false; // set false so SVG points are visible
 
     const drawLinesAndAreas = (group, points, xSc, ySc, datasetColor, pairColor, dataset, pairKey) => {
       if (!points || points.length < 2) return;
