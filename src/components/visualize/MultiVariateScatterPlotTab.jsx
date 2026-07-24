@@ -64,6 +64,20 @@ const BASE_COLORS = [
   "#0D9488", // Teal
 ];
 
+// Distinct categorical colors for individual plotted series.
+// IMPORTANT: these are NOT light/dark variants of one pair color.
+// Each pair + dataset combination receives its own independent hue.
+const UNIQUE_SERIES_COLORS = [
+  "#2563EB", "#DC2626", "#059669", "#D97706", "#7C3AED",
+  "#DB2777", "#0891B2", "#EA580C", "#4F46E5", "#0D9488",
+  "#65A30D", "#C026D3", "#0284C7", "#E11D48", "#16A34A",
+  "#CA8A04", "#9333EA", "#E8590C", "#0369A1", "#BE123C",
+  "#15803D", "#A16207", "#6D28D9", "#C2410C", "#0E7490",
+  "#9F1239", "#166534", "#854D0E", "#5B21B6", "#B91C1C",
+  "#047857", "#B45309", "#7E22CE", "#C0266D", "#0369A1",
+  "#4D7C0F", "#A21CAF", "#1D4ED8", "#B91C1C", "#047857"
+];
+
 // Lighten a hex color by blending toward white by `amount` (0–1)
 const lightenColor = (hex, amount = 0.45) => {
   const num = parseInt(hex.replace("#", ""), 16);
@@ -322,6 +336,12 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const [fixedXRange, setFixedXRange] = useState(null);
   const [datasetLabels, setDatasetLabels] = useState({});
   const [datasetColors, setDatasetColors] = useState({});
+  // Custom color overrides for individual selected X-Y plots.
+  // If a pair has no override, it continues to use the existing dataset colors.
+  const [pairColors, setPairColors] = useState({});
+  // Fully independent colors for every X-Y pair + dataset combination.
+  // Key format: `${pairKey}|||${datasetName}`
+  const [pairDatasetColors, setPairDatasetColors] = useState({});
   
   // NEW: Per-pair custom ranges
   const [perPairRanges, setPerPairRanges] = useState({});
@@ -571,32 +591,95 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     });
   }, [allDatasets]);
 
-  const pairColorMap = useMemo(() => buildPairColorMap(allPairs, visibleDatasetNames), [allPairs, visibleDatasetNames]);
+  const pairColorMap = useMemo(() => {
+    const map = buildPairColorMap(allPairs, visibleDatasetNames);
+
+    // Apply user-selected plot colors on top of the generated palette.
+    // Dataset variants are rebuilt from the selected pair color so legends,
+    // trend lines and any pair-derived styling remain visually consistent.
+    allPairs.forEach((pair) => {
+      const override = pairColors[pair.key];
+      if (!override || !map[pair.key]) return;
+
+      const datasetVariants = {};
+      visibleDatasetNames.forEach((datasetName, dsIndex) => {
+        if (dsIndex === 0) {
+          datasetVariants[datasetName] = override;
+        } else {
+          const variantTier = Math.floor((dsIndex - 1) / 2);
+          const useLight = (dsIndex - 1) % 2 === 0;
+          datasetVariants[datasetName] = useLight
+            ? lightenColor(override, Math.min(0.55, 0.25 + 0.12 * variantTier))
+            : darkenColor(override, Math.min(0.55, 0.25 + 0.1 * variantTier));
+        }
+      });
+
+      map[pair.key] = { base: override, datasetColors: datasetVariants };
+    });
+
+    return map;
+  }, [allPairs, visibleDatasetNames, pairColors]);
 
   const getPairDatasetColor = useCallback((pairKey, dataset) => {
-    const pairColors = pairColorMap[pairKey];
-    if (!pairColors) return BASE_COLORS[0];
-    return pairColors.datasetColors[dataset] || pairColors.base;
-  }, [pairColorMap]);
+    const comboKey = `${pairKey}|||${dataset}`;
+
+    // User-selected override always wins.
+    if (pairDatasetColors[comboKey]) return pairDatasetColors[comboKey];
+
+    // Assign every pair + dataset combination a completely independent
+    // categorical color. No lightening/darkening and no inherited pair shade.
+    const pairIndex = Math.max(0, allPairs.findIndex((pair) => pair.key === pairKey));
+    const datasetIndex = Math.max(0, allDatasets.findIndex((ds) => ds.name === dataset));
+    const seriesIndex = pairIndex * Math.max(allDatasets.length, 1) + datasetIndex;
+
+    return UNIQUE_SERIES_COLORS[seriesIndex % UNIQUE_SERIES_COLORS.length];
+  }, [pairDatasetColors, allPairs, allDatasets]);
 
   const getPairBaseColor = useCallback((pairKey) => {
-    return pairColorMap[pairKey]?.base || BASE_COLORS[0];
-  }, [pairColorMap]);
+    if (pairColors[pairKey]) return pairColors[pairKey];
+    const firstDataset = allDatasets[0]?.name;
+    return firstDataset ? getPairDatasetColor(pairKey, firstDataset) : BASE_COLORS[0];
+  }, [pairColors, allDatasets, getPairDatasetColor]);
 
   const getDatasetColor = useCallback((dataset) => {
     return datasetColors[dataset] || BASE_COLORS[visibleDatasetNames.indexOf(dataset) % BASE_COLORS.length] || BASE_COLORS[0];
   }, [datasetColors, visibleDatasetNames]);
 
   const getPointColor = useCallback((pairKey, dataset) => {
-    // Use the editable per-sheet color map for dots. Areas use this same helper,
-    // keeping sheet differentiation and point/area color consistency together.
-    return getDatasetColor(dataset) || getPairDatasetColor(pairKey, dataset);
-  }, [getDatasetColor, getPairDatasetColor]);
+    // Every pair + dataset series gets its own color.
+    // This makes DATE/Data 1, DATE/Data 2, MACHINE SPEED/Data 1, etc.
+    // visually independent instead of repeating the same dataset colors.
+    return getPairDatasetColor(pairKey, dataset);
+  }, [getPairDatasetColor]);
 
   const getTrendLineColor = useCallback((pairKey, dataset) => {
-    // Use the pair base color for trend lines (parameter color)
-    return getPairBaseColor(pairKey);
-  }, [getPairBaseColor]);
+    // Match each trend line to the exact pair + dataset series.
+    return getPairDatasetColor(pairKey, dataset);
+  }, [getPairDatasetColor]);
+
+  // Give each pair + dataset series a tiny screen-space offset so series that
+  // have identical X/Y coordinates do not paint directly on top of each other.
+  // This affects presentation only; axis values, tooltips and analysis still
+  // use the original data values.
+  const getSeriesVisualOffset = useCallback((pairKey, dataset) => {
+    const pairIndex = Math.max(0, allPairs.findIndex((pair) => pair.key === pairKey));
+    const datasetIndex = Math.max(0, allDatasets.findIndex((ds) => ds.name === dataset));
+    const datasetCount = Math.max(allDatasets.length, 1);
+    const seriesIndex = pairIndex * datasetCount + datasetIndex;
+    const totalSeries = Math.max(allPairs.length * datasetCount, 1);
+
+    // Golden-angle placement distributes many series without forming obvious rows.
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    const angle = seriesIndex * goldenAngle;
+
+    // 0px for a single series; otherwise 4–9px of separation.
+    const radius = totalSeries <= 1 ? 0 : 4 + (seriesIndex % 3) * 2.5;
+
+    return {
+      dx: Math.cos(angle) * radius,
+      dy: Math.sin(angle) * radius,
+    };
+  }, [allPairs, allDatasets]);
 
   useEffect(() => {
     setActivePairs(allPairs.map(p => p.key));
@@ -1182,12 +1265,19 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         .enter()
         .append("circle")
         .attr("class", "scatter-point")
-        .attr("cx", (d) => xSc(d.x))
-        .attr("cy", (d) => ySc(d.y))
+        .attr("cx", (d) => {
+          const offset = getSeriesVisualOffset(d.pairKey, d.dataset);
+          return xSc(d.x) + offset.dx;
+        })
+        .attr("cy", (d) => {
+          const offset = getSeriesVisualOffset(d.pairKey, d.dataset);
+          return ySc(d.y) + offset.dy;
+        })
         .attr("r", size)
         .style("fill", color)
-        .style("fill-opacity", opacity)
-        .style("stroke", "none");
+        .style("fill-opacity", Math.max(0.88, opacity))
+        .style("stroke", darkenColor(color, 0.35))
+        .style("stroke-width", Math.max(1, size * 0.18));
     };
 
     // Toggle: use canvas for plotting points to avoid SVG duplicates and improve performance
@@ -1591,7 +1681,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     // });
 
   }, [getEffectiveRanges, formatAxisValue, chartSettings.showGrid, datasetView,
-    chartSettings.showTrendLines, chartSettings.trendLineMode, trendLinesData, allPairs, getTrendLineColor, getPointColor, pairColorMap, perPairAutoRanges, activePairs, scaleMode, currentPairKey, showLines, showArea, areaOpacity, lineWidth, datasetPointsByName, datasetColors, allDatasets, visibleDatasetNames, selectedYVars]);
+    chartSettings.showTrendLines, chartSettings.trendLineMode, trendLinesData, allPairs, getTrendLineColor, getPointColor, getSeriesVisualOffset, pairColorMap, perPairAutoRanges, activePairs, scaleMode, currentPairKey, showLines, showArea, areaOpacity, lineWidth, datasetPointsByName, datasetColors, allDatasets, visibleDatasetNames, selectedYVars]);
 
   // Update canvas points
   const updateCanvasPoints = useCallback(() => {
@@ -1708,11 +1798,21 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       }
       if (xPos >= -50 && xPos <= plotWidth + 50 && yPos >= -50 && yPos <= plotHeight + 50) {
         const fillColor = getPointColor(d.pairKey, d.dataset);
-        drawCanvasPoint(xPos, yPos, fillColor, perfPointSize, perfOpacity);
+        const offset = getSeriesVisualOffset(d.pairKey, d.dataset);
+
+        // The tiny offset prevents coincident series from hiding one another.
+        // Keep points highly opaque so every legend color is actually visible.
+        drawCanvasPoint(
+          xPos + offset.dx,
+          yPos + offset.dy,
+          fillColor,
+          perfPointSize,
+          Math.max(0.9, perfOpacity)
+        );
       }
     }
     ctx.restore();
-  }, [allPoints, activePairs, allPairs, currentPairPoints, chartSettings.pointSize, chartSettings.opacity, datasetView, getEffectiveRanges, getPointColor, currentTransform, pairColorMap, perPairAutoRanges, scaleMode, currentPairKey, selectedYVars]);
+  }, [allPoints, activePairs, allPairs, currentPairPoints, chartSettings.pointSize, chartSettings.opacity, datasetView, getEffectiveRanges, getPointColor, getSeriesVisualOffset, currentTransform, pairColorMap, perPairAutoRanges, scaleMode, currentPairKey, selectedYVars]);
 
   useEffect(() => {
     updateCanvasPoints();
@@ -1901,13 +2001,28 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     return next;
   }, [allDatasets, datasetColors]);
 
-  const openSettingsModal = () => { setDraftSettings({ ...chartSettings, datasetColors: getDefaultDatasetColors() }); setSettingsModalOpen(true); };
+  const openSettingsModal = () => {
+    setDraftSettings({
+      ...chartSettings,
+      datasetColors: getDefaultDatasetColors(),
+      pairColors: { ...pairColors },
+      pairDatasetColors: { ...pairDatasetColors },
+    });
+    setSettingsModalOpen(true);
+  };
   const handleSettingsModalClose = () => { setSettingsModalOpen(false); setDraftSettings(null); };
   const handleSettingsSave = () => {
     if (!draftSettings) return;
-    const { datasetColors: nextDatasetColors, ...nextChartSettings } = draftSettings;
+    const {
+      datasetColors: nextDatasetColors,
+      pairColors: nextPairColors,
+      pairDatasetColors: nextPairDatasetColors,
+      ...nextChartSettings
+    } = draftSettings;
     setChartSettings(nextChartSettings);
     if (nextDatasetColors) setDatasetColors({ ...nextDatasetColors });
+    if (nextPairColors) setPairColors({ ...nextPairColors });
+    if (nextPairDatasetColors) setPairDatasetColors({ ...nextPairDatasetColors });
     setSettingsModalOpen(false);
     setDraftSettings(null);
   };
@@ -1916,7 +2031,9 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     allDatasets.forEach((dataset, index) => {
       nextColors[dataset.name] = BASE_COLORS[(index + 6) % BASE_COLORS.length] || BASE_COLORS[index % BASE_COLORS.length];
     });
-    setDraftSettings({ pointSize: 8, opacity: 0.7, showGrid: true, showTrendLines: true, trendLineMode: 'average', showOutliers: false, showCorrelation: false, withProductColorOverride: {}, withoutProductColorOverride: {}, datasetColors: nextColors });
+    // Clearing pairColors restores the normal dataset-level colors for points/areas
+    // and the generated palette for pair-specific trend/connecting lines.
+    setDraftSettings({ pointSize: 8, opacity: 0.7, showGrid: true, showTrendLines: true, trendLineMode: 'average', showOutliers: false, showCorrelation: false, withProductColorOverride: {}, withoutProductColorOverride: {}, datasetColors: nextColors, pairColors: {}, pairDatasetColors: {} });
 };
 
   const SummaryCards = () => (
@@ -2138,9 +2255,9 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     ];
 
 
-    const colorPairs = allDatasets.map((dataset, index) => ({
-      key: dataset.name,
-      label: datasetLabels[dataset.name] || dataset.name || `Sheet ${index + 1}`,
+    const datasetColorPairs = allDatasets.map((dataset, index) => ({
+      key: `dataset-${dataset.name}`,
+      label: `Dataset: ${datasetLabels[dataset.name] || dataset.name || `Sheet ${index + 1}`}`,
       value: draftSettings?.datasetColors?.[dataset.name] || datasetColors[dataset.name] || BASE_COLORS[(index + 6) % BASE_COLORS.length],
       onChange: (color) => setDraftSettings(ds => ({
         ...ds,
@@ -2150,6 +2267,42 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         }
       }))
     }));
+
+    const plotColorPairs = allPairs.map((pair, index) => ({
+      key: `pair-${pair.key}`,
+      label: `Plot: ${pair.x} vs ${pair.y}`,
+      value: draftSettings?.pairColors?.[pair.key] || pairColors[pair.key] || pairColorMap[pair.key]?.base || BASE_COLORS[index % BASE_COLORS.length],
+      onChange: (color) => setDraftSettings(ds => ({
+        ...ds,
+        pairColors: {
+          ...ds?.pairColors,
+          [pair.key]: color,
+        }
+      }))
+    }));
+
+    const seriesColorPairs = allPairs.flatMap((pair, pairIndex) =>
+      allDatasets.map((dataset, datasetIndex) => {
+        const comboKey = `${pair.key}|||${dataset.name}`;
+        return {
+          key: `series-${comboKey}`,
+          label: `${pair.x} vs ${pair.y} — ${datasetLabels[dataset.name] || dataset.name}`,
+          value:
+            draftSettings?.pairDatasetColors?.[comboKey] ||
+            pairDatasetColors[comboKey] ||
+            getPairDatasetColor(pair.key, dataset.name),
+          onChange: (color) => setDraftSettings(ds => ({
+            ...ds,
+            pairDatasetColors: {
+              ...ds?.pairDatasetColors,
+              [comboKey]: color,
+            }
+          }))
+        };
+      })
+    );
+
+    const colorPairs = [...datasetColorPairs, ...plotColorPairs, ...seriesColorPairs];
 
     return (
       <ChartSettingsModal
@@ -2163,10 +2316,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         colorPairs={colorPairs}
         colorOptions={BASE_COLORS}
         featureSections={featureSections}
-        colorSection={allDatasets.length > 0}
+        colorSection={allDatasets.length > 0 || allPairs.length > 0}
         title="Chart Settings"
-        description="Customize your multivariate scatter plot appearance and per-sheet colors"
-        colorSectionTitle="Sheet Colors"
+        description="Customize chart appearance, dataset colors, and colors for each selected X-Y plot"
+        colorSectionTitle="Dataset, Pair & Individual Series Colors"
         minHeight={600}
         maxWidth="lg"
         multiDatasetColors={false}
@@ -2200,11 +2353,22 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       visible: visibleDatasetNames.includes(dataset.name),
     }));
 
-    const pairLegend = allPairs.filter((pair) => activePairs.includes(pair.key)).map((pair) => ({
-      key: `pair-${pair.key}`,
-      label: `${pair.x} vs ${pair.y}`,
-      color: pairColorMap[pair.key]?.base || BASE_COLORS[0],
-    }));
+    const pairLegend = allPairs
+      .filter((pair) => activePairs.includes(pair.key))
+      .map((pair) => ({
+        key: `pair-${pair.key}`,
+        pairKey: pair.key,
+        label: `${pair.x} vs ${pair.y}`,
+        color: getPairBaseColor(pair.key),
+        series: allDatasets
+          .filter((dataset) => visibleDatasetNames.includes(dataset.name))
+          .map((dataset) => ({
+            key: `${pair.key}|||${dataset.name}`,
+            dataset: dataset.name,
+            label: datasetLabels[dataset.name] || dataset.name,
+            color: getPairDatasetColor(pair.key, dataset.name),
+          })),
+      }));
 
     return (
       <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
@@ -2227,9 +2391,37 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         {pairLegend.length > 0 && (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
             {pairLegend.map((item) => (
-              <Box key={item.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, bgcolor: 'background.paper', px: 1.25, py: 0.75, borderRadius: 2, border: '1px solid', borderColor: 'grey.300' }}>
-                <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: item.color, flexShrink: 0, border: `1px solid ${darkenColor(item.color, 0.3)}` }} />
-                <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 600 }}>
+              <Box
+                key={item.key}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.9,
+                  bgcolor: 'background.paper',
+                  px: 1.25,
+                  py: 0.75,
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'grey.300'
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.45 }}>
+                  {item.series.map((series) => (
+                    <MuiTooltip key={series.key} title={`${item.label} — ${series.label}`}>
+                      <Box
+                        sx={{
+                          width: 13,
+                          height: 13,
+                          borderRadius: '50%',
+                          bgcolor: series.color,
+                          flexShrink: 0,
+                          border: `1px solid ${darkenColor(series.color, 0.3)}`
+                        }}
+                      />
+                    </MuiTooltip>
+                  ))}
+                </Box>
+                <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 700 }}>
                   {item.label}
                 </Typography>
               </Box>
@@ -2350,9 +2542,14 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                       label={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                            {allDatasets.filter(ds => visibleDatasetNames.includes(ds.name)).map((ds, idx) => (
-                              <Box key={ds.name} sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], border: `2px solid ${darkenColor(datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], 0.25)}` }} />
-                            ))}
+                            {allDatasets.filter(ds => visibleDatasetNames.includes(ds.name)).map((ds) => {
+                              const seriesColor = getPairDatasetColor(pair.key, ds.name);
+                              return (
+                                <MuiTooltip key={ds.name} title={`${pair.x} vs ${pair.y} — ${datasetLabels[ds.name] || ds.name}`}>
+                                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: seriesColor, border: `2px solid ${darkenColor(seriesColor, 0.25)}` }} />
+                                </MuiTooltip>
+                              );
+                            })}
                           </Box>
                           <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>{pair.x} vs {pair.y}</Typography>
                         </Box>
@@ -2476,7 +2673,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               <Alert severity="info" sx={{ display: "flex", alignItems: "center", gap: 1, borderRadius: 2 }}>
                 <PanToolIcon fontSize="small" />
                 <Typography variant="body2">
-                  Use mouse wheel to zoom, drag to pan. Each variable pair has its own color — each sheet (dataset) is plotted using its assigned color.
+                  Use mouse wheel to zoom, drag to pan. Every variable-pair + dataset series has its own color. Coincident series are slightly separated on-screen so no series color is hidden behind another.
                   {showLines && " Blue lines connect points to show data sequence."}
                   {showArea && " Shaded areas highlight the region under each data line."}
                   {datasetView === "individual" && " Individual View displays each active variable pair in its own separate panel."}
@@ -2548,10 +2745,15 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                   if (!activePairs.includes(pair.key)) return null;
                   return (
                     <Box key={pair.key} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap', mr: 1 }}>
-                      {allDatasets.filter(ds => visibleDatasetNames.includes(ds.name)).map((ds, idx) => (
-                        <Box key={ds.name} sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], flexShrink: 0, border: `2px solid ${darkenColor(datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], 0.25)}` }} />
-                      ))}
-                      <Typography sx={{ color: pairColorMap[pair.key]?.base || 'text.primary', fontWeight: 700, fontSize: '14px', fontFamily: 'inherit' }}>
+                      {allDatasets.filter(ds => visibleDatasetNames.includes(ds.name)).map((ds) => {
+                        const seriesColor = getPairDatasetColor(pair.key, ds.name);
+                        return (
+                          <MuiTooltip key={ds.name} title={`${pair.x} vs ${pair.y} — ${datasetLabels[ds.name] || ds.name}`}>
+                            <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: seriesColor, flexShrink: 0, border: `2px solid ${darkenColor(seriesColor, 0.25)}` }} />
+                          </MuiTooltip>
+                        );
+                      })}
+                      <Typography sx={{ color: getPairBaseColor(pair.key), fontWeight: 700, fontSize: '14px', fontFamily: 'inherit' }}>
                         {pair.x} vs {pair.y}
                       </Typography>
                     </Box>
@@ -2626,10 +2828,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                       );
                     })}
                       {tooltip.visible && tooltip.data && (
-                        <Paper elevation={3} sx={{ position: "absolute", left: Math.min(tooltip.x + 10, window.innerWidth - 320), top: Math.max(tooltip.y - 10, 10), p: { xs: 1.5, md: 2 }, backgroundColor: "background.paper", maxWidth: { xs: 250, md: 300 }, borderRadius: 2, border: "2px solid", borderColor: pairColorMap[tooltip.data.pairKey]?.base || 'divider', boxShadow: "0 4px 12px rgba(0,0,0,0.15)", pointerEvents: "none", zIndex: 1000 }}>
+                        <Paper elevation={3} sx={{ position: "absolute", left: Math.min(tooltip.x + 10, window.innerWidth - 320), top: Math.max(tooltip.y - 10, 10), p: { xs: 1.5, md: 2 }, backgroundColor: "background.paper", maxWidth: { xs: 250, md: 300 }, borderRadius: 2, border: "2px solid", borderColor: getPairBaseColor(tooltip.data.pairKey) || 'divider', boxShadow: "0 4px 12px rgba(0,0,0,0.15)", pointerEvents: "none", zIndex: 1000 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.5 }}>
-                            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: tooltip.data.dataset === "With Product" ? pairColorMap[tooltip.data.pairKey]?.post : pairColorMap[tooltip.data.pairKey]?.pre, border: `2px solid ${pairColorMap[tooltip.data.pairKey]?.base}`, flexShrink: 0 }} />
-                            <Typography variant="subtitle2" sx={{ color: pairColorMap[tooltip.data.pairKey]?.base, fontWeight: "bold" }}>{tooltip.data.dataset} — {tooltip.data.xLabel} vs {tooltip.data.yLabel}</Typography>
+                            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: getPointColor(tooltip.data.pairKey, tooltip.data.dataset), border: `2px solid ${getPairBaseColor(tooltip.data.pairKey)}`, flexShrink: 0 }} />
+                            <Typography variant="subtitle2" sx={{ color: getPairBaseColor(tooltip.data.pairKey), fontWeight: "bold" }}>{tooltip.data.dataset} — {tooltip.data.xLabel} vs {tooltip.data.yLabel}</Typography>
                           </Box>
                           <Typography variant="body2">{tooltip.data.xLabel}: {formatValue(tooltip.data.xDisplay, tooltip.data.x > 1e12)}</Typography>
                           <Typography variant="body2">{tooltip.data.yLabel}: {formatValue(tooltip.data.yDisplay, tooltip.data.y > 1e12)}</Typography>
