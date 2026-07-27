@@ -37,6 +37,9 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp"
 import InfoIcon from "@mui/icons-material/Info"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import BarChartIcon from "@mui/icons-material/BarChart"
+import ScatterPlotIcon from "@mui/icons-material/ScatterPlot"
+import TuneIcon from "@mui/icons-material/Tune"
+import FilterAltIcon from "@mui/icons-material/FilterAlt"
 import * as d3 from "d3"
 import logo from "../../assets/abhitech-logo.png"
 import html2canvas from "html2canvas"
@@ -1622,17 +1625,17 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
     }, [value, isDragging]);
 
     return (
-      <Box sx={{ width: '100%' }}>
+      <Box sx={{ width: '100%', p: 1.5, border: '1px solid #E7ECF3', borderRadius: 2, bgcolor: '#FAFBFD' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-          <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>
+          <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569' }}>
             {label}
           </Typography>
           <Typography
             variant="body2"
             sx={{
               fontWeight: 600,
-              color: '#1976d2',
-              backgroundColor: '#f5f5f5',
+              color: '#2563EB',
+              backgroundColor: '#EFF6FF',
               padding: '2px 8px',
               borderRadius: '12px',
               fontSize: '0.8rem'
@@ -1645,7 +1648,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
           sx={{
             position: 'relative',
             height: '6px',
-            backgroundColor: '#e0e0e0',
+            backgroundColor: '#E2E8F0',
             borderRadius: '3px',
             cursor: 'pointer'
           }}
@@ -1658,7 +1661,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
               left: 0,
               top: 0,
               height: '100%',
-              backgroundColor: '#1976d2',
+              backgroundColor: '#2563EB',
               borderRadius: '3px',
               width: `${((tempValue - min) / (max - min)) * 100}%`,
               transition: isDragging ? 'none' : 'width 0.2s ease'
@@ -1972,7 +1975,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
         </Grid>
       </Grid>
 
-      <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
+      <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
             Data Filter
@@ -2031,7 +2034,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
 
       <div ref={pageRef}>
 
-        <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
+        <Card elevation={0} sx={{ mb: 3, borderRadius: 3, border: '1px solid #E5EAF2', boxShadow: '0 8px 28px rgba(15,23,42,.055)', backgroundImage: 'none' }}>
           <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 2 }}>
               <MuiTooltip title="Download entire page as PNG">
@@ -2070,7 +2073,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
               </Typography>
             </Box>
 
-            <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
+            <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
               <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                 <Box sx={{ 
                   display: "flex", 
@@ -2189,7 +2192,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
             </Card>
 
             <Box sx={{ mb: 3 }}>
-            <Alert severity="info" sx={{ 
+            <Alert severity="info" variant="outlined" sx={{ 
               display: "flex", 
               alignItems: "center", 
               gap: 1,
@@ -2284,11 +2287,11 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
           </Box>
 
             {!showWithoutProduct && !showWithProduct ? (
-              <Alert severity="info" sx={{ width: "100%", my: 3, borderRadius: 2 }}>
+              <Alert severity="info" variant="outlined" sx={{ width: "100%", my: 3, borderRadius: 2 }}>
                 No data available for the selected variables
               </Alert>
             ) : (
-              <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, overflow: 'hidden' }}>
+              <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', overflow: 'hidden' }}>
                 <CardContent sx={{ p: 0 }}>
                   <Box sx={containerStyle}>
                     <div ref={containerRef} className="abhitech-plot-area" style={{ width: "100%", height: "100%" }}>
@@ -2309,7 +2312,7 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
                           borderRadius: 2,
                           border: "1px solid",
                           borderColor: tooltip.data.dataset === "With Product" ? "success.light" : "error.light",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                          boxShadow: "0 16px 36px rgba(15,23,42,0.16)",
                           pointerEvents: "none",
                           zIndex: 1000,
                         }}

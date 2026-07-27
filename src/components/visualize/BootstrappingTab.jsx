@@ -40,6 +40,13 @@ import {
 import DownloadIcon from '@mui/icons-material/Download';
 import ImageIcon from '@mui/icons-material/Image';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ViewModuleOutlinedIcon from '@mui/icons-material/ViewModuleOutlined';
+import ViewListOutlinedIcon from '@mui/icons-material/ViewListOutlined';
+import SearchIcon from '@mui/icons-material/Search';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import logo from '../../assets/abhitech-logo.png';
@@ -53,6 +60,12 @@ const BootstrappingTab = ({
     plantName = '',
     productName = ''
 }) => {
+    const ui = {
+        page: { minHeight: '100%', background: 'linear-gradient(180deg, #F7F9FC 0%, #FFFFFF 46%)', borderRadius: 3 },
+        surface: { border: '1px solid #E5EAF2', borderRadius: 3, boxShadow: '0 8px 28px rgba(15,23,42,.06)', backgroundImage: 'none' },
+        softSurface: { border: '1px solid #E8EDF5', borderRadius: 2.5, backgroundColor: '#FAFBFD' }
+    };
+
     const [selectedColumn, setSelectedColumn] = useState('');
     const [significantPage, setSignificantPage] = useState(1);
     const [nonSignificantPage, setNonSignificantPage] = useState(1);
@@ -453,8 +466,11 @@ const BootstrappingTab = ({
                 
                 <TableContainer 
                     component={Paper} 
-                    elevation={1} 
-                    sx={{ overflowX: 'auto' }}
+                    elevation={0}
+                    sx={{ overflowX:'auto', border:'1px solid #E5EAF2', borderRadius:2.5,
+                        '& .MuiTableHead-root':{backgroundColor:'#F6F8FB'},
+                        '& .MuiTableCell-head':{color:'#475569',fontWeight:700},
+                        '& .MuiTableBody-root .MuiTableRow-root:hover':{backgroundColor:'#FAFBFD'} }}
                     ref={tableRef}
                     className="abhitech-plot-area"
                 >
@@ -533,22 +549,29 @@ const BootstrappingTab = ({
         const significantCount = bootstrapAnalysis.significant_impact?.length || 0;
         const nonSignificantCount = bootstrapAnalysis.no_significant_impact?.length || 0;
         const totalAnalyzed = bootstrapAnalysis.total_columns_analyzed || 0;
-
-        if (totalAnalyzed === 0 || isLoading) {
-            return null;
-        }
-
+        if (!totalAnalyzed || isLoading) return null;
+        const metrics = [
+            ['Columns analyzed', totalAnalyzed, 'Numeric variables processed', <ScienceOutlinedIcon />, '#2563EB', '#EFF6FF'],
+            ['Significant impact', significantCount, `${((significantCount / totalAnalyzed) * 100).toFixed(1)}% of analyzed columns`, <ErrorOutlineIcon />, '#DC2626', '#FEF2F2'],
+            ['No significant impact', nonSignificantCount, 'Confidence interval crosses zero', <CheckCircleOutlineIcon />, '#059669', '#ECFDF5']
+        ];
         return (
-            <Alert severity="info" sx={{ mb: { xs: 2, sm: 3 }, mx: { xs: 1, sm: 0 } }}>
-                <AlertTitle sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-                    Bootstrap Analysis Summary
-                </AlertTitle>
-                <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                    <strong>Total columns analyzed:</strong> {totalAnalyzed}<br/>
-                    <strong>Columns with significant impact:</strong> {significantCount}<br/>
-                    <strong>Columns with no significant impact:</strong> {nonSignificantCount}
-                </Typography>
-            </Alert>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+                {metrics.map(([label,value,helper,icon,color,bg]) => (
+                    <Grid item xs={12} sm={4} key={label}>
+                        <Paper elevation={0} sx={{ ...ui.surface, p: 2.25, height: '100%' }}>
+                            <Box sx={{ display:'flex', justifyContent:'space-between', gap:2 }}>
+                                <Box>
+                                    <Typography variant="body2" sx={{ color:'#64748B', fontWeight:650 }}>{label}</Typography>
+                                    <Typography sx={{ fontSize:{xs:26,md:30}, fontWeight:800, color:'#0F172A', lineHeight:1.2, mt:.4 }}>{value}</Typography>
+                                    <Typography variant="caption" sx={{ color:'#94A3B8' }}>{helper}</Typography>
+                                </Box>
+                                <Box sx={{ width:42,height:42,borderRadius:2.25,display:'grid',placeItems:'center',color,bgcolor:bg }}>{icon}</Box>
+                            </Box>
+                        </Paper>
+                    </Grid>
+                ))}
+            </Grid>
         );
     };
 
@@ -615,8 +638,12 @@ const BootstrappingTab = ({
                         onClick={() => onColumnClick(result.column)}
                         clickable
                         sx={{ 
-                            fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                            height: { xs: 24, sm: 32 },
+                            fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                            height: { xs: 30, sm: 34 },
+                            borderRadius: 1.75,
+                            fontWeight: result.column === selectedColumn ? 700 : 600,
+                            transition: 'all .18s ease',
+                            '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 5px 14px rgba(15,23,42,.08)' },
                             '& .MuiChip-label': {
                                 px: { xs: 1, sm: 1.5 }
                             }
@@ -825,83 +852,90 @@ const BootstrappingTab = ({
     }
 
     return (
-        <Box sx={{ p: { xs: 1, sm: 2, md: 0 } }}>
-            {/* Refresh Button */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<RefreshIcon />}
-                    onClick={runFullBootstrapAnalysis}
-                    disabled={isLoading}
-                >
-                    Refresh Analysis
-                </Button>
-            </Box>
+        <Box sx={{ ...ui.page, p: { xs: 1.5, sm: 2.5, md: 3 } }}>
+            <Paper elevation={0} sx={{ ...ui.surface, p: { xs: 2, md: 2.75 }, mb: 2.5, position: 'relative', overflow: 'hidden' }}>
+                <Box sx={{ position: 'absolute', width: 180, height: 180, borderRadius: '50%', bgcolor: '#EFF6FF', right: -70, top: -95 }} />
+                <Box sx={{ position: 'relative', display: 'flex', alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Box sx={{ width: 46, height: 46, borderRadius: 2.5, display: 'grid', placeItems: 'center', bgcolor: '#172B4D', color: 'white' }}>
+                            <InsightsOutlinedIcon />
+                        </Box>
+                        <Box>
+                            <Typography variant="h5" sx={{ fontWeight: 850, color: '#0F172A', letterSpacing: '-.025em', fontSize: { xs: '1.25rem', md: '1.55rem' } }}>
+                                Bootstrap Analysis
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#64748B', mt: 0.25 }}>
+                                Compare product conditions and identify statistically meaningful shifts.
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Button
+                        variant="outlined"
+                        startIcon={<RefreshIcon />}
+                        onClick={runFullBootstrapAnalysis}
+                        disabled={isLoading}
+                        sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700, bgcolor: 'white' }}
+                    >
+                        Refresh analysis
+                    </Button>
+                </Box>
+            </Paper>
 
             {renderSummaryStats()}
-            
-            <Grid container spacing={{ xs: 2, sm: 3 }}>
-                <Grid item xs={12} md={6} lg={4}>
-                    <Autocomplete
-                        options={availableColumns}
-                        value={selectedColumn}
-                        onChange={(event, newValue) => {
-                            if (newValue) {
-                                setSelectedColumn(newValue);
-                            }
-                        }}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Select Column for Analysis"
-                                variant="outlined"
-                                fullWidth
-                                size="small"
-                            />
+
+            <Paper elevation={0} sx={{ ...ui.softSurface, p: 2, mb: 2.5 }}>
+                <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} md={7}>
+                        <Autocomplete
+                            options={availableColumns}
+                            value={selectedColumn}
+                            onChange={(event, newValue) => newValue && setSelectedColumn(newValue)}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Variable to inspect"
+                                    placeholder="Search variables..."
+                                    fullWidth
+                                    size="small"
+                                />
+                            )}
+                            sx={{ bgcolor: 'white', '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                            disableClearable
+                            autoHighlight
+                            openOnFocus
+                        />
+                    </Grid>
+                    <Grid item xs={12} md={5}>
+                        <Typography variant="caption" sx={{ color: '#64748B', display: 'block' }}>Method</Typography>
+                        <Typography variant="body2" sx={{ color: '#334155', fontWeight: 650 }}>
+                            10,000 bootstrap samples · 95% confidence interval
+                        </Typography>
+                    </Grid>
+                </Grid>
+            </Paper>
+
+            <Card elevation={0} sx={{ ...ui.surface }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 1, mb: 1 }}>
+                        <Box>
+                            <Typography variant="h6" sx={{ fontWeight: 800, color: '#172B4D' }}>
+                                Bootstrap Difference Analysis
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Mean difference between "with product" and "without product" conditions.
+                            </Typography>
+                        </Box>
+                        {selectedColumn && (
+                            <Chip label={selectedColumn} sx={{ bgcolor: '#EFF6FF', color: '#1D4ED8', fontWeight: 700 }} />
                         )}
-                        sx={{ mb: { xs: 2, sm: 3, md: 4 } }}
-                        disableClearable
-                        autoHighlight
-                        openOnFocus
-                    />
-                </Grid>
-            </Grid>
+                    </Box>
+                    <Divider sx={{ my: 2 }} />
+                    {renderBootstrapStatisticsTable(selectedColumnStats)}
+                </CardContent>
+            </Card>
 
-            <Grid container spacing={{ xs: 2, sm: 3 }}>
-                <Grid item xs={12}>
-                    <Card sx={{ height: '100%' }}>
-                        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                            <Typography 
-                                variant="h6" 
-                                sx={{ 
-                                    mb: { xs: 1.5, sm: 2 },
-                                    fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' },
-                                    wordBreak: 'break-word'
-                                }}
-                            >
-                                Bootstrap Difference Analysis - {selectedColumn}
-                            </Typography>
-                            <Typography 
-                                variant="body2" 
-                                color="text.secondary" 
-                                sx={{ 
-                                    mb: { xs: 2, sm: 3 },
-                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                    lineHeight: { xs: 1.4, sm: 1.5 }
-                                }}
-                            >
-                                Analysis of mean difference between "with product" and "without product" conditions using 10,000 bootstrap samples.
-                                A significant impact indicates the confidence interval does not include zero.
-                            </Typography>
-                            {renderBootstrapStatisticsTable(selectedColumnStats)}
-                        </CardContent>
-                    </Card>
-                </Grid>
-            </Grid>
-
-            <Box sx={{ mt: { xs: 2, sm: 3 }, mb: { xs: 1, sm: 2 } }}>
-                <Grid container spacing={{ xs: 1, sm: 2 }} alignItems="center">
+            <Paper elevation={0} sx={{ ...ui.softSurface, mt: 2.5, mb: 2.5, p: 1.5 }}>
+                <Grid container spacing={1.5} alignItems="center">
                     <Grid item xs={12} sm={6} md={3}>
                         <FormControl fullWidth size="small">
                             <InputLabel>Items per page</InputLabel>
@@ -921,19 +955,17 @@ const BootstrappingTab = ({
                             </Select>
                         </FormControl>
                     </Grid>
+
                     <Grid item xs={12} sm={6} md={3}>
                         <FormControl fullWidth size="small">
                             <InputLabel>Sort by</InputLabel>
-                            <Select
-                                value={sortOrder}
-                                label="Sort by"
-                                onChange={(e) => setSortOrder(e.target.value)}
-                            >
+                            <Select value={sortOrder} label="Sort by" onChange={(e) => setSortOrder(e.target.value)}>
                                 <MenuItem value="impact">Impact (High to Low)</MenuItem>
                                 <MenuItem value="alphabetical">Alphabetical</MenuItem>
                             </Select>
                         </FormControl>
                     </Grid>
+
                     <Grid item xs={12} sm={6} md={3}>
                         <ToggleButtonGroup
                             value={viewMode}
@@ -942,130 +974,94 @@ const BootstrappingTab = ({
                             size="small"
                             fullWidth
                         >
-                            <ToggleButton value="grid">Grid View</ToggleButton>
-                            <ToggleButton value="list">List View</ToggleButton>
+                            <ToggleButton value="grid" sx={{ textTransform: 'none', gap: 0.75 }}>
+                                <ViewModuleOutlinedIcon fontSize="small" /> Grid
+                            </ToggleButton>
+                            <ToggleButton value="list" sx={{ textTransform: 'none', gap: 0.75 }}>
+                                <ViewListOutlinedIcon fontSize="small" /> List
+                            </ToggleButton>
                         </ToggleButtonGroup>
                     </Grid>
+
                     <Grid item xs={12} sm={6} md={3}>
-                        <Tooltip title="Download Excel Report">
-                            <Button
-                                variant="outlined"
-                                size="small"
-                                startIcon={<DownloadIcon />}
-                                onClick={() => setDownloadDialogOpen(true)}
-                                fullWidth
-                                sx={{ 
-                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                    height: 40
-                                }}
-                            >
-                                Export Excel
-                            </Button>
-                        </Tooltip>
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<DownloadIcon />}
+                            onClick={() => setDownloadDialogOpen(true)}
+                            fullWidth
+                            sx={{ height: 40, borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+                        >
+                            Export Excel
+                        </Button>
                     </Grid>
                 </Grid>
-            </Box>
+            </Paper>
 
-            <Divider sx={{ my: { xs: 2, sm: 3 } }} />
-
-            <Grid container spacing={{ xs: 2, sm: 3 }}>
+            <Grid container spacing={2.5}>
                 <Grid item xs={12} lg={6}>
-                    <Card sx={{ height: '100%' }}>
+                    <Card elevation={0} sx={{ ...ui.surface, height: '100%' }}>
                         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                            <Typography 
-                                variant="h6" 
-                                sx={{ 
-                                    mb: { xs: 1.5, sm: 2 }, 
-                                    color: 'error.main',
-                                    fontSize: { xs: '0.875rem', sm: '1rem', md: '1.125rem' }
-                                }}
-                            >
-                                Columns with Significant Impact ({sortedSignificantColumns.length})
-                            </Typography>
-                            {paginatedSignificantColumns.length > 0 ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                <Box sx={{ width: 34, height: 34, display: 'grid', placeItems: 'center', borderRadius: 2, bgcolor: '#FEF2F2', color: '#DC2626' }}>
+                                    <ErrorOutlineIcon fontSize="small" />
+                                </Box>
+                                <Box>
+                                    <Typography sx={{ fontWeight: 800, color: '#172B4D' }}>Significant Impact</Typography>
+                                    <Typography variant="caption" color="text.secondary">{sortedSignificantColumns.length} columns</Typography>
+                                </Box>
+                            </Box>
+                            {paginatedSignificantColumns.length ? (
                                 <>
                                     {renderColumnChips(paginatedSignificantColumns, 'error', setSelectedColumn)}
-                                    {renderPaginationControls(
-                                        significantPage, 
-                                        setSignificantPage, 
-                                        sortedSignificantColumns.length,
-                                        'Significant'
-                                    )}
+                                    {renderPaginationControls(significantPage, setSignificantPage, sortedSignificantColumns.length, 'Significant')}
                                 </>
                             ) : (
-                                <Typography 
-                                    variant="body2" 
-                                    color="text.secondary"
-                                    sx={{ 
-                                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                        textAlign: { xs: 'center', sm: 'left' }
-                                    }}
-                                >
-                                    No columns show significant impact
-                                </Typography>
+                                <Typography variant="body2" color="text.secondary">No columns show significant impact.</Typography>
                             )}
                         </CardContent>
                     </Card>
                 </Grid>
+
                 <Grid item xs={12} lg={6}>
-                    <Card sx={{ height: '100%' }}>
+                    <Card elevation={0} sx={{ ...ui.surface, height: '100%' }}>
                         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                            <Typography 
-                                variant="h6" 
-                                sx={{ 
-                                    mb: { xs: 1.5, sm: 2 }, 
-                                    color: 'success.main',
-                                    fontSize: { xs: '0.875rem', sm: '1rem', md: '1.125rem' }
-                                }}
-                            >
-                                Columns with No Significant Impact ({sortedNonSignificantColumns.length})
-                            </Typography>
-                            {paginatedNonSignificantColumns.length > 0 ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                <Box sx={{ width: 34, height: 34, display: 'grid', placeItems: 'center', borderRadius: 2, bgcolor: '#ECFDF5', color: '#059669' }}>
+                                    <CheckCircleOutlineIcon fontSize="small" />
+                                </Box>
+                                <Box>
+                                    <Typography sx={{ fontWeight: 800, color: '#172B4D' }}>No Significant Impact</Typography>
+                                    <Typography variant="caption" color="text.secondary">{sortedNonSignificantColumns.length} columns</Typography>
+                                </Box>
+                            </Box>
+                            {paginatedNonSignificantColumns.length ? (
                                 <>
                                     {renderColumnChips(paginatedNonSignificantColumns, 'success', setSelectedColumn)}
-                                    {renderPaginationControls(
-                                        nonSignificantPage, 
-                                        setNonSignificantPage, 
-                                        sortedNonSignificantColumns.length,
-                                        'Non-significant'
-                                    )}
+                                    {renderPaginationControls(nonSignificantPage, setNonSignificantPage, sortedNonSignificantColumns.length, 'Non-significant')}
                                 </>
                             ) : (
-                                <Typography 
-                                    variant="body2" 
-                                    color="text.secondary"
-                                    sx={{ 
-                                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                        textAlign: { xs: 'center', sm: 'left' }
-                                    }}
-                                >
-                                    All columns show significant impact
-                                </Typography>
+                                <Typography variant="body2" color="text.secondary">All analyzed columns show significant impact.</Typography>
                             )}
                         </CardContent>
                     </Card>
                 </Grid>
             </Grid>
 
-            {/* Download Dialog */}
-            <Dialog 
-                open={downloadDialogOpen} 
+            <Dialog
+                open={downloadDialogOpen}
                 onClose={() => setDownloadDialogOpen(false)}
                 maxWidth="md"
                 fullWidth
+                PaperProps={{ sx: { borderRadius: 3, boxShadow: '0 24px 70px rgba(15,23,42,.18)' } }}
             >
-                <DialogTitle sx={{ 
-                    fontSize: { xs: '1rem', sm: '1.25rem' },
-                    pb: 1
-                }}>
-                    Download Bootstrap Analysis Excel Report
+                <DialogTitle sx={{ fontWeight: 800, color: '#172B4D' }}>
+                    Export Bootstrap Analysis
                 </DialogTitle>
                 <DialogContent>
-                    <Box sx={{ mb: 3 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                                Select Individual Columns
-                            </Typography>
+                    <Box sx={{ mb: 3, mt: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, mb: 2 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Select Columns</Typography>
                             <FormControlLabel
                                 control={
                                     <Checkbox
@@ -1077,11 +1073,7 @@ const BootstrappingTab = ({
                                 label={`${getSelectedColumnsCount()}/${getTotalColumnsCount()} selected`}
                             />
                         </Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                            Leave empty to include all columns, or select specific columns to export.
-                        </Typography>
-                        
-                        {/* Search Bar */}
+
                         <TextField
                             fullWidth
                             size="small"
@@ -1090,42 +1082,15 @@ const BootstrappingTab = ({
                             onChange={(e) => setColumnSearchTerm(e.target.value)}
                             sx={{ mb: 2 }}
                             InputProps={{
-                                startAdornment: (
-                                    <Box sx={{ color: 'text.secondary', mr: 1 }}>
-                                        🔍
-                                    </Box>
-                                ),
-                                endAdornment: columnSearchTerm && (
-                                    <Box 
-                                        component="span" 
-                                        onClick={() => setColumnSearchTerm('')}
-                                        sx={{ 
-                                            cursor: 'pointer', 
-                                            color: 'text.secondary',
-                                            mr: 1,
-                                            fontSize: '1.2rem'
-                                        }}
-                                    >
-                                        ×
-                                    </Box>
-                                )
+                                startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1, fontSize: 20 }} />
                             }}
                         />
-                        
-                        <Box sx={{ 
-                            maxHeight: 200, 
-                            overflowY: 'auto', 
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            borderRadius: 1,
-                            p: 1
-                        }}>
+
+                        <Box sx={{ maxHeight: 220, overflowY: 'auto', border: '1px solid #E5EAF2', borderRadius: 2, p: 1 }}>
                             <FormGroup>
                                 {getFilteredColumns().map((columnName) => {
                                     const columnData = [...(bootstrapAnalysis.significant_impact || []), ...(bootstrapAnalysis.no_significant_impact || [])]
                                         .find(item => item.column === columnName);
-                                    const isSignificant = columnData?.is_significant;
-                                    
                                     return (
                                         <FormControlLabel
                                             key={columnName}
@@ -1138,47 +1103,25 @@ const BootstrappingTab = ({
                                             }
                                             label={
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                                                        {columnName}
-                                                    </Typography>
-                                                    <Chip 
-                                                        label={isSignificant ? "Significant" : "Non-significant"} 
-                                                        color={isSignificant ? "error" : "success"}
+                                                    <Typography variant="body2">{columnName}</Typography>
+                                                    <Chip
+                                                        label={columnData?.is_significant ? 'Significant' : 'Non-significant'}
+                                                        color={columnData?.is_significant ? 'error' : 'success'}
                                                         variant="outlined"
                                                         size="small"
-                                                        sx={{ fontSize: { xs: '0.6rem', sm: '0.7rem' }, height: 20 }}
                                                     />
                                                 </Box>
                                             }
-                                            sx={{ 
-                                                mb: 0.5,
-                                                '& .MuiFormControlLabel-label': { width: '100%' }
-                                            }}
                                         />
                                     );
                                 })}
-                                {getFilteredColumns().length === 0 && (
-                                    <Typography 
-                                        variant="body2" 
-                                        color="text.secondary" 
-                                        sx={{ 
-                                            textAlign: 'center', 
-                                            py: 2,
-                                            fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                                        }}
-                                    >
-                                        No columns found matching "{columnSearchTerm}"
-                                    </Typography>
-                                )}
                             </FormGroup>
                         </Box>
                     </Box>
 
                     <Box sx={{ mb: 3 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                                Include Statistics
-                            </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, mb: 1 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Include Statistics</Typography>
                             <FormControlLabel
                                 control={
                                     <Checkbox
@@ -1191,109 +1134,41 @@ const BootstrappingTab = ({
                             />
                         </Box>
                         <FormGroup>
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={downloadOptions.statistics.column}
-                                        onChange={() => handleStatisticToggle('column')}
-                                    />
-                                }
-                                label="Column Name"
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={downloadOptions.statistics.mean_difference}
-                                        onChange={() => handleStatisticToggle('mean_difference')}
-                                    />
-                                }
-                                label="Mean Difference"
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={downloadOptions.statistics.standard_deviation}
-                                        onChange={() => handleStatisticToggle('standard_deviation')}
-                                    />
-                                }
-                                label="Standard Error"
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={downloadOptions.statistics.confidence_interval_lower}
-                                        onChange={() => handleStatisticToggle('confidence_interval_lower')}
-                                    />
-                                }
-                                label="Confidence Interval Lower Bound (2.5%)"
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={downloadOptions.statistics.confidence_interval_upper}
-                                        onChange={() => handleStatisticToggle('confidence_interval_upper')}
-                                    />
-                                }
-                                label="Confidence Interval Upper Bound (97.5%)"
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={downloadOptions.statistics.is_significant}
-                                        onChange={() => handleStatisticToggle('is_significant')}
-                                    />
-                                }
-                                label="Significant Impact (Yes/No)"
-                            />
+                            {[
+                                ['column', 'Column Name'],
+                                ['mean_difference', 'Mean Difference'],
+                                ['standard_deviation', 'Standard Error'],
+                                ['confidence_interval_lower', 'Confidence Interval Lower Bound (2.5%)'],
+                                ['confidence_interval_upper', 'Confidence Interval Upper Bound (97.5%)'],
+                                ['is_significant', 'Significant Impact (Yes/No)']
+                            ].map(([key, label]) => (
+                                <FormControlLabel
+                                    key={key}
+                                    control={<Checkbox checked={downloadOptions.statistics[key]} onChange={() => handleStatisticToggle(key)} />}
+                                    label={label}
+                                />
+                            ))}
                         </FormGroup>
                     </Box>
 
-                    <Box sx={{ mb: 2 }}>
-                        <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>
-                            File Name
-                        </Typography>
-                        <TextField
-                            fullWidth
-                            size="small"
-                            value={downloadOptions.fileName}
-                            onChange={(e) => setDownloadOptions(prev => ({
-                                ...prev,
-                                fileName: e.target.value
-                            }))}
-                            placeholder="bootstrap_analysis"
-                            helperText="File will be saved with timestamp (e.g., bootstrap_analysis_2024-01-15T10-30-45.xlsx)"
-                        />
-                    </Box>
-
-                    <Alert severity="info" sx={{ mt: 2 }}>
-                        <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                            <strong>Note:</strong> The Excel file will include a "Category" column to distinguish between significant and non-significant impacts.
-                            {(() => {
-                                const exportRowCount = downloadOptions.selectedColumns.length > 0 ? 
-                                    downloadOptions.selectedColumns.length :
-                                    getAllAvailableColumns().length;
-                                
-                                if (exportRowCount > 0) {
-                                    return ` Total rows to export: ${exportRowCount}`;
-                                } else {
-                                    return ' No data available for export with current selection.';
-                                }
-                            })()}
-                        </Typography>
-                    </Alert>
+                    <TextField
+                        fullWidth
+                        size="small"
+                        label="File name"
+                        value={downloadOptions.fileName}
+                        onChange={(e) => setDownloadOptions(prev => ({ ...prev, fileName: e.target.value }))}
+                        helperText="A timestamp will be appended automatically."
+                    />
                 </DialogContent>
-                <DialogActions sx={{ p: 2, pt: 1 }}>
-                    <Button onClick={() => setDownloadDialogOpen(false)}>
-                        Cancel
-                    </Button>
-                    <Button 
+
+                <DialogActions sx={{ p: 2.5 }}>
+                    <Button onClick={() => setDownloadDialogOpen(false)} sx={{ textTransform: 'none' }}>Cancel</Button>
+                    <Button
                         onClick={handleDownloadExcel}
                         variant="contained"
                         startIcon={<DownloadIcon />}
-                        disabled={
-                            getSelectedStatisticsCount() === 0 ||
-                            getAllAvailableColumns().length === 0
-                        }
+                        disabled={getSelectedStatisticsCount() === 0 || getAllAvailableColumns().length === 0}
+                        sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 700 }}
                     >
                         Download Excel
                     </Button>

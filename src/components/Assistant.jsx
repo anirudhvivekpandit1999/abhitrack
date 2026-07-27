@@ -1,5 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import MicIcon from '@mui/icons-material/Mic';
+import SendRoundedIcon from '@mui/icons-material/SendRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
+import AttachFileRoundedIcon from '@mui/icons-material/AttachFileRounded';
+import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRightRounded';
+import InsertDriveFileRoundedIcon from '@mui/icons-material/InsertDriveFileRounded';
 
 const Assistant = ({
   isListening: propIsListening,
@@ -193,22 +199,7 @@ async function processActionQueue(queue) {
   queue.shift(); // remove completed
   processActionQueue(queue); // continue next
 }
-async function processActionQueue(queue) {
-  if (!queue.length) return;
 
-  const current = queue[0];
-  const required = REQUIRED_PARAMS[current.type] || [];
-  const missing = required.filter(p => !current.params[p]);
-
-  if (missing.length > 0) {
-    askForMissingParams(current);
-    return; // WAIT for user reply
-  }
-
-  await executeAction(current);
-  queue.shift(); // remove completed
-  processActionQueue(queue); // continue next
-}
 
 let actionQueue = [];
 
@@ -287,140 +278,293 @@ let actionQueue = [];
   return (
     <>
       {assistantCollapsed ? (
-        <div className="hidden md:flex fixed right-0 top-1/2 transform -translate-y-1/2 z-50">
+        <div className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-50">
           <button
             onClick={() => {
               if (propSetAssistantCollapsed) propSetAssistantCollapsed(false);
               else setAssistantCollapsed(false);
             }}
-            aria-label="Open Assistant"
-            className="w-12 h-12 rounded-l-lg bg-blue-600 text-white shadow-md flex items-center justify-center px-3 transform transition-all duration-300 hover:scale-105"
+            aria-label="Open AbhiStat Assistant"
+            className="group relative w-14 h-14 rounded-l-2xl bg-slate-950 text-white shadow-[0_14px_40px_rgba(15,23,42,0.28)] flex items-center justify-center transition-all duration-300 hover:w-16 hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200"
           >
-            💬
+            <AutoAwesomeRoundedIcon fontSize="small" />
+            <span className="absolute right-full mr-3 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-medium whitespace-nowrap opacity-0 translate-x-1 pointer-events-none transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 shadow-lg">
+              Open Assistant
+            </span>
           </button>
         </div>
       ) : (
-        <aside className="w-64 hidden md:flex flex-col border-l bg-gradient-to-b from-white to-slate-50 shadow-xl h-[calc(100vh-12rem)] fixed right-0 top-20 z-40 transform transition-all duration-300 ease-in-out translate-x-0 rounded-l-lg" style={{ animation: 'subtle-pop 300ms ease-out both' }}>
-          <div className="p-3 border-b font-semibold text-slate-700 bg-gradient-to-r from-white to-slate-50 flex items-center justify-between">
-            <div>Assistant</div>
-            <button
-              onClick={() => {
-                if (propSetAssistantCollapsed) propSetAssistantCollapsed(true);
-                else setAssistantCollapsed(true);
-              }}
-              aria-label="Collapse Assistant"
-              className="text-sm text-slate-500 px-2 py-1 rounded hover:bg-slate-100"
-            >
-              ◀
-            </button>
-          </div>
+        <aside
+          className="hidden md:flex flex-col fixed right-4 top-24 bottom-6 z-40 w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-[24px] border border-slate-200/80 bg-white/95 shadow-[0_24px_70px_rgba(15,23,42,0.18)] backdrop-blur-xl"
+          style={{ animation: 'subtle-pop 260ms ease-out both' }}
+        >
+          {/* Header */}
+          <div className="relative overflow-hidden border-b border-slate-100 bg-white px-4 py-4">
+            <div className="pointer-events-none absolute -right-10 -top-16 h-36 w-36 rounded-full bg-blue-50" />
+            <div className="pointer-events-none absolute right-20 -top-16 h-24 w-24 rounded-full bg-violet-50" />
 
-          <div ref={containerRef} className="flex-1 p-3 overflow-y-auto space-y-3">
-            {lastCommand ? (
-              <div className="bg-slate-50 rounded-lg p-2 text-xs">
-                <div className="text-[11px] text-slate-500 mb-1">Last command</div>
-                <div className="text-xs text-slate-800">{lastCommand}</div>
-              </div>
-            ) : (
-              <div className="text-[11px] text-slate-500">No commands yet. Click the mic and speak.</div>
-            )}
-
-            {voiceFeedback && (
-              <div className="bg-blue-50 rounded-lg p-2 text-xs">
-                <div className="text-[11px] text-blue-600 font-medium">Feedback</div>
-                <div className="text-xs text-blue-800">{voiceFeedback}</div>
-              </div>
-            )}
-
-            <div className="pt-2">
-              {messages.length ? messages.map((m, i) => (
-                <div key={i} className={`mb-2 ${m.from === "user" ? "text-right" : "text-left"}`}>
-                  {m.from === "user" ? (
-                    <div style={{ backgroundColor: '#02008a', color: '#ffffff' }} className="inline-block max-w-full break-words px-2 py-1 rounded text-xs">
-                      {m.text}
-                    </div>
-                  ) : (
-                    <div className="inline-block max-w-full break-words px-2 py-1 rounded bg-slate-100 text-slate-800 text-xs border border-slate-300">
-                      {m.text}
-                    </div>
-                  )}
+            <div className="relative flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white shadow-sm">
+                  <AutoAwesomeRoundedIcon fontSize="small" />
                 </div>
-              )) : null}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h2 className="truncate text-sm font-bold tracking-tight text-slate-900">
+                      AbhiStat Assistant
+                    </h2>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-100">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      Online
+                    </span>
+                  </div>
+                  <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                    Data workflow copilot
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (propSetAssistantCollapsed) propSetAssistantCollapsed(true);
+                  else setAssistantCollapsed(true);
+                }}
+                aria-label="Collapse Assistant"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
+              >
+                <KeyboardArrowRightRoundedIcon fontSize="small" />
+              </button>
             </div>
           </div>
 
-          <div className="p-3 border-t bg-gradient-to-r from-white to-slate-50">
-            <div className="flex gap-2 items-center">
-              <input
+          {/* Conversation */}
+          <div
+            ref={containerRef}
+            className="flex-1 overflow-y-auto bg-gradient-to-b from-slate-50/80 via-white to-white px-4 py-4"
+          >
+            {messages.length === 0 && !lastCommand && !voiceFeedback ? (
+              <div className="flex h-full min-h-[280px] flex-col items-center justify-center px-4 text-center">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                  <AutoAwesomeRoundedIcon />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900">How can I help?</h3>
+                <p className="mt-1.5 max-w-[260px] text-xs leading-5 text-slate-500">
+                  Ask me to upload a spreadsheet, select a base sheet, preprocess data, or create a formula column.
+                </p>
+
+                <div className="mt-5 grid w-full gap-2">
+                  {[
+                    "Upload an Excel file",
+                    "Select a base sheet",
+                    "Create a formula column"
+                  ].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => setCommandText(suggestion)}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-xs font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/50 hover:text-blue-700"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {lastCommand && (
+                  <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+                    <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                      Last voice command
+                    </div>
+                    <div className="text-xs leading-5 text-slate-700">{lastCommand}</div>
+                  </div>
+                )}
+
+                {voiceFeedback && (
+                  <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2.5">
+                    <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-blue-600">
+                      <MicIcon sx={{ fontSize: 13 }} />
+                      Voice feedback
+                    </div>
+                    <div className="text-xs leading-5 text-blue-900">{voiceFeedback}</div>
+                  </div>
+                )}
+
+                {messages.map((m, i) => (
+                  <div
+                    key={i}
+                    className={`flex ${m.from === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    {m.from === "assistant" && (
+                      <div className="mr-2 mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
+                        <AutoAwesomeRoundedIcon sx={{ fontSize: 15 }} />
+                      </div>
+                    )}
+
+                    <div
+                      className={
+                        m.from === "user"
+                          ? "max-w-[82%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-blue-700 px-3.5 py-2.5 text-xs leading-5 text-white shadow-sm"
+                          : "max-w-[82%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3.5 py-2.5 text-xs leading-5 text-slate-700 shadow-sm"
+                      }
+                    >
+                      {m.text}
+                    </div>
+                  </div>
+                ))}
+
+                {sending && (
+                  <div className="flex justify-start">
+                    <div className="mr-2 mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
+                      <AutoAwesomeRoundedIcon sx={{ fontSize: 15 }} />
+                    </div>
+                    <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3.5 py-3 shadow-sm">
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.2s]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.1s]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Composer */}
+          <div className="border-t border-slate-100 bg-white p-3">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-2 transition focus-within:border-blue-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-50">
+              <textarea
                 value={commandText}
-                placeholder="Type a command (optional)"
-                className="flex-1 min-w-0 rounded-md border px-3 py-2 text-sm focus:outline-none"
+                rows={2}
+                placeholder="Ask AbhiStat to do something..."
+                className="block max-h-28 min-h-[48px] w-full resize-none bg-transparent px-2 py-1.5 text-sm leading-5 text-slate-800 outline-none placeholder:text-slate-400"
                 onChange={(e) => setCommandText(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     handleSendClick();
                   }
                 }}
               />
-              <button
-                onClick={handleSendClick}
-                className="ml-2 px-3 py-2 rounded bg-slate-800 text-white text-sm"
-                disabled={sending}
-              >
-                {sending ? "Sending..." : "Send"}
-              </button>
-              <button
-                onClick={toggleListening}
-                className={`flex items-center gap-1 shrink-0 rounded-md px-2 py-1 text-sm font-medium ${isListening ? "bg-red-600 text-white" : "bg-blue-600 text-white"}`}
-              >
-                <MicIcon fontSize="small" />
-                <span className="whitespace-nowrap">{isListening ? "Listening" : "Speak"}</span>
-              </button>
+
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={openFilePicker}
+                    aria-label="Attach or browse file"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800"
+                  >
+                    <AttachFileRoundedIcon fontSize="small" />
+                  </button>
+
+                  <button
+                    onClick={toggleListening}
+                    aria-label={isListening ? "Stop listening" : "Start listening"}
+                    className={`flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold transition ${
+                      isListening
+                        ? "bg-red-50 text-red-700 ring-1 ring-inset ring-red-100"
+                        : "text-slate-600 hover:bg-slate-200/70 hover:text-slate-900"
+                    }`}
+                  >
+                    <MicIcon fontSize="small" />
+                    {isListening ? "Listening..." : "Voice"}
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleSendClick}
+                  disabled={sending || !commandText.trim()}
+                  aria-label="Send command"
+                  className="flex h-9 items-center gap-1.5 rounded-xl bg-slate-950 px-3 text-xs font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  <span>Send</span>
+                  <SendRoundedIcon sx={{ fontSize: 16 }} />
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between px-1">
+              <span className="text-[10px] text-slate-400">Enter to send · Shift + Enter for a new line</span>
+              <span className="text-[10px] font-medium text-slate-400">AbhiStat AI</span>
             </div>
           </div>
         </aside>
       )}
 
       {showFileSearchModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="p-6 border-b">
-              <h2 className="text-lg font-bold text-slate-900">Find File</h2>
-              <p className="text-sm text-slate-600 mt-1">Searching for: <span className="font-semibold text-blue-600">{''}</span></p>
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) handleCloseModal();
+          }}
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.28)]">
+            <div className="flex items-start justify-between border-b border-slate-100 px-5 py-5">
+              <div className="flex gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                  <InsertDriveFileRoundedIcon fontSize="small" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold tracking-tight text-slate-900">Find a file</h2>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Choose a matching recent file or browse your computer.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseModal}
+                aria-label="Close file search"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <CloseRoundedIcon fontSize="small" />
+              </button>
             </div>
 
-            {matchedRecentFiles.length > 0 ? (
-              <div className="p-4">
-                <div className="text-xs font-semibold text-slate-700 mb-2">Matching Files:</div>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+            <div className="max-h-[360px] overflow-y-auto p-4">
+              {matchedRecentFiles.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="px-1 pb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Matching files
+                  </div>
                   {matchedRecentFiles.map((file) => (
                     <button
                       key={file}
                       onClick={() => (handleDirectFileSelection ? handleDirectFileSelection(file) : null)}
-                      className="w-full text-left p-3 rounded-md hover:bg-blue-50 border border-slate-200 hover:border-blue-400 transition"
+                      className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-blue-200 hover:bg-blue-50/50"
                     >
-                      <div className="font-medium text-slate-800">{file}</div>
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-white group-hover:text-blue-700">
+                        <InsertDriveFileRoundedIcon sx={{ fontSize: 19 }} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold text-slate-800">{file}</div>
+                        <div className="mt-0.5 text-[11px] text-slate-400">Recent file</div>
+                      </div>
+                      <KeyboardArrowRightRoundedIcon className="text-slate-300 transition group-hover:text-blue-500" fontSize="small" />
                     </button>
                   ))}
                 </div>
-              </div>
-            ) : (
-              <div className="p-4 text-center text-slate-500">
-                <div className="text-sm">No matching files found.</div>
-              </div>
-            )}
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                    <InsertDriveFileRoundedIcon />
+                  </div>
+                  <div className="text-sm font-semibold text-slate-700">No matching files</div>
+                  <p className="mt-1 max-w-xs text-xs leading-5 text-slate-400">
+                    Browse your computer to select the spreadsheet you want to use.
+                  </p>
+                </div>
+              )}
+            </div>
 
-            <div className="p-4 border-t flex gap-2">
+            <div className="flex gap-2 border-t border-slate-100 bg-slate-50/70 p-4">
               <button
                 onClick={() => (handleBrowseMoreFiles ? handleBrowseMoreFiles() : openFilePicker())}
-                className="flex-1 bg-blue-600 text-white rounded-md py-2 font-medium hover:bg-blue-700 transition"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
               >
+                <AttachFileRoundedIcon fontSize="small" />
                 Browse Files
               </button>
               <button
                 onClick={handleCloseModal}
-                className="flex-1 bg-slate-200 text-slate-800 rounded-md py-2 font-medium hover:bg-slate-300 transition"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
               >
                 Cancel
               </button>

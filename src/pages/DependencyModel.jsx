@@ -1,5 +1,12 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, {
+    useState,
+    useEffect,
+    useMemo,
+    useCallback
+} from 'react';
+
 import { useLocation, useNavigate } from 'react-router-dom';
+
 import {
     DndContext,
     closestCenter,
@@ -10,6 +17,7 @@ import {
     DragOverlay,
     useDroppable
 } from '@dnd-kit/core';
+
 import {
     arrayMove,
     SortableContext,
@@ -17,13 +25,15 @@ import {
     verticalListSortingStrategy,
     useSortable
 } from '@dnd-kit/sortable';
+
 import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
+
 import {
     Box,
     Card,
     CardContent,
-    CardHeader,
+    Chip,
     Container,
     Divider,
     IconButton,
@@ -35,229 +45,735 @@ import {
     ThemeProvider,
     Snackbar,
     Alert,
-    Tooltip
+    Tooltip,
+    alpha
 } from '@mui/material';
+
 import {
     ArrowBack as ArrowBackIcon,
     ArrowForward as ArrowForwardIcon,
     Search as SearchIcon,
     DragIndicator as DragIndicatorIcon,
     Cancel as CancelIcon,
-    Info as InfoIcon
+    InfoOutlined as InfoIcon,
+    FunctionsOutlined as FunctionsIcon,
+    Inventory2Outlined as UnusedIcon,
+    InsightsOutlined as DependentIcon,
+    TuneOutlined as TuneIcon,
+    TouchAppOutlined as DragIcon
 } from '@mui/icons-material';
+
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import customTheme from '../theme/customTheme';
 import NavigationButtons from '../components/NavigationButtons';
 
+
+/* =========================================================
+   CONFIGURATION
+========================================================= */
+
 const API_BASE_URL = 'https://abhistat.com/api';
 
+const COLUMN_CONFIG = {
+    independentVariables: {
+        color: '#2563EB',
+        softColor: '#EFF6FF',
+        borderColor: '#BFDBFE',
+        icon: FunctionsIcon,
+        label: 'INPUT VARIABLES',
+        tooltip:
+            'Variables that are manipulated or categorized to observe their effect on dependent variables.'
+    },
+
+    fieldsNotUsed: {
+        color: '#64748B',
+        softColor: '#F8FAFC',
+        borderColor: '#E2E8F0',
+        icon: UnusedIcon,
+        label: 'AVAILABLE FIELDS',
+        tooltip:
+            'Variables currently excluded from the dependency model.'
+    },
+
+    dependentVariables: {
+        color: '#059669',
+        softColor: '#ECFDF5',
+        borderColor: '#A7F3D0',
+        icon: DependentIcon,
+        label: 'OUTPUT VARIABLES',
+        tooltip:
+            'Variables that are measured or tested in response to changes in independent variables.'
+    }
+};
+
+
+/* =========================================================
+   PAGINATION HOOK
+========================================================= */
+
 const usePagination = (items, itemsPerPage) => {
+
     const [currentPage, setCurrentPage] = useState(1);
-    const maxPage = Math.max(1, Math.ceil(items.length / itemsPerPage));
+
+    const maxPage = Math.max(
+        1,
+        Math.ceil(items.length / itemsPerPage)
+    );
 
     const currentItems = useMemo(() => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        return items.slice(startIndex, startIndex + itemsPerPage);
+
+        const startIndex =
+            (currentPage - 1) * itemsPerPage;
+
+        return items.slice(
+            startIndex,
+            startIndex + itemsPerPage
+        );
+
     }, [items, currentPage, itemsPerPage]);
 
-    const handlePageChange = (event, page) => {
+    const handlePageChange = (_event, page) => {
         setCurrentPage(page);
     };
 
     useEffect(() => {
-        if (currentPage > maxPage && maxPage > 0) {
+
+        if (currentPage > maxPage) {
             setCurrentPage(maxPage);
         }
+
     }, [currentPage, maxPage]);
 
-    return { currentItems, currentPage, maxPage, handlePageChange };
+    return {
+        currentItems,
+        currentPage,
+        maxPage,
+        handlePageChange
+    };
 };
 
-const SortableItem = ({ id, content, columnId, onMoveItem }) => {
+
+/* =========================================================
+   SORTABLE VARIABLE ITEM
+========================================================= */
+
+const SortableItem = ({
+    id,
+    content,
+    columnId,
+    onMoveItem
+}) => {
+
     const {
         attributes,
         listeners,
         setNodeRef,
         transform,
-        transition
+        transition,
+        isDragging
     } = useSortable({ id });
 
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition
-    };
+    const config = COLUMN_CONFIG[columnId];
 
-    const showLeftArrow = columnId !== 'independentVariables';
-    const showRightArrow = columnId !== 'dependentVariables';
+    const showLeftArrow =
+        columnId !== 'independentVariables';
 
-    let leftTargetColumn, rightTargetColumn;
+    const showRightArrow =
+        columnId !== 'dependentVariables';
+
+    let leftTargetColumn = null;
+    let rightTargetColumn = null;
 
     if (columnId === 'independentVariables') {
-        leftTargetColumn = null;
+
         rightTargetColumn = 'fieldsNotUsed';
+
     } else if (columnId === 'fieldsNotUsed') {
+
         leftTargetColumn = 'independentVariables';
         rightTargetColumn = 'dependentVariables';
+
     } else {
+
         leftTargetColumn = 'fieldsNotUsed';
-        rightTargetColumn = null;
     }
 
+    const getTargetLabel = (target) => {
+
+        if (target === 'independentVariables') {
+            return 'Independent Variables';
+        }
+
+        if (target === 'dependentVariables') {
+            return 'Dependent Variables';
+        }
+
+        return 'Fields Not Used';
+    };
+
     return (
-        <Card
+        <Paper
             ref={setNodeRef}
-            style={style}
+            elevation={0}
+            style={{
+                transform: CSS.Transform.toString(transform),
+                transition
+            }}
             sx={{
-                mb: 1,
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                mb: 1.15,
+                px: 1.1,
+                py: 0.9,
+
+                display: 'flex',
+                alignItems: 'center',
+
+                minHeight: 52,
+
+                borderRadius: '10px',
+
+                border: '1px solid',
+                borderColor: isDragging
+                    ? config.color
+                    : '#E2E8F0',
+
+                borderLeft: `3px solid ${config.color}`,
+
+                backgroundColor: '#FFFFFF',
+
+                boxShadow: isDragging
+                    ? '0 12px 30px rgba(15,23,42,0.16)'
+                    : '0 1px 2px rgba(15,23,42,0.025)',
+
+                opacity: isDragging ? 0.55 : 1,
+
+                transition:
+                    'border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease',
+
                 '&:hover': {
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.15)'
+                    borderColor: config.borderColor,
+
+                    boxShadow:
+                        '0 5px 14px rgba(15,23,42,0.07)',
+
+                    transform: 'translateY(-1px)'
                 }
             }}
-            elevation={1}
         >
-            <CardContent sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
+
+            {/* DRAG HANDLE */}
+
+            <Tooltip title="Drag variable" arrow>
                 <Box
-                    sx={{ color: 'text.secondary', cursor: 'grab' }}
                     {...listeners}
                     {...attributes}
+                    sx={{
+                        width: 30,
+                        height: 30,
+
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+
+                        flexShrink: 0,
+
+                        borderRadius: '7px',
+
+                        color: '#94A3B8',
+
+                        cursor: 'grab',
+
+                        '&:hover': {
+                            color: '#475569',
+                            bgcolor: '#F1F5F9'
+                        },
+
+                        '&:active': {
+                            cursor: 'grabbing'
+                        }
+                    }}
                 >
                     <DragIndicatorIcon fontSize="small" />
                 </Box>
+            </Tooltip>
 
-                {showLeftArrow && (
+
+            {/* LEFT MOVE */}
+
+            {showLeftArrow && (
+
+                <Tooltip
+                    title={`Move to ${getTargetLabel(leftTargetColumn)}`}
+                    arrow
+                >
                     <IconButton
                         size="small"
-                        onClick={() => onMoveItem(id, columnId, leftTargetColumn)}
-                        aria-label={`Move to ${leftTargetColumn}`}
-                        sx={{ mx: 0.5 }}
+                        onClick={() =>
+                            onMoveItem(
+                                id,
+                                columnId,
+                                leftTargetColumn
+                            )
+                        }
+                        sx={{
+                            ml: 0.25,
+
+                            width: 29,
+                            height: 29,
+
+                            borderRadius: '7px',
+
+                            color: '#64748B',
+
+                            '&:hover': {
+                                bgcolor: '#EFF6FF',
+                                color: '#2563EB'
+                            }
+                        }}
                     >
                         <ArrowBackIcon fontSize="small" />
                     </IconButton>
-                )}
+                </Tooltip>
 
-                <Typography
-                    noWrap
-                    sx={{ flex: 1, px: 1 }}
-                    title={content}
-                    variant="body2"
+            )}
+
+
+            {/* VARIABLE NAME */}
+
+            <Typography
+                noWrap
+                title={content}
+                sx={{
+                    flex: 1,
+
+                    minWidth: 0,
+
+                    px: 1,
+
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+
+                    color: '#334155'
+                }}
+            >
+                {content}
+            </Typography>
+
+
+            {/* RIGHT MOVE */}
+
+            {showRightArrow && (
+
+                <Tooltip
+                    title={`Move to ${getTargetLabel(rightTargetColumn)}`}
+                    arrow
                 >
-                    {content}
-                </Typography>
-
-                {showRightArrow && (
                     <IconButton
                         size="small"
-                        onClick={() => onMoveItem(id, columnId, rightTargetColumn)}
-                        aria-label={`Move to ${rightTargetColumn}`}
-                        sx={{ mx: 0.5 }}
+                        onClick={() =>
+                            onMoveItem(
+                                id,
+                                columnId,
+                                rightTargetColumn
+                            )
+                        }
+                        sx={{
+                            width: 29,
+                            height: 29,
+
+                            borderRadius: '7px',
+
+                            color: '#64748B',
+
+                            '&:hover': {
+                                bgcolor: '#EFF6FF',
+                                color: '#2563EB'
+                            }
+                        }}
                     >
                         <ArrowForwardIcon fontSize="small" />
                     </IconButton>
-                )}
-            </CardContent>
-        </Card>
+                </Tooltip>
+
+            )}
+
+        </Paper>
     );
 };
 
-const Column = ({ id, title, items, searchTerm, onSearchChange, onMoveItem }) => {
-    const { setNodeRef, isOver } = useDroppable({ id });
+
+/* =========================================================
+   COLUMN COMPONENT
+========================================================= */
+
+const Column = ({
+    id,
+    title,
+    items,
+    searchTerm,
+    onSearchChange,
+    onMoveItem
+}) => {
+
+    const {
+        setNodeRef,
+        isOver
+    } = useDroppable({ id });
+
+    const config = COLUMN_CONFIG[id];
+
+    const HeaderIcon = config.icon;
 
     const filteredItems = useMemo(() => {
-        if (!searchTerm) return items;
+
+        if (!searchTerm) {
+            return items;
+        }
+
         return items.filter(item =>
-            item.content.toLowerCase().includes(searchTerm.toLowerCase())
+            item.content
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase())
         );
+
     }, [items, searchTerm]);
 
-    const { currentItems, currentPage, maxPage, handlePageChange } = usePagination(filteredItems, 5);
 
-    let infoTooltip = null;
-    if (id === 'independentVariables') {
-        infoTooltip = 'Variables that are manipulated or categorized to observe their effect on dependent variables.';
-    } else if (id === 'dependentVariables') {
-        infoTooltip = 'Variables that are measured or tested in response to changes in independent variables.';
-    }
+    const {
+        currentItems,
+        currentPage,
+        maxPage,
+        handlePageChange
+    } = usePagination(filteredItems, 5);
+
 
     return (
         <Card
+            elevation={0}
             sx={{
-                flex: 1,
-                minHeight: 500,
+                minWidth: 0,
+                minHeight: 545,
+
                 display: 'flex',
                 flexDirection: 'column',
-                boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+
+                borderRadius: '16px',
+
+                border: '1px solid',
+                borderColor: isOver
+                    ? config.color
+                    : '#E5EAF0',
+
+                overflow: 'hidden',
+
+                backgroundColor: '#FFFFFF',
+
+                boxShadow: isOver
+                    ? `0 0 0 3px ${alpha(config.color, 0.10)}`
+                    : '0 4px 18px rgba(15,23,42,0.045)',
+
+                transition:
+                    'border-color 180ms ease, box-shadow 180ms ease'
             }}
-            elevation={2}
         >
-            <CardHeader
-                title={
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                        <span>{title}</span>
-                        {infoTooltip && (
-                            <Tooltip title={infoTooltip} arrow>
-                                <InfoIcon fontSize="small" sx={{ cursor: 'pointer', color: 'white' }} />
-                            </Tooltip>
-                        )}
-                    </Box>
-                }
+
+            {/* =================================================
+                COLUMN HEADER
+            ================================================= */}
+
+            <Box
                 sx={{
-                    bgcolor: 'background.tableHeader',
-                    color: 'background.default',
-                    textAlign: 'center',
-                    py: 1.5
+                    px: 2.25,
+                    pt: 2.25,
+                    pb: 2,
+
+                    background:
+                        `linear-gradient(135deg, ${config.softColor} 0%, #FFFFFF 100%)`,
+
+                    borderBottom: '1px solid',
+                    borderColor: config.borderColor
                 }}
-                titleTypographyProps={{ variant: 'subtitle1' }}
-            />
-            <Box sx={{ bgcolor: 'grey.100', p: 1 }}>
+            >
+
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        gap: 1
+                    }}
+                >
+
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            gap: 1.25,
+                            alignItems: 'center',
+                            minWidth: 0
+                        }}
+                    >
+
+                        <Box
+                            sx={{
+                                width: 40,
+                                height: 40,
+
+                                borderRadius: '10px',
+
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+
+                                color: config.color,
+
+                                bgcolor: alpha(
+                                    config.color,
+                                    0.09
+                                ),
+
+                                flexShrink: 0
+                            }}
+                        >
+                            <HeaderIcon fontSize="small" />
+                        </Box>
+
+
+                        <Box sx={{ minWidth: 0 }}>
+
+                            <Typography
+                                sx={{
+                                    fontSize: '0.66rem',
+                                    fontWeight: 800,
+
+                                    letterSpacing: '0.08em',
+
+                                    color: config.color,
+
+                                    mb: 0.25
+                                }}
+                            >
+                                {config.label}
+                            </Typography>
+
+                            <Typography
+                                sx={{
+                                    color: '#1E293B',
+
+                                    fontSize: '0.96rem',
+                                    fontWeight: 750,
+
+                                    letterSpacing: '-0.015em'
+                                }}
+                            >
+                                {title}
+                            </Typography>
+
+                        </Box>
+
+                    </Box>
+
+
+                    <Tooltip
+                        title={config.tooltip}
+                        arrow
+                        placement="top"
+                    >
+                        <IconButton
+                            size="small"
+                            sx={{
+                                color: '#94A3B8',
+
+                                '&:hover': {
+                                    color: config.color,
+                                    bgcolor: alpha(
+                                        config.color,
+                                        0.08
+                                    )
+                                }
+                            }}
+                        >
+                            <InfoIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+
+                </Box>
+
+
+                {/* COUNT */}
+
+                <Box sx={{ mt: 1.75 }}>
+
+                    <Chip
+                        size="small"
+                        label={`${items.length} ${
+                            items.length === 1
+                                ? 'variable'
+                                : 'variables'
+                        }`}
+                        sx={{
+                            height: 24,
+
+                            bgcolor: alpha(
+                                config.color,
+                                0.07
+                            ),
+
+                            color: config.color,
+
+                            border: `1px solid ${alpha(
+                                config.color,
+                                0.13
+                            )}`,
+
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+
+                            '& .MuiChip-label': {
+                                px: 1.1
+                            }
+                        }}
+                    />
+
+                </Box>
+
+            </Box>
+
+
+            {/* =================================================
+                SEARCH
+            ================================================= */}
+
+            <Box
+                sx={{
+                    p: 1.5,
+
+                    bgcolor: '#FFFFFF',
+
+                    borderBottom: '1px solid #EEF2F6'
+                }}
+            >
+
                 <TextField
                     size="small"
                     fullWidth
-                    placeholder="Search fields..."
+                    placeholder={`Search ${title.toLowerCase()}...`}
                     value={searchTerm}
-                    onChange={(e) => onSearchChange(id, e.target.value)}
+                    onChange={(e) =>
+                        onSearchChange(
+                            id,
+                            e.target.value
+                        )
+                    }
                     InputProps={{
                         startAdornment: (
                             <InputAdornment position="start">
-                                <SearchIcon fontSize="small" />
+                                <SearchIcon
+                                    sx={{
+                                        fontSize: 19,
+                                        color: '#94A3B8'
+                                    }}
+                                />
                             </InputAdornment>
                         ),
+
                         endAdornment: searchTerm && (
                             <InputAdornment position="end">
+
                                 <IconButton
                                     size="small"
-                                    onClick={() => onSearchChange(id, '')}
-                                    aria-label="Clear search"
+                                    onClick={() =>
+                                        onSearchChange(
+                                            id,
+                                            ''
+                                        )
+                                    }
                                 >
-                                    <CancelIcon fontSize="small" />
+                                    <CancelIcon
+                                        sx={{
+                                            fontSize: 17
+                                        }}
+                                    />
                                 </IconButton>
+
                             </InputAdornment>
-                        ),
+                        )
+                    }}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+
+                            height: 40,
+
+                            borderRadius: '9px',
+
+                            bgcolor: '#F8FAFC',
+
+                            fontSize: '0.8rem',
+
+                            transition:
+                                'background-color 150ms ease',
+
+                            '& fieldset': {
+                                borderColor: '#E2E8F0'
+                            },
+
+                            '&:hover': {
+                                bgcolor: '#FFFFFF'
+                            },
+
+                            '&:hover fieldset': {
+                                borderColor: '#CBD5E1'
+                            },
+
+                            '&.Mui-focused': {
+                                bgcolor: '#FFFFFF'
+                            },
+
+                            '&.Mui-focused fieldset': {
+                                borderColor: config.color,
+                                borderWidth: '1px'
+                            }
+                        }
                     }}
                 />
+
             </Box>
-            <CardContent
+
+
+            {/* =================================================
+                DROP ZONE
+            ================================================= */}
+
+            <Box
                 ref={setNodeRef}
                 sx={{
                     flex: 1,
-                    p: 1,
-                    bgcolor: 'grey.50',
-                    overflowY: 'auto',
+
+                    minHeight: 330,
+
+                    p: 1.4,
+
                     display: 'flex',
                     flexDirection: 'column',
-                    minHeight: 300,
-                    ...(isOver && {
-                        bgcolor: 'primary.light',
-                        border: 2,
-                        borderColor: 'primary.medium'
-                    })
+
+                    bgcolor: isOver
+                        ? config.softColor
+                        : '#F8FAFC',
+
+                    transition:
+                        'background-color 180ms ease'
                 }}
             >
+
                 <SortableContext
-                    items={currentItems.map(item => item.id)}
-                    strategy={verticalListSortingStrategy}
+                    items={currentItems.map(
+                        item => item.id
+                    )}
+                    strategy={
+                        verticalListSortingStrategy
+                    }
                 >
-                    {currentItems.map((item) => (
+
+                    {currentItems.map(item => (
+
                         <SortableItem
                             key={item.id}
                             id={item.id}
@@ -265,466 +781,1663 @@ const Column = ({ id, title, items, searchTerm, onSearchChange, onMoveItem }) =>
                             columnId={id}
                             onMoveItem={onMoveItem}
                         />
+
                     ))}
+
                 </SortableContext>
 
+
+                {/* EMPTY STATE */}
+
                 {filteredItems.length === 0 && (
-                    <Box sx={{
-                        flex: 1,
+
+                    <Box
+                        sx={{
+                            flex: 1,
+
+                            minHeight: 180,
+
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+
+                            textAlign: 'center',
+
+                            p: 3,
+
+                            borderRadius: '11px',
+
+                            border: '1.5px dashed',
+                            borderColor: isOver
+                                ? config.color
+                                : '#CBD5E1',
+
+                            bgcolor: isOver
+                                ? alpha(
+                                      config.color,
+                                      0.035
+                                  )
+                                : 'rgba(255,255,255,0.55)'
+                        }}
+                    >
+
+                        <Box
+                            sx={{
+                                width: 42,
+                                height: 42,
+
+                                mb: 1.25,
+
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+
+                                borderRadius: '50%',
+
+                                bgcolor: alpha(
+                                    config.color,
+                                    0.08
+                                ),
+
+                                color: config.color
+                            }}
+                        >
+                            {searchTerm
+                                ? (
+                                    <SearchIcon />
+                                )
+                                : (
+                                    <DragIcon />
+                                )
+                            }
+                        </Box>
+
+
+                        <Typography
+                            sx={{
+                                color: '#475569',
+
+                                fontSize: '0.82rem',
+                                fontWeight: 700,
+
+                                mb: 0.5
+                            }}
+                        >
+                            {searchTerm
+                                ? 'No matching variables'
+                                : 'Drop variables here'
+                            }
+                        </Typography>
+
+
+                        <Typography
+                            sx={{
+                                maxWidth: 210,
+
+                                color: '#94A3B8',
+
+                                fontSize: '0.72rem',
+                                lineHeight: 1.5
+                            }}
+                        >
+                            {searchTerm
+                                ? `Nothing matches "${searchTerm}".`
+                                : 'Drag a variable from another column or use the arrow controls.'
+                            }
+                        </Typography>
+
+                    </Box>
+
+                )}
+
+            </Box>
+
+
+            {/* =================================================
+                PAGINATION
+            ================================================= */}
+
+            {maxPage > 1 && (
+
+                <Box
+                    sx={{
+                        minHeight: 54,
+
+                        px: 1,
+                        py: 1,
+
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        border: '2px dashed',
-                        borderColor: 'grey.300',
-                        borderRadius: 1,
-                        m: 1,
-                        p: 2
-                    }}>
-                        <Typography color="text.secondary">
-                            Drop items here
-                        </Typography>
-                    </Box>
-                )}
-            </CardContent>
-            {maxPage > 1 && (
-                <Box sx={{ p: 1, display: 'flex', justifyContent: 'center', bgcolor: 'grey.50', borderTop: 1, borderColor: 'grey.200' }}>
+
+                        bgcolor: '#FFFFFF',
+
+                        borderTop:
+                            '1px solid #EEF2F6'
+                    }}
+                >
+
                     <Pagination
                         count={maxPage}
                         page={currentPage}
                         onChange={handlePageChange}
                         size="small"
+                        siblingCount={0}
                         color="primary"
+                        sx={{
+                            '& .MuiPaginationItem-root': {
+                                fontSize: '0.75rem',
+                                borderRadius: '7px'
+                            }
+                        }}
                     />
+
                 </Box>
+
             )}
+
         </Card>
     );
 };
 
+
+/* =========================================================
+   MAIN DEPENDENCY MODEL
+========================================================= */
+
 const DependencyModel = () => {
+
     const location = useLocation();
     const navigate = useNavigate();
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [sessionId, setSessionId] = useLocalStorage('session_id', null);
 
-    const emptyColumns = {
+    const [isLoading, setIsLoading] =
+        useState(false);
+
+    const [error, setError] =
+        useState(null);
+
+    const [sessionId, setSessionId] =
+        useLocalStorage(
+            'session_id',
+            null
+        );
+
+
+    const emptyColumns = useMemo(() => ({
         independentVariables: {
             id: 'independentVariables',
             title: 'Independent Variables',
             items: []
         },
+
         fieldsNotUsed: {
             id: 'fieldsNotUsed',
             title: 'Fields Not Used',
             items: []
         },
+
         dependentVariables: {
             id: 'dependentVariables',
             title: 'Dependent Variables',
             items: []
         }
-    };
+    }), []);
 
-    const [columns, setColumns] = useLocalStorage('dependency-model-columns', emptyColumns);
+
+    const [columns, setColumns] =
+        useLocalStorage(
+            'dependency-model-columns',
+            emptyColumns
+        );
+
+
+    const [activeId, setActiveId] =
+        useState(null);
+
+
+    const [searchTerms, setSearchTerms] =
+        useLocalStorage(
+            'dependency-model-search',
+            {
+                independentVariables: '',
+                fieldsNotUsed: '',
+                dependentVariables: ''
+            }
+        );
+
+
+    /* =====================================================
+       SESSION
+    ===================================================== */
 
     useEffect(() => {
+
         if (location.state?.sessionId) {
-            setSessionId(location.state.sessionId);
+            setSessionId(
+                location.state.sessionId
+            );
         }
-    }, [location.state, setSessionId]);
 
-    const [activeId, setActiveId] = useState(null);
+    }, [
+        location.state,
+        setSessionId
+    ]);
 
-    const [searchTerms, setSearchTerms] = useLocalStorage('dependency-model-search', {
-        independentVariables: '',
-        fieldsNotUsed: '',
-        dependentVariables: ''
-    });
+
+    /* =====================================================
+       DND SENSORS
+    ===================================================== */
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 5,
-            },
-        }),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
+
+        useSensor(
+            PointerSensor,
+            {
+                activationConstraint: {
+                    distance: 5
+                }
+            }
+        ),
+
+        useSensor(
+            KeyboardSensor,
+            {
+                coordinateGetter:
+                    sortableKeyboardCoordinates
+            }
+        )
     );
 
-    const createItemId = (content) => {
-        return `item-${content}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-    };
+
+    /* =====================================================
+       ITEM ID
+    ===================================================== */
+
+    const createItemId = useCallback(
+        (content) => {
+
+            return `item-${content}-${Date.now()}-${Math.random()
+                .toString(36)
+                .substring(2, 7)}`;
+
+        },
+        []
+    );
+
+
+    /* =====================================================
+       LOAD VARIABLES
+    ===================================================== */
 
     useEffect(() => {
-        if (location.state?.dependentVariables || location.state?.independentVariables) {
-            const dependentVars = location.state?.dependentVariables || [];
-            const independentVars = location.state?.independentVariables || [];
-            const availableColumns = location.state?.availableColumns || [];
 
-            const allVariables = new Set([...dependentVars, ...independentVars]);
-            
-            const unusedFields = availableColumns.filter(col => !allVariables.has(col));
+        if (
+            location.state?.dependentVariables ||
+            location.state?.independentVariables
+        ) {
+
+            const dependentVars =
+                location.state?.dependentVariables || [];
+
+            const independentVars =
+                location.state?.independentVariables || [];
+
+            const availableColumns =
+                location.state?.availableColumns || [];
+
+            const allVariables =
+                new Set([
+                    ...dependentVars,
+                    ...independentVars
+                ]);
+
+            const unusedFields =
+                availableColumns.filter(
+                    col =>
+                        !allVariables.has(col)
+                );
+
 
             const newColumns = {
+
                 independentVariables: {
                     ...emptyColumns.independentVariables,
-                    items: independentVars.map(content => ({
-                        id: createItemId(content),
-                        content
-                    }))
+
+                    items:
+                        independentVars.map(
+                            content => ({
+                                id: createItemId(
+                                    content
+                                ),
+                                content
+                            })
+                        )
                 },
+
                 dependentVariables: {
                     ...emptyColumns.dependentVariables,
-                    items: dependentVars.map(content => ({
-                        id: createItemId(content),
-                        content
-                    }))
+
+                    items:
+                        dependentVars.map(
+                            content => ({
+                                id: createItemId(
+                                    content
+                                ),
+                                content
+                            })
+                        )
                 },
+
                 fieldsNotUsed: {
                     ...emptyColumns.fieldsNotUsed,
-                    items: unusedFields.map(content => ({
-                        id: createItemId(content),
-                        content
-                    }))
+
+                    items:
+                        unusedFields.map(
+                            content => ({
+                                id: createItemId(
+                                    content
+                                ),
+                                content
+                            })
+                        )
                 }
             };
 
             setColumns(newColumns);
-        } else {
-            handleAvailableColumns();
+
         }
-    }, [location.state]);
+
+    }, [
+        location.state,
+        emptyColumns,
+        createItemId,
+        setColumns
+    ]);
+
+
+    /* =====================================================
+       SCROLL TOP
+    ===================================================== */
 
     useEffect(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+
+        window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: 'smooth'
+        });
+
     }, []);
 
-    const handleAvailableColumns = useCallback(() => {
-        if (location.state?.availableColumns?.length > 0) {
-            const uniqueColumns = [...new Set(location.state.availableColumns)];
+
+    /* =====================================================
+       ADD AVAILABLE COLUMNS
+    ===================================================== */
+
+    useEffect(() => {
+
+        if (
+            !location.state?.dependentVariables &&
+            !location.state?.independentVariables &&
+            location.state?.availableColumns?.length
+        ) {
+
+            const uniqueColumns = [
+                ...new Set(
+                    location.state.availableColumns
+                )
+            ];
+
 
             setColumns(prev => {
-                const existingContents = new Set();
-                Object.values(prev).forEach(column => {
-                    column.items.forEach(item => {
-                        existingContents.add(item.content);
-                    });
-                });
 
-                const newItems = uniqueColumns
-                    .filter(col => !existingContents.has(col))
-                    .map((col) => ({
-                        id: createItemId(col),
-                        content: col
-                    }));
+                const existingContents =
+                    new Set();
 
-                if (newItems.length === 0) return prev;
+                Object.values(prev).forEach(
+                    column => {
+
+                        column.items.forEach(
+                            item => {
+                                existingContents.add(
+                                    item.content
+                                );
+                            }
+                        );
+
+                    }
+                );
+
+
+                const newItems =
+                    uniqueColumns
+                        .filter(
+                            col =>
+                                !existingContents.has(
+                                    col
+                                )
+                        )
+                        .map(
+                            content => ({
+                                id: createItemId(
+                                    content
+                                ),
+                                content
+                            })
+                        );
+
+
+                if (!newItems.length) {
+                    return prev;
+                }
+
 
                 return {
                     ...prev,
+
                     fieldsNotUsed: {
                         ...prev.fieldsNotUsed,
-                        items: [...newItems, ...prev.fieldsNotUsed.items]
+
+                        items: [
+                            ...newItems,
+                            ...prev.fieldsNotUsed.items
+                        ]
                     }
                 };
-            });
-        }
-    }, [location.state?.availableColumns, setColumns]);
 
-    const removeItemFromAllColumnsByContent = useCallback((content) => {
-        return Object.fromEntries(
-            Object.entries(columns).map(([columnId, column]) => [
-                columnId,
-                {
-                    ...column,
-                    items: column.items.filter(item => item.content !== content)
-                }
-            ])
+            });
+
+        }
+
+    }, [
+        location.state,
+        createItemId,
+        setColumns
+    ]);
+
+
+    /* =====================================================
+       HELPERS
+    ===================================================== */
+
+    const removeItemFromAllColumnsByContent =
+        useCallback(
+            (content) => {
+
+                return Object.fromEntries(
+
+                    Object.entries(columns)
+                        .map(
+                            ([columnId, column]) => [
+
+                                columnId,
+
+                                {
+                                    ...column,
+
+                                    items:
+                                        column.items.filter(
+                                            item =>
+                                                item.content !==
+                                                content
+                                        )
+                                }
+
+                            ]
+                        )
+                );
+
+            },
+            [columns]
         );
-    }, [columns]);
 
-    const findColumnForItem = useCallback((itemId) => {
-        for (const [columnId, column] of Object.entries(columns)) {
-            if (column.items.some(item => item.id === itemId)) {
-                return columnId;
-            }
-        }
-        return null;
-    }, [columns]);
 
-    const findItemInColumn = useCallback((itemId, columnId) => {
-        return columns[columnId]?.items.find(item => item.id === itemId) || null;
-    }, [columns]);
+    const findColumnForItem =
+        useCallback(
+            (itemId) => {
 
-    const handleDragStart = useCallback((event) => {
-        setActiveId(event.active.id);
-    }, []);
+                for (
+                    const [
+                        columnId,
+                        column
+                    ] of Object.entries(columns)
+                ) {
 
-    const handleDragEnd = useCallback((event) => {
-        const { active, over } = event;
-
-        if (!active || !over) {
-            setActiveId(null);
-            return;
-        }
-
-        const activeColumnId = findColumnForItem(active.id);
-
-        if (!activeColumnId) {
-            setActiveId(null);
-            return;
-        }
-
-        const activeItem = findItemInColumn(active.id, activeColumnId);
-
-        if (!activeItem) {
-            setActiveId(null);
-            return;
-        }
-
-        const overId = over.id;
-
-        if (Object.keys(columns).includes(overId)) {
-            const newColumns = removeItemFromAllColumnsByContent(activeItem.content);
-
-            newColumns[overId].items.unshift({
-                id: createItemId(activeItem.content),
-                content: activeItem.content
-            });
-
-            setColumns(newColumns);
-        } else {
-            const overColumnId = findColumnForItem(overId);
-
-            if (overColumnId) {
-                if (activeColumnId === overColumnId) {
-                    const items = [...columns[activeColumnId].items];
-                    const oldIndex = items.findIndex(item => item.id === active.id);
-                    const newIndex = items.findIndex(item => item.id === overId);
-
-                    if (oldIndex !== -1 && newIndex !== -1) {
-                        const newItems = arrayMove(items, oldIndex, newIndex);
-
-                        setColumns({
-                            ...columns,
-                            [activeColumnId]: {
-                                ...columns[activeColumnId],
-                                items: newItems
-                            }
-                        });
+                    if (
+                        column.items.some(
+                            item =>
+                                item.id === itemId
+                        )
+                    ) {
+                        return columnId;
                     }
-                } else {
-                    const newColumns = removeItemFromAllColumnsByContent(activeItem.content);
 
-                    const overItemIndex = newColumns[overColumnId].items.findIndex(
-                        item => item.id === overId
+                }
+
+                return null;
+
+            },
+            [columns]
+        );
+
+
+    const findItemInColumn =
+        useCallback(
+            (itemId, columnId) => {
+
+                return (
+                    columns[columnId]?.items.find(
+                        item =>
+                            item.id === itemId
+                    ) || null
+                );
+
+            },
+            [columns]
+        );
+
+
+    /* =====================================================
+       DRAG START
+    ===================================================== */
+
+    const handleDragStart =
+        useCallback(
+            event => {
+
+                setActiveId(
+                    event.active.id
+                );
+
+            },
+            []
+        );
+
+
+    /* =====================================================
+       DRAG END
+    ===================================================== */
+
+    const handleDragEnd =
+        useCallback(
+            event => {
+
+                const {
+                    active,
+                    over
+                } = event;
+
+
+                if (!active || !over) {
+
+                    setActiveId(null);
+                    return;
+
+                }
+
+
+                const activeColumnId =
+                    findColumnForItem(
+                        active.id
                     );
 
-                    if (overItemIndex !== -1) {
-                        newColumns[overColumnId].items.splice(overItemIndex + 1, 0, {
-                            id: createItemId(activeItem.content),
-                            content: activeItem.content
+
+                if (!activeColumnId) {
+
+                    setActiveId(null);
+                    return;
+
+                }
+
+
+                const activeItem =
+                    findItemInColumn(
+                        active.id,
+                        activeColumnId
+                    );
+
+
+                if (!activeItem) {
+
+                    setActiveId(null);
+                    return;
+
+                }
+
+
+                const overId = over.id;
+
+
+                /* DROP DIRECTLY ON COLUMN */
+
+                if (
+                    Object.keys(columns)
+                        .includes(overId)
+                ) {
+
+                    if (
+                        activeColumnId !== overId
+                    ) {
+
+                        const newColumns =
+                            removeItemFromAllColumnsByContent(
+                                activeItem.content
+                            );
+
+
+                        newColumns[
+                            overId
+                        ].items.unshift({
+                            id: createItemId(
+                                activeItem.content
+                            ),
+
+                            content:
+                                activeItem.content
                         });
-                    } else {
-                        newColumns[overColumnId].items.unshift({
-                            id: createItemId(activeItem.content),
-                            content: activeItem.content
-                        });
+
+
+                        setColumns(
+                            newColumns
+                        );
                     }
 
-                    setColumns(newColumns);
                 }
-            }
-        }
 
-        setActiveId(null);
-    }, [columns, findColumnForItem, findItemInColumn, removeItemFromAllColumnsByContent, setColumns]);
+                /* DROP ON ITEM */
 
-    const moveItem = useCallback((itemId, sourceColumnId, destColumnId) => {
-        if (!destColumnId) return;
+                else {
 
-        const item = findItemInColumn(itemId, sourceColumnId);
+                    const overColumnId =
+                        findColumnForItem(
+                            overId
+                        );
 
-        if (item) {
-            const newColumns = removeItemFromAllColumnsByContent(item.content);
 
-            newColumns[destColumnId].items.unshift({
-                id: createItemId(item.content),
-                content: item.content
-            });
+                    if (overColumnId) {
 
-            setColumns(newColumns);
-        }
-    }, [findItemInColumn, removeItemFromAllColumnsByContent, setColumns]);
+                        /* REORDER */
 
-    const handleSearchChange = useCallback((columnId, value) => {
-        setSearchTerms(prev => ({
-            ...prev,
-            [columnId]: value
-        }));
-    }, [setSearchTerms]);
+                        if (
+                            activeColumnId ===
+                            overColumnId
+                        ) {
 
-    const activeItem = useMemo(() => {
-        if (!activeId) return null;
+                            const items = [
+                                ...columns[
+                                    activeColumnId
+                                ].items
+                            ];
 
-        const columnId = findColumnForItem(activeId);
-        if (!columnId) return null;
 
-        return findItemInColumn(activeId, columnId);
-    }, [activeId, findColumnForItem, findItemInColumn]);
+                            const oldIndex =
+                                items.findIndex(
+                                    item =>
+                                        item.id ===
+                                        active.id
+                                );
 
-    const handleNextStep = useCallback(async () => {
-        const dependentVariables = columns.dependentVariables.items.map(item => item.content);
-        const independentVariables = columns.independentVariables.items.map(item => item.content);
-        
-        try {
-            setIsLoading(true);
-            
-            const getCookie = (name) => {
-                const value = `; ${document.cookie}`;
-                const parts = value.split(`; ${name}=`);
-                if (parts.length === 2) return parts.pop().split(';').shift();
+
+                            const newIndex =
+                                items.findIndex(
+                                    item =>
+                                        item.id ===
+                                        overId
+                                );
+
+
+                            if (
+                                oldIndex !== -1 &&
+                                newIndex !== -1
+                            ) {
+
+                                const newItems =
+                                    arrayMove(
+                                        items,
+                                        oldIndex,
+                                        newIndex
+                                    );
+
+
+                                setColumns({
+                                    ...columns,
+
+                                    [activeColumnId]: {
+                                        ...columns[
+                                            activeColumnId
+                                        ],
+
+                                        items:
+                                            newItems
+                                    }
+                                });
+
+                            }
+
+                        }
+
+                        /* MOVE BETWEEN COLUMNS */
+
+                        else {
+
+                            const newColumns =
+                                removeItemFromAllColumnsByContent(
+                                    activeItem.content
+                                );
+
+
+                            const overItemIndex =
+                                newColumns[
+                                    overColumnId
+                                ].items.findIndex(
+                                    item =>
+                                        item.id ===
+                                        overId
+                                );
+
+
+                            const movedItem = {
+                                id: createItemId(
+                                    activeItem.content
+                                ),
+
+                                content:
+                                    activeItem.content
+                            };
+
+
+                            if (
+                                overItemIndex !== -1
+                            ) {
+
+                                newColumns[
+                                    overColumnId
+                                ].items.splice(
+                                    overItemIndex + 1,
+                                    0,
+                                    movedItem
+                                );
+
+                            } else {
+
+                                newColumns[
+                                    overColumnId
+                                ].items.unshift(
+                                    movedItem
+                                );
+
+                            }
+
+
+                            setColumns(
+                                newColumns
+                            );
+
+                        }
+
+                    }
+
+                }
+
+
+                setActiveId(null);
+
+            },
+            [
+                columns,
+                createItemId,
+                findColumnForItem,
+                findItemInColumn,
+                removeItemFromAllColumnsByContent,
+                setColumns
+            ]
+        );
+
+
+    /* =====================================================
+       MOVE USING ARROWS
+    ===================================================== */
+
+    const moveItem =
+        useCallback(
+            (
+                itemId,
+                sourceColumnId,
+                destColumnId
+            ) => {
+
+                if (!destColumnId) {
+                    return;
+                }
+
+
+                const item =
+                    findItemInColumn(
+                        itemId,
+                        sourceColumnId
+                    );
+
+
+                if (!item) {
+                    return;
+                }
+
+
+                const newColumns =
+                    removeItemFromAllColumnsByContent(
+                        item.content
+                    );
+
+
+                newColumns[
+                    destColumnId
+                ].items.unshift({
+                    id: createItemId(
+                        item.content
+                    ),
+
+                    content:
+                        item.content
+                });
+
+
+                setColumns(
+                    newColumns
+                );
+
+            },
+            [
+                createItemId,
+                findItemInColumn,
+                removeItemFromAllColumnsByContent,
+                setColumns
+            ]
+        );
+
+
+    /* =====================================================
+       SEARCH
+    ===================================================== */
+
+    const handleSearchChange =
+        useCallback(
+            (columnId, value) => {
+
+                setSearchTerms(prev => ({
+                    ...prev,
+                    [columnId]: value
+                }));
+
+            },
+            [setSearchTerms]
+        );
+
+
+    /* =====================================================
+       ACTIVE ITEM
+    ===================================================== */
+
+    const activeItem =
+        useMemo(() => {
+
+            if (!activeId) {
                 return null;
-            };
-            const storedSessionId = sessionId || localStorage.getItem('session_id');
-            if (!storedSessionId) {
-                throw new Error("Session not found. Please upload files first.");
             }
-            const response = await fetch(`${API_BASE_URL}/save-dependency-model`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Session-ID': storedSessionId || ''
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    dependent_variables: dependentVariables,
-                    independent_variables: independentVariables,
-                    session_id: storedSessionId
-                })
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Failed to save dependency model");
-            }
-            const data = await response.json();
-            navigate('/visualize-data', {
-                state: {
-                    ...data,
-                    dependentVariables,
-                    independentVariables,
-                    sessionId: data.session_id || storedSessionId,
-                    bootstrap_analysis: data.bootstrap_analysis,
-                    clientName: location.state?.clientName || '',
-                    plantName: location.state?.plantName || '',
-                    productName: location.state?.productName || ''
-                }
-            });
-        } catch (error) {
-            console.error("Error saving dependency model:", error);
-            setError(error.message || "Failed to save dependency model. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [columns, navigate, sessionId]);
 
-    const handlePreviousStep = useCallback(() => {
-        navigate('/calculated-columns-builder');
-    }, [navigate]);
+
+            const columnId =
+                findColumnForItem(
+                    activeId
+                );
+
+
+            if (!columnId) {
+                return null;
+            }
+
+
+            return findItemInColumn(
+                activeId,
+                columnId
+            );
+
+        }, [
+            activeId,
+            findColumnForItem,
+            findItemInColumn
+        ]);
+
+
+    /* =====================================================
+       NEXT
+    ===================================================== */
+
+    const handleNextStep =
+        useCallback(
+            async () => {
+
+                const dependentVariables =
+                    columns
+                        .dependentVariables
+                        .items
+                        .map(
+                            item =>
+                                item.content
+                        );
+
+
+                const independentVariables =
+                    columns
+                        .independentVariables
+                        .items
+                        .map(
+                            item =>
+                                item.content
+                        );
+
+
+                try {
+
+                    setIsLoading(true);
+
+
+                    const storedSessionId =
+                        sessionId ||
+                        localStorage.getItem(
+                            'session_id'
+                        );
+
+
+                    if (!storedSessionId) {
+
+                        throw new Error(
+                            'Session not found. Please upload files first.'
+                        );
+
+                    }
+
+
+                    const response =
+                        await fetch(
+                            `${API_BASE_URL}/save-dependency-model`,
+                            {
+                                method: 'POST',
+
+                                headers: {
+                                    'Content-Type':
+                                        'application/json',
+
+                                    'X-Session-ID':
+                                        storedSessionId
+                                },
+
+                                credentials:
+                                    'include',
+
+                                body:
+                                    JSON.stringify({
+                                        dependent_variables:
+                                            dependentVariables,
+
+                                        independent_variables:
+                                            independentVariables,
+
+                                        session_id:
+                                            storedSessionId
+                                    })
+                            }
+                        );
+
+
+                    if (!response.ok) {
+
+                        let errorMessage =
+                            'Failed to save dependency model';
+
+
+                        try {
+
+                            const errorData =
+                                await response.json();
+
+                            errorMessage =
+                                errorData.error ||
+                                errorMessage;
+
+                        } catch {
+                            // response was not JSON
+                        }
+
+
+                        throw new Error(
+                            errorMessage
+                        );
+
+                    }
+
+
+                    const data =
+                        await response.json();
+
+
+                    navigate(
+                        '/visualize-data',
+                        {
+                            state: {
+
+                                ...data,
+
+                                dependentVariables,
+                                independentVariables,
+
+                                sessionId:
+                                    data.session_id ||
+                                    storedSessionId,
+
+                                bootstrap_analysis:
+                                    data.bootstrap_analysis,
+
+                                clientName:
+                                    location.state
+                                        ?.clientName ||
+                                    '',
+
+                                plantName:
+                                    location.state
+                                        ?.plantName ||
+                                    '',
+
+                                productName:
+                                    location.state
+                                        ?.productName ||
+                                    ''
+                            }
+                        }
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        'Error saving dependency model:',
+                        error
+                    );
+
+
+                    setError(
+                        error.message ||
+                        'Failed to save dependency model. Please try again.'
+                    );
+
+                } finally {
+
+                    setIsLoading(false);
+
+                }
+
+            },
+            [
+                columns,
+                navigate,
+                sessionId,
+                location.state
+            ]
+        );
+
+
+    /* =====================================================
+       PREVIOUS
+    ===================================================== */
+
+    const handlePreviousStep =
+        useCallback(
+            () => {
+
+                navigate(
+                    '/calculated-columns-builder'
+                );
+
+            },
+            [navigate]
+        );
+
 
     const handleCloseError = () => {
         setError(null);
     };
 
+
+    /* =====================================================
+       COUNTS
+    ===================================================== */
+
+    const totalVariables =
+        columns.independentVariables.items.length +
+        columns.fieldsNotUsed.items.length +
+        columns.dependentVariables.items.length;
+
+
+    /* =====================================================
+       RENDER
+    ===================================================== */
+
     return (
+
         <ThemeProvider theme={customTheme}>
-            <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-                <Container maxWidth="xl" sx={{ py: 6 }}>
+
+            <Box
+                sx={{
+                    minHeight: '100vh',
+
+                    bgcolor: '#F6F8FB',
+
+                    backgroundImage:
+                        'radial-gradient(circle at top right, rgba(37,99,235,0.035), transparent 30%)'
+                }}
+            >
+
+                <Container
+                    maxWidth="xl"
+                    sx={{
+                        py: {
+                            xs: 3,
+                            md: 5
+                        }
+                    }}
+                >
+
                     <Paper
-                        elevation={2}
+                        elevation={0}
                         sx={{
-                            borderRadius: 1,
-                            p: { xs: 2, sm: 3 },
-                            backgroundColor: 'background.paper',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                            p: {
+                                xs: 2,
+                                sm: 3,
+                                md: 4
+                            },
+
+                            borderRadius: {
+                                xs: '14px',
+                                md: '20px'
+                            },
+
+                            bgcolor: '#FFFFFF',
+
+                            border:
+                                '1px solid #E5EAF0',
+
+                            boxShadow:
+                                '0 8px 30px rgba(15,23,42,0.045)'
                         }}
                     >
-                        <Typography variant="h5" component="h2" color="primary.main" sx={{ mb: 3 }}>
-                            Step 3: Dependency Model
-                        </Typography>
-                        <Typography variant="body2" sx={{ mb: 3 }}>
-                            Drag and drop variables between columns to define your model. Dependent variables will be analyzed against independent variables.
-                        </Typography>
+
+                        {/* =====================================
+                            PAGE HEADER
+                        ===================================== */}
+
+                        <Box
+                            sx={{
+                                display: 'flex',
+
+                                flexDirection: {
+                                    xs: 'column',
+                                    md: 'row'
+                                },
+
+                                alignItems: {
+                                    xs: 'flex-start',
+                                    md: 'center'
+                                },
+
+                                justifyContent:
+                                    'space-between',
+
+                                gap: 2,
+
+                                mb: 3.5
+                            }}
+                        >
+
+                            <Box>
+
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1,
+
+                                        mb: 1
+                                    }}
+                                >
+
+                                    <Box
+                                        sx={{
+                                            width: 36,
+                                            height: 36,
+
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent:
+                                                'center',
+
+                                            borderRadius:
+                                                '9px',
+
+                                            bgcolor:
+                                                '#EFF6FF',
+
+                                            color:
+                                                '#2563EB'
+                                        }}
+                                    >
+                                        <TuneIcon fontSize="small" />
+                                    </Box>
+
+
+                                    <Typography
+                                        sx={{
+                                            color:
+                                                '#2563EB',
+
+                                            fontSize:
+                                                '0.73rem',
+
+                                            fontWeight: 800,
+
+                                            letterSpacing:
+                                                '0.08em'
+                                        }}
+                                    >
+                                        STEP 3
+                                    </Typography>
+
+                                </Box>
+
+
+                                <Typography
+                                    component="h1"
+                                    sx={{
+                                        color: '#172B4D',
+
+                                        fontSize: {
+                                            xs: '1.45rem',
+                                            md: '1.8rem'
+                                        },
+
+                                        fontWeight: 750,
+
+                                        letterSpacing:
+                                            '-0.035em',
+
+                                        lineHeight: 1.2,
+
+                                        mb: 0.75
+                                    }}
+                                >
+                                    Dependency Model
+                                </Typography>
+
+
+                                <Typography
+                                    sx={{
+                                        maxWidth: 720,
+
+                                        color: '#64748B',
+
+                                        fontSize:
+                                            '0.88rem',
+
+                                        lineHeight: 1.65
+                                    }}
+                                >
+                                    Organize your variables to define
+                                    how inputs relate to measured
+                                    outputs. Drag variables between
+                                    columns or use the arrow controls.
+                                </Typography>
+
+                            </Box>
+
+
+                            <Chip
+                                label={`${totalVariables} total variables`}
+                                sx={{
+                                    height: 32,
+
+                                    bgcolor: '#F8FAFC',
+
+                                    color: '#475569',
+
+                                    border:
+                                        '1px solid #E2E8F0',
+
+                                    fontWeight: 650,
+
+                                    fontSize:
+                                        '0.76rem'
+                                }}
+                            />
+
+                        </Box>
+
+
+                        {/* =====================================
+                            INSTRUCTION STRIP
+                        ===================================== */}
+
+                        <Box
+                            sx={{
+                                mb: 3,
+
+                                px: 2,
+                                py: 1.35,
+
+                                display: 'flex',
+                                alignItems: 'center',
+
+                                gap: 1.25,
+
+                                borderRadius: '10px',
+
+                                bgcolor: '#F8FAFC',
+
+                                border:
+                                    '1px solid #E8EDF3'
+                            }}
+                        >
+
+                            <DragIcon
+                                sx={{
+                                    fontSize: 19,
+                                    color: '#64748B'
+                                }}
+                            />
+
+                            <Typography
+                                sx={{
+                                    color: '#64748B',
+
+                                    fontSize:
+                                        '0.78rem',
+
+                                    lineHeight: 1.5
+                                }}
+                            >
+                                <Box
+                                    component="span"
+                                    sx={{
+                                        color: '#334155',
+                                        fontWeight: 700
+                                    }}
+                                >
+                                    Build your model:
+                                </Box>{' '}
+
+                                move variables into Independent
+                                Variables or Dependent Variables.
+                                Fields you do not want analyzed can
+                                remain in Fields Not Used.
+                            </Typography>
+
+                        </Box>
+
+
+                        {/* =====================================
+                            DND
+                        ===================================== */}
+
                         <DndContext
                             sensors={sensors}
-                            collisionDetection={closestCenter}
-                            onDragStart={handleDragStart}
-                            onDragEnd={handleDragEnd}
-                            modifiers={[restrictToWindowEdges]}
+                            collisionDetection={
+                                closestCenter
+                            }
+                            onDragStart={
+                                handleDragStart
+                            }
+                            onDragEnd={
+                                handleDragEnd
+                            }
+                            modifiers={[
+                                restrictToWindowEdges
+                            ]}
                         >
-                            <Box sx={{
-                                display: 'grid',
-                                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
-                                gap: 3,
-                                mb: 4
-                            }}>
+
+                            <Box
+                                sx={{
+                                    display: 'grid',
+
+                                    gridTemplateColumns: {
+                                        xs: '1fr',
+                                        lg:
+                                            'repeat(3, minmax(0, 1fr))'
+                                    },
+
+                                    gap: {
+                                        xs: 2,
+                                        lg: 2.25
+                                    },
+
+                                    mb: 4
+                                }}
+                            >
+
                                 <Column
                                     id="independentVariables"
-                                    title={columns.independentVariables.title}
-                                    items={columns.independentVariables.items}
-                                    searchTerm={searchTerms.independentVariables}
-                                    onSearchChange={handleSearchChange}
-                                    onMoveItem={moveItem}
+                                    title={
+                                        columns
+                                            .independentVariables
+                                            .title
+                                    }
+                                    items={
+                                        columns
+                                            .independentVariables
+                                            .items
+                                    }
+                                    searchTerm={
+                                        searchTerms
+                                            .independentVariables
+                                    }
+                                    onSearchChange={
+                                        handleSearchChange
+                                    }
+                                    onMoveItem={
+                                        moveItem
+                                    }
                                 />
+
+
                                 <Column
                                     id="fieldsNotUsed"
-                                    title={columns.fieldsNotUsed.title}
-                                    items={columns.fieldsNotUsed.items}
-                                    searchTerm={searchTerms.fieldsNotUsed}
-                                    onSearchChange={handleSearchChange}
-                                    onMoveItem={moveItem}
+                                    title={
+                                        columns
+                                            .fieldsNotUsed
+                                            .title
+                                    }
+                                    items={
+                                        columns
+                                            .fieldsNotUsed
+                                            .items
+                                    }
+                                    searchTerm={
+                                        searchTerms
+                                            .fieldsNotUsed
+                                    }
+                                    onSearchChange={
+                                        handleSearchChange
+                                    }
+                                    onMoveItem={
+                                        moveItem
+                                    }
                                 />
+
+
                                 <Column
                                     id="dependentVariables"
-                                    title={columns.dependentVariables.title}
-                                    items={columns.dependentVariables.items}
-                                    searchTerm={searchTerms.dependentVariables}
-                                    onSearchChange={handleSearchChange}
-                                    onMoveItem={moveItem}
+                                    title={
+                                        columns
+                                            .dependentVariables
+                                            .title
+                                    }
+                                    items={
+                                        columns
+                                            .dependentVariables
+                                            .items
+                                    }
+                                    searchTerm={
+                                        searchTerms
+                                            .dependentVariables
+                                    }
+                                    onSearchChange={
+                                        handleSearchChange
+                                    }
+                                    onMoveItem={
+                                        moveItem
+                                    }
                                 />
+
                             </Box>
+
+
+                            {/* DRAG OVERLAY */}
+
                             <DragOverlay>
-                                {activeId && activeItem && (
-                                    <Card sx={{ boxShadow: '0 5px 10px rgba(0,0,0,0.2)' }}>
-                                        <CardContent sx={{ p: 1 }}>
-                                            <Typography variant="body2">
-                                                {activeItem.content}
-                                            </Typography>
-                                        </CardContent>
-                                    </Card>
+
+                                {activeId &&
+                                    activeItem && (
+
+                                    <Paper
+                                        elevation={0}
+                                        sx={{
+                                            width: 280,
+
+                                            px: 1.5,
+                                            py: 1.25,
+
+                                            display: 'flex',
+                                            alignItems:
+                                                'center',
+
+                                            gap: 1,
+
+                                            borderRadius:
+                                                '10px',
+
+                                            bgcolor:
+                                                '#FFFFFF',
+
+                                            border:
+                                                '1px solid #93C5FD',
+
+                                            borderLeft:
+                                                '3px solid #2563EB',
+
+                                            boxShadow:
+                                                '0 18px 40px rgba(15,23,42,0.18)'
+                                        }}
+                                    >
+
+                                        <DragIndicatorIcon
+                                            sx={{
+                                                color:
+                                                    '#94A3B8'
+                                            }}
+                                        />
+
+                                        <Typography
+                                            noWrap
+                                            sx={{
+                                                color:
+                                                    '#334155',
+
+                                                fontSize:
+                                                    '0.82rem',
+
+                                                fontWeight:
+                                                    650
+                                            }}
+                                        >
+                                            {
+                                                activeItem.content
+                                            }
+                                        </Typography>
+
+                                    </Paper>
+
                                 )}
+
                             </DragOverlay>
+
                         </DndContext>
-                        <Divider sx={{ my: 3, borderColor: 'primary.light' }} />
-                        <NavigationButtons
-                            onPrevious={handlePreviousStep}
-                            onNext={handleNextStep}
-                            isLoading={isLoading}
-                            previousLabel="Back to Calculated Columns"
-                            nextLabel={isLoading ? 'Processing...' : 'Next Step'}
+
+
+                        {/* =====================================
+                            NAVIGATION
+                        ===================================== */}
+
+                        <Divider
+                            sx={{
+                                mt: 1,
+                                mb: 1,
+
+                                borderColor:
+                                    '#E8EDF3'
+                            }}
                         />
+
+
+                        <NavigationButtons
+                            onPrevious={
+                                handlePreviousStep
+                            }
+                            onNext={
+                                handleNextStep
+                            }
+                            isLoading={
+                                isLoading
+                            }
+                            previousLabel="Back to Calculated Columns"
+                            nextLabel={
+                                isLoading
+                                    ? 'Processing...'
+                                    : 'Continue to Visualization'
+                            }
+                        />
+
                     </Paper>
+
                 </Container>
+
             </Box>
-            <Snackbar open={!!error} autoHideDuration={6000} onClose={handleCloseError}>
-                <Alert onClose={handleCloseError} severity="error" sx={{ width: '100%' }}>
+
+
+            {/* ERROR */}
+
+            <Snackbar
+                open={!!error}
+                autoHideDuration={6000}
+                onClose={handleCloseError}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'center'
+                }}
+            >
+
+                <Alert
+                    onClose={handleCloseError}
+                    severity="error"
+                    variant="filled"
+                    sx={{
+                        width: '100%',
+                        borderRadius: '10px'
+                    }}
+                >
                     {error}
                 </Alert>
+
             </Snackbar>
+
         </ThemeProvider>
     );
 };
+
 
 export default DependencyModel;

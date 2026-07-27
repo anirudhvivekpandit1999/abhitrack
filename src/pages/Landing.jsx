@@ -1,287 +1,584 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import {
+    Box,
     Button,
+    Chip,
     Container,
     Grid,
+    Stack,
     Typography,
-    Box,
     useMediaQuery,
     useTheme,
 } from '@mui/material';
 import {
-    FileUpload,
-    Calculate,
-    CheckCircle,
-    ArrowForward,
-    AttachMoney,
-    Factory,
-    Timeline,
     Analytics,
+    ArrowForward,
+    Calculate,
+    CheckCircleRounded,
     CompareArrows,
+    FileUploadOutlined,
+    InsightsRounded,
+    KeyboardArrowDownRounded,
+    QueryStatsRounded,
+    ScienceRounded,
+    SecurityRounded,
+    SpeedRounded,
+    TrendingDownRounded,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
+const COLORS = {
+    navy: '#0B1F33',
+    navySoft: '#12314D',
+    blue: '#2563EB',
+    blueLight: '#60A5FA',
+    cyan: '#38BDF8',
+    text: '#172033',
+    muted: '#667085',
+    border: '#E4E7EC',
+    surface: '#F7F9FC',
+    success: '#059669',
+};
+
+const fadeUp = {
+    hidden: { opacity: 0, y: 24 },
+    visible: { opacity: 1, y: 0 },
+};
+
+const stagger = {
+    hidden: {},
+    visible: {
+        transition: {
+            staggerChildren: 0.1,
+        },
+    },
+};
+
+function MiniChart() {
+    return (
+        <Box
+            sx={{
+                position: 'relative',
+                height: { xs: 210, sm: 250 },
+                mt: 2,
+                overflow: 'hidden',
+                borderRadius: 3,
+                bgcolor: '#FBFCFE',
+                border: `1px solid ${COLORS.border}`,
+            }}
+        >
+            <svg
+                viewBox="0 0 620 250"
+                width="100%"
+                height="100%"
+                preserveAspectRatio="none"
+                aria-label="Before and after optimization performance chart"
+            >
+                <defs>
+                    <linearGradient id="beforeArea" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#64748B" stopOpacity="0.2" />
+                        <stop offset="100%" stopColor="#64748B" stopOpacity="0" />
+                    </linearGradient>
+                    <linearGradient id="afterArea" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#2563EB" stopOpacity="0.22" />
+                        <stop offset="100%" stopColor="#2563EB" stopOpacity="0" />
+                    </linearGradient>
+                    <pattern id="grid" width="62" height="50" patternUnits="userSpaceOnUse">
+                        <path
+                            d="M 62 0 L 0 0 0 50"
+                            fill="none"
+                            stroke="#E9EDF3"
+                            strokeWidth="1"
+                        />
+                    </pattern>
+                </defs>
+
+                <rect width="620" height="250" fill="url(#grid)" />
+
+                <path
+                    d="M 0 184 C 50 168, 75 177, 120 160 S 205 171, 250 145 S 330 157, 375 136 S 460 146, 505 124 S 570 132, 620 112 L 620 250 L 0 250 Z"
+                    fill="url(#beforeArea)"
+                />
+                <path
+                    d="M 0 184 C 50 168, 75 177, 120 160 S 205 171, 250 145 S 330 157, 375 136 S 460 146, 505 124 S 570 132, 620 112"
+                    fill="none"
+                    stroke="#64748B"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                />
+
+                <path
+                    d="M 0 164 C 55 150, 85 139, 125 128 S 200 118, 250 102 S 325 91, 375 78 S 455 65, 505 51 S 575 42, 620 30 L 620 250 L 0 250 Z"
+                    fill="url(#afterArea)"
+                />
+                <path
+                    d="M 0 164 C 55 150, 85 139, 125 128 S 200 118, 250 102 S 325 91, 375 78 S 455 65, 505 51 S 575 42, 620 30"
+                    fill="none"
+                    stroke="#2563EB"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                />
+
+                {[0, 125, 250, 375, 505, 620].map((x, index) => {
+                    const beforeY = [184, 160, 145, 136, 124, 112][index];
+                    const afterY = [164, 128, 102, 78, 51, 30][index];
+                    return (
+                        <React.Fragment key={x}>
+                            <circle cx={x} cy={beforeY} r="4.5" fill="#64748B" />
+                            <circle cx={x} cy={afterY} r="5" fill="#2563EB" />
+                        </React.Fragment>
+                    );
+                })}
+            </svg>
+
+            <Stack
+                direction="row"
+                spacing={2.5}
+                sx={{
+                    position: 'absolute',
+                    top: 14,
+                    left: 16,
+                    px: 1.5,
+                    py: 0.8,
+                    bgcolor: 'rgba(255,255,255,.9)',
+                    border: `1px solid ${COLORS.border}`,
+                    borderRadius: 2,
+                    backdropFilter: 'blur(8px)',
+                }}
+            >
+                <Stack direction="row" spacing={0.8} alignItems="center">
+                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#64748B' }} />
+                    <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.muted }}>
+                        Before
+                    </Typography>
+                </Stack>
+                <Stack direction="row" spacing={0.8} alignItems="center">
+                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: COLORS.blue }} />
+                    <Typography sx={{ fontSize: 11, fontWeight: 700, color: COLORS.muted }}>
+                        After
+                    </Typography>
+                </Stack>
+            </Stack>
+        </Box>
+    );
+}
+
+function MetricCard({ label, value, helper, icon }) {
+    return (
+        <Box
+            sx={{
+                p: 2.2,
+                borderRadius: 2.5,
+                border: `1px solid ${COLORS.border}`,
+                bgcolor: '#FFFFFF',
+                minWidth: 0,
+            }}
+        >
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                <Box>
+                    <Typography
+                        sx={{
+                            color: COLORS.muted,
+                            fontSize: 11,
+                            fontWeight: 800,
+                            letterSpacing: '.06em',
+                            textTransform: 'uppercase',
+                        }}
+                    >
+                        {label}
+                    </Typography>
+                    <Typography
+                        sx={{
+                            color: COLORS.text,
+                            fontSize: { xs: 22, sm: 26 },
+                            fontWeight: 800,
+                            lineHeight: 1.15,
+                            mt: 0.7,
+                        }}
+                    >
+                        {value}
+                    </Typography>
+                </Box>
+                <Box
+                    sx={{
+                        width: 34,
+                        height: 34,
+                        display: 'grid',
+                        placeItems: 'center',
+                        borderRadius: 2,
+                        bgcolor: '#EFF6FF',
+                        color: COLORS.blue,
+                        flexShrink: 0,
+                        '& svg': { fontSize: 19 },
+                    }}
+                >
+                    {icon}
+                </Box>
+            </Stack>
+            <Typography sx={{ mt: 0.8, color: COLORS.muted, fontSize: 12 }}>
+                {helper}
+            </Typography>
+        </Box>
+    );
+}
+
 function Landing() {
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-    useEffect(() => {
-        const handleScroll = () => {
-            const sections = ['hero', 'features', 'process', 'benefits', 'cta'];
-
-            let current = 'hero';
-            sections.forEach(section => {
-                const element = document.getElementById(section);
-                if (element) {
-                    const rect = element.getBoundingClientRect();
-                    if (rect.top <= 100) {
-                        current = section;
-                    }
-                }
-            });
-        };
-
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const navigate = useNavigate();
-    const handleButtonClick = () => {
-        navigate('/login');
-    };
 
     const scrollToSection = (sectionId) => {
-        const element = document.getElementById(sectionId);
-        if (element) {
-            window.scrollTo({
-                behavior: 'smooth',
-                top: element.offsetTop - 64
-            });
-        }
+        document.getElementById(sectionId)?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        });
     };
 
     const processSteps = [
         {
-            icon: <FileUpload fontSize="large" />,
-            title: "Data Validation",
-            description: "Upload your 'before' and 'after' data files. Our system validates formats, column matching, and data consistency across measurements."
+            icon: <FileUploadOutlined />,
+            number: '01',
+            title: 'Validate your data',
+            description:
+                "Upload before and after datasets. AbhiStat checks file structure, columns and measurement consistency before analysis.",
         },
         {
-            icon: <Calculate fontSize="large" />,
-            title: "Custom Calculations",
-            description: "Create calculated columns using our Excel-like formula builder with intuitive expressions based on your column names."
+            icon: <Calculate />,
+            number: '02',
+            title: 'Build calculations',
+            description:
+                'Create calculated variables with an Excel-like formula workflow using the columns already present in your dataset.',
         },
         {
-            icon: <CompareArrows fontSize="large" />,
-            title: "Variable Definition",
-            description: "Define dependent and independent variables with our drag & drop interface for proper statistical analysis."
+            icon: <CompareArrows />,
+            number: '03',
+            title: 'Define relationships',
+            description:
+                'Choose dependent and independent variables to establish the statistical relationships you want to investigate.',
         },
         {
-            icon: <Analytics fontSize="large" />,
-            title: "Data Visualization",
-            description: "Interactive dashboards display distribution curves, correlation plots, and statistical metrics with insights."
-        }
+            icon: <Analytics />,
+            number: '04',
+            title: 'Explore the evidence',
+            description:
+                'Review distributions, correlations, bootstrapping results and interactive visualizations in one analysis workspace.',
+        },
     ];
-    
-    const fadeInUp = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0 }
-    };
 
-    const fadeIn = {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1 }
-    };
+    const benefits = [
+        'Compare before and after performance with statistical evidence rather than visual guesswork.',
+        'Find the variables most strongly associated with changes in process performance.',
+        'Inspect distributions and uncertainty before drawing conclusions from averages alone.',
+        'Turn complex operating data into clear visual evidence for engineering and management teams.',
+    ];
 
-    const staggerChildren = {
-        hidden: {},
-        visible: {
-            transition: {
-                staggerChildren: 0.1
-            }
-        }
-    };
+    const analysisTypes = [
+        { label: 'Central tendency', icon: <QueryStatsRounded /> },
+        { label: 'Distribution', icon: <ScienceRounded /> },
+        { label: 'Correlation', icon: <InsightsRounded /> },
+        { label: 'Bootstrapping', icon: <Analytics /> },
+    ];
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans" style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}>
+        <Box
+            sx={{
+                minHeight: '100vh',
+                bgcolor: COLORS.surface,
+                color: COLORS.text,
+                fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+                overflowX: 'hidden',
+            }}
+        >
+            {/* HERO */}
             <Box
                 id="hero"
-                className="pt-24 pb-16 min-h-screen flex items-center"
                 sx={{
-                    background: 'linear-gradient(135deg, #0B3C5D 0%, #1D2D50 100%)',
-                    color: 'white'
+                    position: 'relative',
+                    minHeight: { md: '100vh' },
+                    display: 'flex',
+                    alignItems: 'center',
+                    overflow: 'hidden',
+                    background: `
+                        radial-gradient(circle at 82% 18%, rgba(56,189,248,.17), transparent 24rem),
+                        radial-gradient(circle at 18% 85%, rgba(37,99,235,.12), transparent 28rem),
+                        linear-gradient(135deg, #081A2C 0%, #0B2339 52%, #0C2C49 100%)
+                    `,
+                    color: '#fff',
+                    pt: { xs: 8, md: 5 },
+                    pb: { xs: 9, md: 6 },
                 }}
             >
-                <Container maxWidth="lg">
-                    <Grid container spacing={4} alignItems="center">
-                        <Grid item xs={12} md={6}>
-                            <Box className="mb-8">
-                                <motion.div
-                                    initial="hidden"
-                                    animate="visible"
-                                    variants={fadeInUp}
-                                    transition={{ duration: 0.6 }}
-                                >
-                                    <Typography
-                                        variant="h2"
-                                        component="h1"
-                                        sx={{
-                                            fontWeight: 700,
-                                            mb: 4,
-                                            lineHeight: 1.2,
-                                            fontFamily: "'Poppins', sans-serif"
-                                        }}
-                                    >
-                                        Advanced Data Analysis for Efficiency Optimization
-                                    </Typography>
-                                </motion.div>
-                                <motion.div
-                                    initial="hidden"
-                                    animate="visible"
-                                    variants={fadeInUp}
-                                    transition={{ duration: 0.6, delay: 0.2 }}
-                                >
-                                    <Typography
-                                        variant="h5"
-                                        sx={{
-                                            mb: 6,
-                                            color: '#B3E5FC',
-                                            fontWeight: 300,
-                                            fontFamily: "'Inter', sans-serif"
-                                        }}
-                                    >
-                                        Measure the impact of Abhitech's solutions with statistical precision and interactive visualizations.
-                                    </Typography>
-                                </motion.div>
-                                <motion.div
-                                    initial="hidden"
-                                    animate="visible"
-                                    variants={fadeInUp}
-                                    transition={{ duration: 0.6, delay: 0.4 }}
-                                    className="flex flex-wrap gap-4"
-                                >
-                                    <Button
-                                        variant="contained"
-                                        size="large"
-                                        onClick={() => scrollToSection('cta')}
-                                        sx={{
-                                            background: 'white',
-                                            color: '#0B3C5D',
-                                            fontWeight: 600,
-                                            borderRadius: '30px',
-                                            padding: '12px 30px',
-                                            boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
-                                            '&:hover': {
-                                                background: '#F8F9FA',
-                                                transform: 'translateY(-2px)',
-                                                boxShadow: '0 10px 25px rgba(0,0,0,0.18)',
-                                            },
-                                            transition: 'all 0.3s ease'
-                                        }}
-                                    >
-                                        Start Your Analysis
-                                    </Button>
-                                </motion.div>
-                            </Box>
-                        </Grid>
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        inset: 0,
+                        opacity: 0.2,
+                        backgroundImage:
+                            'linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px)',
+                        backgroundSize: '48px 48px',
+                        maskImage: 'linear-gradient(to bottom, black, transparent 90%)',
+                        pointerEvents: 'none',
+                    }}
+                />
+
+                <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
+                    <Grid container spacing={{ xs: 7, md: 8 }} alignItems="center">
                         <Grid item xs={12} md={6}>
                             <motion.div
                                 initial="hidden"
                                 animate="visible"
-                                variants={fadeIn}
-                                transition={{ duration: 0.8 }}
+                                variants={stagger}
                             >
-                                <Box className="bg-white p-6 rounded-xl shadow-xl">
-                                    <Box className="bg-gray-50 p-4 rounded-lg relative overflow-hidden">
-                                        <Box className="flex justify-between mb-6">
-                                            <Box sx={{
-                                                background: '#1D2D50',
-                                                color: 'white',
-                                                px: 3,
-                                                py: 1.5,
-                                                borderRadius: '8px',
-                                                fontWeight: 500
-                                            }}>
-                                                Before Optimization
+                                <motion.div variants={fadeUp} transition={{ duration: 0.55 }}>
+                                    <Chip
+                                        label="ABHISTAT • INDUSTRIAL ANALYTICS"
+                                        size="small"
+                                        sx={{
+                                            mb: 3,
+                                            color: '#DCEEFF',
+                                            bgcolor: 'rgba(96,165,250,.10)',
+                                            border: '1px solid rgba(147,197,253,.22)',
+                                            fontSize: 11,
+                                            fontWeight: 800,
+                                            letterSpacing: '.09em',
+                                            '& .MuiChip-label': { px: 1.5 },
+                                        }}
+                                    />
+                                </motion.div>
+
+                                <motion.div variants={fadeUp} transition={{ duration: 0.6 }}>
+                                    <Typography
+                                        component="h1"
+                                        sx={{
+                                            maxWidth: 760,
+                                            fontSize: {
+                                                xs: '2.55rem',
+                                                sm: '3.5rem',
+                                                md: '4rem',
+                                                lg: '4.65rem',
+                                            },
+                                            lineHeight: 1.02,
+                                            letterSpacing: '-.045em',
+                                            fontWeight: 800,
+                                        }}
+                                    >
+                                        Turn industrial data into{' '}
+                                        <Box component="span" sx={{ color: '#7DD3FC' }}>
+                                            measurable evidence.
+                                        </Box>
+                                    </Typography>
+                                </motion.div>
+
+                                <motion.div variants={fadeUp} transition={{ duration: 0.6 }}>
+                                    <Typography
+                                        sx={{
+                                            mt: 3,
+                                            maxWidth: 660,
+                                            color: '#B8CADB',
+                                            fontSize: { xs: 17, md: 19 },
+                                            lineHeight: 1.7,
+                                            fontWeight: 400,
+                                        }}
+                                    >
+                                        Compare operating conditions, quantify performance changes and
+                                        investigate the variables behind them with a statistical workflow
+                                        built for Abhitech's industrial optimization projects.
+                                    </Typography>
+                                </motion.div>
+
+                                <motion.div variants={fadeUp} transition={{ duration: 0.6 }}>
+                                    <Stack
+                                        direction={{ xs: 'column', sm: 'row' }}
+                                        spacing={1.5}
+                                        sx={{ mt: 4.5, alignItems: { xs: 'stretch', sm: 'center' } }}
+                                    >
+                                        <Button
+                                            variant="contained"
+                                            size="large"
+                                            endIcon={<ArrowForward />}
+                                            onClick={() => navigate('/full-excel-file')}
+                                            sx={{
+                                                minHeight: 52,
+                                                px: 3.2,
+                                                borderRadius: 2.5,
+                                                textTransform: 'none',
+                                                fontWeight: 800,
+                                                fontSize: 15,
+                                                bgcolor: '#FFFFFF',
+                                                color: COLORS.navy,
+                                                boxShadow: '0 12px 30px rgba(0,0,0,.18)',
+                                                '&:hover': {
+                                                    bgcolor: '#F8FAFC',
+                                                    transform: 'translateY(-2px)',
+                                                    boxShadow: '0 16px 34px rgba(0,0,0,.22)',
+                                                },
+                                                transition: 'all .2s ease',
+                                            }}
+                                        >
+                                            Start an analysis
+                                        </Button>
+
+                                        <Button
+                                            size="large"
+                                            endIcon={<KeyboardArrowDownRounded />}
+                                            onClick={() => scrollToSection('process')}
+                                            sx={{
+                                                minHeight: 52,
+                                                px: 2.4,
+                                                borderRadius: 2.5,
+                                                textTransform: 'none',
+                                                color: '#D9E7F3',
+                                                fontWeight: 700,
+                                                border: '1px solid rgba(255,255,255,.15)',
+                                                '&:hover': {
+                                                    bgcolor: 'rgba(255,255,255,.06)',
+                                                    borderColor: 'rgba(255,255,255,.25)',
+                                                },
+                                            }}
+                                        >
+                                            See how it works
+                                        </Button>
+                                    </Stack>
+                                </motion.div>
+
+                                <motion.div variants={fadeUp} transition={{ duration: 0.6 }}>
+                                    <Stack
+                                        direction={{ xs: 'column', sm: 'row' }}
+                                        spacing={{ xs: 1.2, sm: 3 }}
+                                        sx={{ mt: 5 }}
+                                    >
+                                        {[
+                                            [<SecurityRounded key="s" />, 'Validated workflow'],
+                                            [<SpeedRounded key="p" />, 'Interactive analysis'],
+                                            [<InsightsRounded key="i" />, 'Statistical insight'],
+                                        ].map(([icon, text]) => (
+                                            <Stack
+                                                key={text}
+                                                direction="row"
+                                                spacing={1}
+                                                alignItems="center"
+                                                sx={{ color: '#AFC4D6' }}
+                                            >
+                                                <Box sx={{ color: '#7DD3FC', display: 'flex', '& svg': { fontSize: 18 } }}>
+                                                    {icon}
+                                                </Box>
+                                                <Typography sx={{ fontSize: 13, fontWeight: 650 }}>
+                                                    {text}
+                                                </Typography>
+                                            </Stack>
+                                        ))}
+                                    </Stack>
+                                </motion.div>
+                            </motion.div>
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <motion.div
+                                initial={{ opacity: 0, y: 28, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ duration: 0.75, delay: 0.18 }}
+                            >
+                                <Box
+                                    sx={{
+                                        position: 'relative',
+                                        p: { xs: 1.4, sm: 2 },
+                                        borderRadius: 5,
+                                        bgcolor: 'rgba(255,255,255,.08)',
+                                        border: '1px solid rgba(255,255,255,.12)',
+                                        boxShadow: '0 32px 80px rgba(0,0,0,.3)',
+                                        backdropFilter: 'blur(12px)',
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            p: { xs: 2, sm: 2.7 },
+                                            borderRadius: 3.5,
+                                            bgcolor: '#FFFFFF',
+                                            color: COLORS.text,
+                                        }}
+                                    >
+                                        <Stack
+                                            direction={{ xs: 'column', sm: 'row' }}
+                                            justifyContent="space-between"
+                                            alignItems={{ xs: 'flex-start', sm: 'center' }}
+                                            spacing={1.5}
+                                        >
+                                            <Box>
+                                                <Typography
+                                                    sx={{
+                                                        fontSize: 11,
+                                                        fontWeight: 800,
+                                                        letterSpacing: '.08em',
+                                                        color: COLORS.blue,
+                                                        textTransform: 'uppercase',
+                                                    }}
+                                                >
+                                                    Performance comparison
+                                                </Typography>
+                                                <Typography sx={{ mt: 0.4, fontWeight: 800, fontSize: 20 }}>
+                                                    Optimization overview
+                                                </Typography>
                                             </Box>
-                                            <Box sx={{
-                                                background: '#3282B8',
-                                                color: 'white',
-                                                px: 3,
-                                                py: 1.5,
-                                                borderRadius: '8px',
-                                                fontWeight: 500
-                                            }}>
-                                                After Optimization
-                                            </Box>
-                                        </Box>
+                                            <Chip
+                                                icon={<CheckCircleRounded />}
+                                                label="Analysis complete"
+                                                size="small"
+                                                sx={{
+                                                    color: '#047857',
+                                                    bgcolor: '#ECFDF5',
+                                                    fontWeight: 750,
+                                                    '& .MuiChip-icon': { color: '#059669' },
+                                                }}
+                                            />
+                                        </Stack>
 
-                                        <svg width="100%" height="220" className="mb-4">
-                                            <pattern id="smallGrid" width="10" height="10" patternUnits="userSpaceOnUse">
-                                                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#f0f0f0" strokeWidth="0.5" />
-                                            </pattern>
-                                            <rect width="100%" height="100%" fill="url(#smallGrid)" />
+                                        <MiniChart />
 
-                                            <text x="5" y="15" fontSize="10" fill="#666">Consumption</text>
-                                            <text x="360" y="210" fontSize="10" fill="#666">Time</text>
+                                        <Grid container spacing={1.5} sx={{ mt: 0.3 }}>
+                                            <Grid item xs={12} sm={4}>
+                                                <MetricCard
+                                                    label="Load"
+                                                    value="-24.7%"
+                                                    helper="Change after optimization"
+                                                    icon={<TrendingDownRounded />}
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} sm={4}>
+                                                <MetricCard
+                                                    label="LHS/RHS spray"
+                                                    value="-32.5%"
+                                                    helper="Measured improvement"
+                                                    icon={<InsightsRounded />}
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} sm={4}>
+                                                <MetricCard
+                                                    label="Confidence"
+                                                    value="95%"
+                                                    helper="Statistical interval"
+                                                    icon={<Analytics />}
+                                                />
+                                            </Grid>
+                                        </Grid>
 
-                                            <path d="M 20 180 L 60 150 L 100 170 L 140 160 L 180 140 L 220 150 L 260 130 L 300 140 L 340 120 L 380 130 L 380 200 L 20 200 Z"
-                                                fill="rgba(29, 45, 80, 0.1)" stroke="none" />
-
-                                            <path d="M 20 180 L 60 150 L 100 170 L 140 160 L 180 140 L 220 150 L 260 130 L 300 140 L 340 120 L 380 130"
-                                                stroke="#1D2D50" fill="none" strokeWidth="3" />
-
-                                            <path d="M 20 160 L 60 130 L 100 120 L 140 100 L 180 80 L 220 70 L 260 60 L 300 50 L 340 40 L 380 30 L 380 200 L 20 200 Z"
-                                                fill="rgba(50, 130, 184, 0.1)" stroke="none" />
-
-                                            <path d="M 20 160 L 60 130 L 100 120 L 140 100 L 180 80 L 220 70 L 260 60 L 300 50 L 340 40 L 380 30"
-                                                stroke="#3282B8" fill="none" strokeWidth="3" />
-
-                                            <circle cx="20" cy="180" r="4" fill="#1D2D50" />
-                                            <circle cx="100" cy="170" r="4" fill="#1D2D50" />
-                                            <circle cx="180" cy="140" r="4" fill="#1D2D50" />
-                                            <circle cx="260" cy="130" r="4" fill="#1D2D50" />
-                                            <circle cx="340" cy="120" r="4" fill="#1D2D50" />
-                                            <circle cx="380" cy="130" r="4" fill="#1D2D50" />
-
-                                            <circle cx="20" cy="160" r="4" fill="#3282B8" />
-                                            <circle cx="100" cy="120" r="4" fill="#3282B8" />
-                                            <circle cx="180" cy="80" r="4" fill="#3282B8" />
-                                            <circle cx="260" cy="60" r="4" fill="#3282B8" />
-                                            <circle cx="340" cy="40" r="4" fill="#3282B8" />
-                                            <circle cx="380" cy="30" r="4" fill="#3282B8" />
-
-                                            <text x="20" y="215" fontSize="10" fill="#666">Jan</text>
-                                            <text x="100" y="215" fontSize="10" fill="#666">Mar</text>
-                                            <text x="180" y="215" fontSize="10" fill="#666">May</text>
-                                            <text x="260" y="215" fontSize="10" fill="#666">Jul</text>
-                                            <text x="340" y="215" fontSize="10" fill="#666">Sep</text>
-                                        </svg>
-
-                                        <Box className="flex justify-between mb-4 p-3 bg-white rounded-lg shadow-sm">
-                                            <Typography variant="subtitle2" sx={{ color: '#1D2D50', fontWeight: 500 }}>
-                                                Load
+                                        <Stack
+                                            direction="row"
+                                            justifyContent="space-between"
+                                            alignItems="center"
+                                            sx={{
+                                                mt: 2,
+                                                pt: 1.8,
+                                                borderTop: `1px solid ${COLORS.border}`,
+                                            }}
+                                        >
+                                            <Typography sx={{ fontSize: 12, color: COLORS.muted, fontWeight: 650 }}>
+                                                Abhitech Energycon Limited
                                             </Typography>
-                                            <Typography variant="subtitle2" sx={{ color: '#0B5394', fontWeight: 700 }}>
-                                                -24.7%
+                                            <Typography sx={{ fontSize: 12, color: COLORS.blue, fontWeight: 800 }}>
+                                                AbhiStat
                                             </Typography>
-                                        </Box>
-
-                                        <Box className="flex justify-between p-3 bg-white rounded-lg shadow-sm">
-                                            <Typography variant="subtitle2" sx={{ color: '#1D2D50', fontWeight: 500 }}>
-                                                LHS RHS Spray
-                                            </Typography>
-                                            <Typography variant="subtitle2" sx={{ color: '#0B5394', fontWeight: 700 }}>
-                                                -32.5%
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-
-                                    <Box className="flex justify-between items-center mt-4 px-2">
-                                        <Typography variant="caption" sx={{ color: '#0B3C5D', fontWeight: 500 }}>
-                                            Abhitech Energycon Limited
-                                        </Typography>
+                                        </Stack>
                                     </Box>
                                 </Box>
                             </motion.div>
@@ -289,302 +586,363 @@ function Landing() {
                     </Grid>
                 </Container>
             </Box>
-            
-            <Box id="process" className="py-20" sx={{ background: '#F8FAFC' }}>
-                <Container maxWidth="lg">
-                    <Box className="text-center mb-16">
-                        <motion.div
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: true }}
-                            variants={fadeInUp}
-                        >
+
+            {/* PROCESS */}
+            <Box
+                id="process"
+                component="section"
+                sx={{ py: { xs: 9, md: 13 }, bgcolor: COLORS.surface }}
+            >
+                <Container maxWidth="xl">
+                    <motion.div
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true, amount: 0.2 }}
+                        variants={fadeUp}
+                    >
+                        <Box sx={{ maxWidth: 760, mb: { xs: 6, md: 8 } }}>
                             <Typography
-                                variant="overline"
                                 sx={{
-                                    color: '#0B3C5D',
-                                    fontWeight: 600,
-                                    letterSpacing: '1.5px',
-                                    mb: 2,
-                                    display: 'block'
+                                    color: COLORS.blue,
+                                    fontSize: 12,
+                                    fontWeight: 850,
+                                    letterSpacing: '.11em',
+                                    textTransform: 'uppercase',
                                 }}
                             >
-                                FOUR-STEP METHODOLOGY
+                                Analysis workflow
                             </Typography>
                             <Typography
-                                variant="h3"
                                 component="h2"
                                 sx={{
-                                    fontWeight: 700,
-                                    mb: 4,
-                                    color: '#1D2D50',
-                                    fontFamily: "'Poppins', sans-serif"
+                                    mt: 1.3,
+                                    color: COLORS.text,
+                                    fontSize: { xs: 32, md: 45 },
+                                    lineHeight: 1.12,
+                                    letterSpacing: '-.035em',
+                                    fontWeight: 800,
                                 }}
                             >
-                                Comprehensive Data Analysis Workflow
+                                From raw spreadsheet to defensible insight.
                             </Typography>
                             <Typography
-                                variant="h6"
                                 sx={{
-                                    color: '#475569',
-                                    maxWidth: '42rem',
-                                    mx: 'auto',
-                                    fontWeight: 400,
-                                    lineHeight: 1.6,
-                                    fontFamily: "'Inter', sans-serif"
+                                    mt: 2.2,
+                                    color: COLORS.muted,
+                                    fontSize: { xs: 16, md: 18 },
+                                    lineHeight: 1.7,
                                 }}
                             >
-                                Our systematic approach delivers clear insights through a four-stage process designed for statistical precision.
+                                A focused four-stage workflow keeps data preparation, variable definition
+                                and statistical interpretation connected instead of scattering them across
+                                disconnected tools.
                             </Typography>
-                        </motion.div>
-                    </Box>
+                        </Box>
+                    </motion.div>
 
-                    <Box className="relative">
-                        {!isMobile && (
-                            <Box
-                                className="absolute top-24 left-12 right-12 h-1 rounded-full"
-                                sx={{ background: 'rgba(11,60,93,0.15)' }}
-                            />
-                        )}
-
-                        <motion.div
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: true }}
-                            variants={staggerChildren}
-                        >
-                            <Grid container spacing={isMobile ? 6 : 3}>
-                                {processSteps.map((step, index) => (
-                                    <Grid item xs={12} md={3} key={index}>
-                                        <motion.div
-                                            variants={fadeInUp}
-                                            className="relative"
+                    <motion.div
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true, amount: 0.12 }}
+                        variants={stagger}
+                    >
+                        <Grid container spacing={2.2}>
+                            {processSteps.map((step) => (
+                                <Grid item xs={12} sm={6} lg={3} key={step.number}>
+                                    <motion.div variants={fadeUp}>
+                                        <Box
+                                            sx={{
+                                                height: '100%',
+                                                minHeight: 330,
+                                                p: 3.2,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                borderRadius: 3.5,
+                                                bgcolor: '#FFFFFF',
+                                                border: `1px solid ${COLORS.border}`,
+                                                boxShadow: '0 8px 28px rgba(16,24,40,.045)',
+                                                transition: 'transform .22s ease, box-shadow .22s ease, border-color .22s ease',
+                                                '&:hover': {
+                                                    transform: 'translateY(-5px)',
+                                                    borderColor: '#BFDBFE',
+                                                    boxShadow: '0 18px 42px rgba(16,24,40,.09)',
+                                                },
+                                            }}
                                         >
-                                            <Box className="flex flex-col items-center">
-                                                <Box sx={{
-                                                    background: 'linear-gradient(135deg, #0B3C5D 0%, #3282B8 100%)',
-                                                    color: 'white',
-                                                    borderRadius: '50%',
-                                                    width: '64px',
-                                                    height: '64px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    mb: 3,
-                                                    zIndex: 10,
-                                                    boxShadow: '0 10px 20px rgba(11,60,93,0.2)'
-                                                }}>
-                                                    <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                                                        {index + 1}
-                                                    </Typography>
+                                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                                <Box
+                                                    sx={{
+                                                        width: 48,
+                                                        height: 48,
+                                                        display: 'grid',
+                                                        placeItems: 'center',
+                                                        borderRadius: 2.5,
+                                                        color: COLORS.blue,
+                                                        bgcolor: '#EFF6FF',
+                                                        '& svg': { fontSize: 25 },
+                                                    }}
+                                                >
+                                                    {step.icon}
                                                 </Box>
-                                                <Box sx={{
-                                                    background: 'white',
-                                                    p: 3,
-                                                    borderRadius: '16px',
-                                                    textAlign: 'center',
-                                                    height: '100%',
-                                                    borderBottom: '4px solid #0B3C5D',
-                                                    boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
-                                                    transition: 'all 0.3s ease',
-                                                    '&:hover': {
-                                                        transform: 'translateY(-5px)',
-                                                        boxShadow: '0 15px 35px rgba(0,0,0,0.1)'
-                                                    }
-                                                }}>
-                                                    <Box sx={{ color: '#0B3C5D', mb: 2 }}>
-                                                        {step.icon}
-                                                    </Box>
-                                                    <Typography
-                                                        variant="h5"
-                                                        component="h3"
-                                                        sx={{
-                                                            fontWeight: 700,
-                                                            mb: 2,
-                                                            color: '#1D2D50',
-                                                            fontFamily: "'Poppins', sans-serif"
-                                                        }}
-                                                    >
-                                                        {step.title}
-                                                    </Typography>
-                                                    <Typography variant="body1" sx={{ color: '#475569' }}>
-                                                        {step.description}
-                                                    </Typography>
-                                                </Box>
-                                            </Box>
-                                        </motion.div>
-                                    </Grid>
-                                ))}
-                            </Grid>
-                        </motion.div>
-                    </Box>
+                                                <Typography
+                                                    sx={{
+                                                        color: '#D0D5DD',
+                                                        fontSize: 14,
+                                                        fontWeight: 850,
+                                                        letterSpacing: '.08em',
+                                                    }}
+                                                >
+                                                    {step.number}
+                                                </Typography>
+                                            </Stack>
+
+                                            <Typography
+                                                component="h3"
+                                                sx={{
+                                                    mt: 5,
+                                                    color: COLORS.text,
+                                                    fontSize: 22,
+                                                    fontWeight: 800,
+                                                    letterSpacing: '-.02em',
+                                                }}
+                                            >
+                                                {step.title}
+                                            </Typography>
+                                            <Typography
+                                                sx={{
+                                                    mt: 1.5,
+                                                    color: COLORS.muted,
+                                                    fontSize: 14.5,
+                                                    lineHeight: 1.72,
+                                                }}
+                                            >
+                                                {step.description}
+                                            </Typography>
+
+                                            <Box
+                                                sx={{
+                                                    mt: 'auto',
+                                                    pt: 4,
+                                                    height: 3,
+                                                    width: 46,
+                                                    borderBottom: `3px solid ${COLORS.blue}`,
+                                                }}
+                                            />
+                                        </Box>
+                                    </motion.div>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </motion.div>
                 </Container>
             </Box>
 
-            <Box id="benefits" className="py-20 bg-white">
-                <Container maxWidth="lg">
-                    <Grid container spacing={8} alignItems="center">
+            {/* BENEFITS */}
+            <Box
+                id="benefits"
+                component="section"
+                sx={{
+                    py: { xs: 9, md: 13 },
+                    bgcolor: '#FFFFFF',
+                    borderTop: `1px solid ${COLORS.border}`,
+                    borderBottom: `1px solid ${COLORS.border}`,
+                }}
+            >
+                <Container maxWidth="xl">
+                    <Grid container spacing={{ xs: 7, md: 10 }} alignItems="center">
                         <Grid item xs={12} md={6}>
                             <motion.div
                                 initial="hidden"
                                 whileInView="visible"
-                                viewport={{ once: true }}
-                                variants={fadeInUp}
+                                viewport={{ once: true, amount: 0.2 }}
+                                variants={fadeUp}
                             >
                                 <Typography
-                                    variant="overline"
                                     sx={{
-                                        color: '#0B3C5D',
-                                        fontWeight: 600,
-                                        letterSpacing: '1.5px',
-                                        mb: 2,
-                                        display: 'block'
+                                        color: COLORS.blue,
+                                        fontSize: 12,
+                                        fontWeight: 850,
+                                        letterSpacing: '.11em',
+                                        textTransform: 'uppercase',
                                     }}
                                 >
-                                    DATA-DRIVEN DECISIONS
+                                    Data-driven decisions
                                 </Typography>
                                 <Typography
-                                    variant="h3"
                                     component="h2"
                                     sx={{
-                                        fontWeight: 700,
-                                        mb: 4,
-                                        color: '#1D2D50',
-                                        fontFamily: "'Poppins', sans-serif"
+                                        mt: 1.3,
+                                        maxWidth: 680,
+                                        color: COLORS.text,
+                                        fontSize: { xs: 32, md: 45 },
+                                        lineHeight: 1.12,
+                                        letterSpacing: '-.035em',
+                                        fontWeight: 800,
                                     }}
                                 >
-                                    Statistical Insights That Drive Performance
+                                    See what changed, then investigate why.
                                 </Typography>
                                 <Typography
-                                    variant="body1"
                                     sx={{
-                                        color: '#475569',
-                                        mb: 5,
-                                        lineHeight: 1.7,
-                                        fontSize: '1.05rem'
+                                        mt: 2.2,
+                                        maxWidth: 650,
+                                        color: COLORS.muted,
+                                        fontSize: 17,
+                                        lineHeight: 1.72,
                                     }}
                                 >
-                                    Our analytical tools are specifically designed for industries using solid and liquid fuels to help you:
+                                    AbhiStat helps engineering teams move beyond a single before-and-after
+                                    percentage by exposing distributions, relationships and statistical
+                                    uncertainty behind the result.
                                 </Typography>
 
-                                <Box>
-                                    {[
-                                        "Compare before/after data with robust statistical methods to validate performance improvements",
-                                        "Identify specific processes with highest optimization potential through correlation analysis",
-                                        "Generate interactive visualizations showcasing efficiency gains with explanatory insights",
-                                        "Make data-driven decisions with confidence using bootstrapping and distribution analysis"
-                                    ].map((benefit, index) => (
-                                        <Box key={index} className="flex items-start mb-4">
-                                            <CheckCircle sx={{ color: '#0B3C5D', mr: 2, mt: 0.5 }} />
-                                            <Typography
-                                                variant="body1"
+                                <Stack spacing={2.1} sx={{ mt: 4.5 }}>
+                                    {benefits.map((benefit) => (
+                                        <Stack key={benefit} direction="row" spacing={1.6} alignItems="flex-start">
+                                            <Box
                                                 sx={{
-                                                    color: '#334155',
-                                                    lineHeight: 1.6
+                                                    mt: '2px',
+                                                    width: 28,
+                                                    height: 28,
+                                                    display: 'grid',
+                                                    placeItems: 'center',
+                                                    borderRadius: '50%',
+                                                    bgcolor: '#ECFDF5',
+                                                    color: COLORS.success,
+                                                    flexShrink: 0,
+                                                    '& svg': { fontSize: 18 },
+                                                }}
+                                            >
+                                                <CheckCircleRounded />
+                                            </Box>
+                                            <Typography
+                                                sx={{
+                                                    color: '#344054',
+                                                    fontSize: 15.5,
+                                                    lineHeight: 1.65,
                                                 }}
                                             >
                                                 {benefit}
                                             </Typography>
-                                        </Box>
+                                        </Stack>
                                     ))}
-                                </Box>
+                                </Stack>
                             </motion.div>
                         </Grid>
+
                         <Grid item xs={12} md={6}>
                             <motion.div
-                                initial="hidden"
-                                whileInView="visible"
+                                initial={{ opacity: 0, y: 24 }}
+                                whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
-                                variants={fadeIn}
-                                transition={{ duration: 0.7 }}
+                                transition={{ duration: 0.6 }}
                             >
-                                <Box sx={{
-                                    background: '#F8FAFC',
-                                    p: 4,
-                                    borderRadius: '16px',
-                                    boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
-                                    border: '1px solid #E2E8F0'
-                                }}>
-                                    <Box className="mb-6">
-                                        <Typography
-                                            variant="h5"
-                                            component="h3"
+                                <Box
+                                    sx={{
+                                        p: { xs: 2, sm: 3 },
+                                        borderRadius: 4,
+                                        bgcolor: COLORS.surface,
+                                        border: `1px solid ${COLORS.border}`,
+                                    }}
+                                >
+                                    <Stack
+                                        direction={{ xs: 'column', sm: 'row' }}
+                                        justifyContent="space-between"
+                                        spacing={2}
+                                        sx={{ mb: 3 }}
+                                    >
+                                        <Box>
+                                            <Typography sx={{ color: COLORS.text, fontSize: 21, fontWeight: 800 }}>
+                                                Analysis workspace
+                                            </Typography>
+                                            <Typography sx={{ mt: 0.5, color: COLORS.muted, fontSize: 13.5 }}>
+                                                Multiple statistical views, one operating dataset.
+                                            </Typography>
+                                        </Box>
+                                        <Chip
+                                            label="4 analysis modes"
+                                            size="small"
                                             sx={{
-                                                fontWeight: 700,
-                                                mb: 1,
-                                                color: '#1D2D50',
-                                                fontFamily: "'Poppins', sans-serif"
+                                                alignSelf: { xs: 'flex-start', sm: 'center' },
+                                                bgcolor: '#EEF2FF',
+                                                color: '#4338CA',
+                                                fontWeight: 750,
                                             }}
-                                        >
-                                            Real Analysis Results
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ color: '#64748B' }}>
-                                            Based on actual implementation data
-                                        </Typography>
-                                    </Box>
+                                        />
+                                    </Stack>
 
-                                    <Box sx={{
-                                        background: 'white',
-                                        p: 3,
-                                        borderRadius: '12px',
-                                        boxShadow: '0 5px 15px rgba(0,0,0,0.05)'
-                                    }}>
-                                        <Typography
-                                            variant="subtitle1"
-                                            sx={{
-                                                fontWeight: 700,
-                                                mb: 3,
-                                                color: '#1D2D50'
-                                            }}
+                                    <Grid container spacing={1.5}>
+                                        {analysisTypes.map((item, index) => (
+                                            <Grid item xs={12} sm={6} key={item.label}>
+                                                <Box
+                                                    sx={{
+                                                        minHeight: 145,
+                                                        p: 2.5,
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        justifyContent: 'space-between',
+                                                        borderRadius: 3,
+                                                        bgcolor: '#FFFFFF',
+                                                        border: `1px solid ${COLORS.border}`,
+                                                        transition: 'all .2s ease',
+                                                        '&:hover': {
+                                                            borderColor: '#BFDBFE',
+                                                            boxShadow: '0 10px 24px rgba(16,24,40,.06)',
+                                                        },
+                                                    }}
+                                                >
+                                                    <Stack direction="row" justifyContent="space-between">
+                                                        <Box
+                                                            sx={{
+                                                                width: 40,
+                                                                height: 40,
+                                                                display: 'grid',
+                                                                placeItems: 'center',
+                                                                borderRadius: 2,
+                                                                bgcolor: index === 0 ? '#EFF6FF' : '#F8FAFC',
+                                                                color: index === 0 ? COLORS.blue : '#475467',
+                                                                '& svg': { fontSize: 22 },
+                                                            }}
+                                                        >
+                                                            {item.icon}
+                                                        </Box>
+                                                        <Typography sx={{ color: '#D0D5DD', fontSize: 11, fontWeight: 800 }}>
+                                                            0{index + 1}
+                                                        </Typography>
+                                                    </Stack>
+                                                    <Typography sx={{ mt: 2.2, color: COLORS.text, fontSize: 16, fontWeight: 750 }}>
+                                                        {item.label}
+                                                    </Typography>
+                                                </Box>
+                                            </Grid>
+                                        ))}
+                                    </Grid>
+
+                                    <Box
+                                        sx={{
+                                            mt: 1.5,
+                                            p: 2.2,
+                                            borderRadius: 3,
+                                            bgcolor: COLORS.navy,
+                                            color: '#FFFFFF',
+                                        }}
+                                    >
+                                        <Stack
+                                            direction={{ xs: 'column', sm: 'row' }}
+                                            justifyContent="space-between"
+                                            alignItems={{ xs: 'flex-start', sm: 'center' }}
+                                            spacing={1}
                                         >
-                                            Performance Metrics
-                                        </Typography>
-                                        <Grid container spacing={3}>
-                                            <Grid item xs={6}>
-                                                <Box sx={{
-                                                    background: '#F8FAFC',
-                                                    p: 3,
-                                                    borderRadius: '10px',
-                                                    textAlign: 'center',
-                                                    height: '100%'
-                                                }}>
-                                                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#0B3C5D' }}>Central Tendency</Typography>
-                                                </Box>
-                                            </Grid>
-                                            <Grid item xs={6}>
-                                                <Box sx={{
-                                                    background: '#F8FAFC',
-                                                    p: 3,
-                                                    borderRadius: '10px',
-                                                    textAlign: 'center',
-                                                    height: '100%'
-                                                }}>
-                                                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#0B3C5D' }}>Distribution</Typography>
-                                                </Box>
-                                            </Grid>
-                                            <Grid item xs={6}>
-                                                <Box sx={{
-                                                    background: '#F8FAFC',
-                                                    p: 3,
-                                                    borderRadius: '10px',
-                                                    textAlign: 'center',
-                                                    height: '100%'
-                                                }}>
-                                                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#0B3C5D' }}>Correlation</Typography>
-                                                </Box>
-                                            </Grid>
-                                            <Grid item xs={6}>
-                                                <Box sx={{
-                                                    background: '#F8FAFC',
-                                                    p: 3,
-                                                    borderRadius: '10px',
-                                                    textAlign: 'center',
-                                                    height: '100%'
-                                                }}>
-                                                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#0B3C5D' }}>Bootstrapping</Typography>
-                                                </Box>
-                                            </Grid>
-                                        </Grid>
+                                            <Box>
+                                                <Typography sx={{ fontSize: 12, color: '#9FC2DF', fontWeight: 700 }}>
+                                                    RESULT
+                                                </Typography>
+                                                <Typography sx={{ mt: 0.4, fontSize: 17, fontWeight: 750 }}>
+                                                    Evidence you can inspect, compare and explain.
+                                                </Typography>
+                                            </Box>
+                                            <InsightsRounded sx={{ color: '#7DD3FC' }} />
+                                        </Stack>
                                     </Box>
                                 </Box>
                             </motion.div>
@@ -592,85 +950,111 @@ function Landing() {
                     </Grid>
                 </Container>
             </Box>
-            <Box id="cta" className="py-20" sx={{
-                background: 'linear-gradient(135deg, #0B3C5D 0%, #1D2D50 100%)',
-                color: 'white'
-            }}>
-                <Container maxWidth="md">
-                    <Box className="text-center">
-                        <motion.div
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: true }}
-                            variants={fadeInUp}
-                            transition={{ duration: 0.6 }}
-                        >
+
+            {/* CTA */}
+            <Box
+                id="cta"
+                component="section"
+                sx={{
+                    position: 'relative',
+                    overflow: 'hidden',
+                    py: { xs: 9, md: 12 },
+                    bgcolor: COLORS.navy,
+                    color: '#FFFFFF',
+                }}
+            >
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        width: 420,
+                        height: 420,
+                        right: -160,
+                        top: -180,
+                        borderRadius: '50%',
+                        bgcolor: 'rgba(56,189,248,.08)',
+                        filter: 'blur(2px)',
+                    }}
+                />
+                <Container maxWidth="md" sx={{ position: 'relative', zIndex: 1 }}>
+                    <motion.div
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                        variants={fadeUp}
+                    >
+                        <Box sx={{ textAlign: 'center' }}>
                             <Typography
-                                variant="overline"
                                 sx={{
-                                    color: '#BBE1FA',
-                                    fontWeight: 600,
-                                    letterSpacing: '1.5px',
-                                    mb: 2,
-                                    display: 'block'
+                                    color: '#7DD3FC',
+                                    fontSize: 12,
+                                    fontWeight: 850,
+                                    letterSpacing: '.11em',
+                                    textTransform: 'uppercase',
                                 }}
                             >
-                                START YOUR ANALYSIS
+                                Start your analysis
                             </Typography>
                             <Typography
-                                variant="h3"
                                 component="h2"
                                 sx={{
-                                    fontWeight: 700,
-                                    mb: 4,
-                                    fontFamily: "'Poppins', sans-serif"
+                                    mt: 1.4,
+                                    fontSize: { xs: 34, md: 50 },
+                                    lineHeight: 1.1,
+                                    letterSpacing: '-.04em',
+                                    fontWeight: 800,
                                 }}
                             >
-                                Ready to Dive Into Your Data?
+                                Your spreadsheet has more to say.
                             </Typography>
                             <Typography
-                                variant="h6"
                                 sx={{
-                                    mb: 8,
-                                    color: '#BBE1FA',
-                                    fontWeight: 300,
-                                    maxWidth: '42rem',
+                                    mt: 2.2,
                                     mx: 'auto',
-                                    lineHeight: 1.6,
-                                    fontFamily: "'Inter', sans-serif"
+                                    maxWidth: 650,
+                                    color: '#AFC4D6',
+                                    fontSize: { xs: 16, md: 18 },
+                                    lineHeight: 1.7,
                                 }}
                             >
-                                Start measuring the impact of Abhitech's solutions with our robust statistical analysis tools and interactive visualizations.
+                                Upload your operating data and move from raw measurements to a structured
+                                statistical comparison.
                             </Typography>
-                            <Box className="flex flex-wrap justify-center gap-4">
-                                <Button
-                                    variant="contained"
-                                    size="large"
-                                    endIcon={<ArrowForward />}
-                                    onClick={() => navigate('/full-excel-file')}
-                                    sx={{
-                                        background: 'white',
-                                        color: '#0B3C5D',
-                                        fontWeight: 600,
-                                        borderRadius: '30px',
-                                        padding: '12px 30px',
-                                        boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
-                                        '&:hover': {
-                                            background: '#F8F9FA',
-                                            transform: 'translateY(-3px)',
-                                            boxShadow: '0 12px 28px rgba(0,0,0,0.2)',
-                                        },
-                                        transition: 'all 0.3s ease'
-                                    }}
-                                >
-                                    Upload Your Data
-                                </Button>
-                            </Box>
-                        </motion.div>
-                    </Box>
+
+                            <Button
+                                variant="contained"
+                                size="large"
+                                endIcon={<ArrowForward />}
+                                onClick={() => navigate('/full-excel-file')}
+                                sx={{
+                                    mt: 4.5,
+                                    minHeight: 54,
+                                    px: 3.5,
+                                    borderRadius: 2.5,
+                                    textTransform: 'none',
+                                    fontSize: 15,
+                                    fontWeight: 800,
+                                    bgcolor: '#FFFFFF',
+                                    color: COLORS.navy,
+                                    boxShadow: '0 12px 30px rgba(0,0,0,.2)',
+                                    '&:hover': {
+                                        bgcolor: '#F8FAFC',
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 16px 36px rgba(0,0,0,.25)',
+                                    },
+                                    transition: 'all .2s ease',
+                                }}
+                            >
+                                Upload your data
+                            </Button>
+
+                            <Typography sx={{ mt: 2, color: '#7897B1', fontSize: 12 }}>
+                                AbhiStat • Abhitech Energycon Limited
+                            </Typography>
+                        </Box>
+                    </motion.div>
                 </Container>
             </Box>
-        </div>
+        </Box>
     );
 }
 

@@ -42,6 +42,9 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import ScaleIcon from "@mui/icons-material/Scale";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
+import ScatterPlotIcon from "@mui/icons-material/ScatterPlot";
+import TuneIcon from "@mui/icons-material/Tune";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import * as d3 from "d3";
 import { v4 as uuidv4 } from 'uuid';
 import logo from "../../assets/abhitech-logo.png";
@@ -152,17 +155,17 @@ const CustomSlider = ({ value, onChange, min, max, step, label, formatValue }) =
   }, [value, isDragging]);
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', p: 1.5, border: '1px solid #E8EDF5', borderRadius: 2, bgcolor: '#FAFBFD' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-        <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>
+        <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569' }}>
           {label}
         </Typography>
         <Typography
           variant="body2"
           sx={{
             fontWeight: 600,
-            color: '#1976d2',
-            backgroundColor: '#f5f5f5',
+            color: '#2563EB',
+            backgroundColor: '#EFF6FF',
             padding: '2px 8px',
             borderRadius: '12px',
             fontSize: '0.8rem'
@@ -175,7 +178,7 @@ const CustomSlider = ({ value, onChange, min, max, step, label, formatValue }) =
         sx={{
           position: 'relative',
           height: '6px',
-          backgroundColor: '#e0e0e0',
+          backgroundColor: '#E2E8F0',
           borderRadius: '3px',
           cursor: 'pointer'
         }}
@@ -188,7 +191,7 @@ const CustomSlider = ({ value, onChange, min, max, step, label, formatValue }) =
             left: 0,
             top: 0,
             height: '100%',
-            backgroundColor: '#1976d2',
+            backgroundColor: '#2563EB',
             borderRadius: '3px',
             width: `${((tempValue - min) / (max - min)) * 100}%`,
             transition: isDragging ? 'none' : 'width 0.2s ease'
@@ -2434,11 +2437,19 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   };
 
   return (
-    <Box sx={{ width: "100%", p: { xs: 1, sm: 2, md: 3 } }} ref={pageRef}>
+    <Box sx={{
+      p: { xs: 1.5, sm: 2.5, md: 3 },
+      maxWidth: "100%",
+      overflow: "hidden",
+      minHeight: "100%",
+      bgcolor: "#F7F9FC",
+      background: "linear-gradient(180deg, #F5F8FC 0%, #FAFBFD 36%, #FFFFFF 100%)",
+      borderRadius: 3
+    }}>
       <SettingsModal />
 
       {/* Scale Mode Selection */}
-      <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
+      <Card elevation={0} sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: 'none', bgcolor: '#FAFBFD' }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <ScaleIcon color="primary" />
@@ -2499,7 +2510,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       </Grid>
 
       {/* Data Filter */}
-      <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
+      <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Data Filter</Typography>
           <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="center">
@@ -2520,7 +2531,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       </Card>
 
       {/* Active Variable Pairs */}
-      <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
+      <Card elevation={0} sx={{ mb: 3, borderRadius: 3, border: "1px solid #E5EAF2", boxShadow: "0 8px 28px rgba(15,23,42,.055)", backgroundImage: "none" }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Active Variable Pairs</Typography>
           <Paper elevation={0} sx={{ maxHeight: 120, overflowY: 'auto', p: 2, bgcolor: 'grey.100', borderRadius: 2, boxShadow: 0 }}>
@@ -2565,7 +2576,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       </Card>
 
       {/* Dataset Color Customization */}
-      <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
+      <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Dataset Colors</Typography>
           <Grid container spacing={2}>
@@ -2593,7 +2604,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       </Card>
 
       {/* Line & Area Settings Toggle */}
-      <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
+      <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <ShowChartIcon color="primary" />
@@ -2634,16 +2645,93 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         </CardContent>
       </Card>
 
-      {/* Toolbar */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 2, gap: 1, flexWrap: 'wrap' }}>
-        <MuiTooltip title="Download entire page as PNG">
-          <Button color="primary" onClick={downloadPageAsPNG} variant="outlined" size="small" startIcon={<DownloadIcon />} sx={{ textTransform: 'none', fontWeight: 500 }}>Download Page</Button>
-        </MuiTooltip>
-      </Box>
+      {/* Dashboard Header */}
+      <Card elevation={0} sx={{
+        mb: 2.5,
+        border: '1px solid #E5EAF2',
+        borderRadius: 3,
+        boxShadow: '0 8px 28px rgba(15,23,42,0.055)',
+        overflow: 'hidden',
+        position: 'relative',
+        backgroundImage: 'none'
+      }}>
+        <Box sx={{
+          position: 'absolute', width: 250, height: 250, borderRadius: '50%',
+          bgcolor: '#EEF4FF', right: -90, top: -145, pointerEvents: 'none'
+        }} />
+        <Box sx={{
+          position: 'absolute', width: 110, height: 110, borderRadius: '50%',
+          bgcolor: '#F5F3FF', right: 135, bottom: -82, pointerEvents: 'none'
+        }} />
+        <CardContent sx={{ p: { xs: 2, md: 2.75 }, '&:last-child': { pb: { xs: 2, md: 2.75 } }, position: 'relative' }}>
+          <Box sx={{
+            display: 'flex', justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', md: 'center' },
+            flexDirection: { xs: 'column', md: 'row' }, gap: 2
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{
+                width: 48, height: 48, borderRadius: 2.5, display: 'grid',
+                placeItems: 'center', bgcolor: '#172B4D', color: '#fff',
+                boxShadow: '0 8px 20px rgba(23,43,77,.18)', flexShrink: 0
+              }}>
+                <ScatterPlotIcon />
+              </Box>
+              <Box>
+                <Typography variant="h5" sx={{
+                  fontWeight: 850, color: '#0F172A', letterSpacing: '-0.025em',
+                  fontSize: { xs: '1.25rem', md: '1.55rem' }
+                }}>
+                  Multi-Variate Scatter Plot
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748B', mt: .3, maxWidth: 720 }}>
+                  Compare variable relationships across datasets with independent series colors, flexible scaling, trend analysis and interactive zoom.
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: { xs: '100%', md: 'auto' } }}>
+              <Button
+                variant="outlined"
+                startIcon={<TuneIcon />}
+                onClick={openSettingsModal}
+                sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, borderColor: '#D8E0EC', color: '#334155', bgcolor: '#fff' }}
+              >
+                Chart Settings
+              </Button>
+              <MuiTooltip title="Download entire page as PNG">
+                <Button
+                  onClick={downloadPageAsPNG}
+                  variant="contained"
+                  startIcon={<DownloadIcon />}
+                  sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, bgcolor: '#172B4D', boxShadow: 'none', '&:hover': { bgcolor: '#223A61', boxShadow: 'none' } }}
+                >
+                  Export Page
+                </Button>
+              </MuiTooltip>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2.25 }}>
+            <Box sx={{ px: 1.2, py: .55, borderRadius: 10, bgcolor: '#EFF6FF', color: '#2563EB', fontSize: 12, fontWeight: 750 }}>
+              {activePairs.length} active pair{activePairs.length === 1 ? '' : 's'}
+            </Box>
+            <Box sx={{ px: 1.2, py: .55, borderRadius: 10, bgcolor: '#ECFDF5', color: '#047857', fontSize: 12, fontWeight: 750 }}>
+              {visibleDatasetNames.length} visible dataset{visibleDatasetNames.length === 1 ? '' : 's'}
+            </Box>
+            <Box sx={{ px: 1.2, py: .55, borderRadius: 10, bgcolor: '#F5F3FF', color: '#7C3AED', fontSize: 12, fontWeight: 750 }}>
+              {visibleAnalysisPoints.length.toLocaleString()} plotted points
+            </Box>
+            <Box sx={{ px: 1.2, py: .55, borderRadius: 10, bgcolor: '#F8FAFC', color: '#475569', fontSize: 12, fontWeight: 750 }}>
+              {scaleMode === 'global' ? 'Dynamic scale' : scaleMode === 'perPair' ? 'Single-pair scale' : 'Per-variable scale'}
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
 
       <div ref={pageRef}>
         <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
-          <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+          <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
               <Typography variant="h6" sx={{ fontWeight: 600, color: "primary.main", fontSize: { xs: "1.1rem", sm: "1.25rem", md: "1.5rem" }, textAlign: { xs: "center", sm: "left" } }}>
                 Multi-Variate Scatter Plot{scaleMode === "perPair" && currentPairLabel ? ` - ${currentPairLabel}` : ""}
@@ -2670,7 +2758,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             
 
             <Box sx={{ mb: 3 }}>
-              <Alert severity="info" sx={{ display: "flex", alignItems: "center", gap: 1, borderRadius: 2 }}>
+              <Alert severity="info" variant="outlined" sx={{ display: "flex", alignItems: "center", gap: 1, borderRadius: 2.5, borderColor: "#D9E7FF", bgcolor: "#F8FBFF", color: "#475569", "& .MuiAlert-icon": { color: "#2563EB" } }}>
                 <PanToolIcon fontSize="small" />
                 <Typography variant="body2">
                   Use mouse wheel to zoom, drag to pan. Every variable-pair + dataset series has its own color. Coincident series are slightly separated on-screen so no series color is hidden behind another.
@@ -2689,7 +2777,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
             {/* Axis Scale Controls */}
             {scaleMode !== "perVariable" && (
-              <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
+              <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
                 <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexDirection: { xs: "column", sm: "row" }, gap: 1 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "primary.main" }}>
@@ -2765,7 +2853,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             {!hasData ? (
               <Alert severity="info" sx={{ width: "100%", my: 3, borderRadius: 2 }}>No data available for the selected variables</Alert>
             ) : (
-              <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, overflow: 'hidden' }}>
+              <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', overflow: 'hidden' }}>
                 <CardContent sx={{ p: 0 }}>
                   <Box sx={{ width: '100%', position: 'relative' }}>
                     <div ref={containerRef} className="abhitech-plot-area" style={{ width: "100%", height: "500px", position: "relative" }}>
@@ -2828,7 +2916,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                       );
                     })}
                       {tooltip.visible && tooltip.data && (
-                        <Paper elevation={3} sx={{ position: "absolute", left: Math.min(tooltip.x + 10, window.innerWidth - 320), top: Math.max(tooltip.y - 10, 10), p: { xs: 1.5, md: 2 }, backgroundColor: "background.paper", maxWidth: { xs: 250, md: 300 }, borderRadius: 2, border: "2px solid", borderColor: getPairBaseColor(tooltip.data.pairKey) || 'divider', boxShadow: "0 4px 12px rgba(0,0,0,0.15)", pointerEvents: "none", zIndex: 1000 }}>
+                        <Paper elevation={3} sx={{ position: "absolute", left: Math.min(tooltip.x + 10, window.innerWidth - 320), top: Math.max(tooltip.y - 10, 10), p: { xs: 1.5, md: 2 }, backgroundColor: "background.paper", maxWidth: { xs: 250, md: 300 }, borderRadius: 2, border: "2px solid", borderColor: getPairBaseColor(tooltip.data.pairKey) || 'divider', boxShadow: "0 16px 36px rgba(15,23,42,0.16)", pointerEvents: "none", zIndex: 1000 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.5 }}>
                             <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: getPointColor(tooltip.data.pairKey, tooltip.data.dataset), border: `2px solid ${getPairBaseColor(tooltip.data.pairKey)}`, flexShrink: 0 }} />
                             <Typography variant="subtitle2" sx={{ color: getPairBaseColor(tooltip.data.pairKey), fontWeight: "bold" }}>{tooltip.data.dataset} — {tooltip.data.xLabel} vs {tooltip.data.yLabel}</Typography>

@@ -1,257 +1,1176 @@
-import React, { useState, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+} from 'react';
+
 import {
-    Box,
-    Drawer,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    Typography,
-    IconButton,
-    Fade,
-    Tooltip,
-    useMediaQuery,
-    useTheme,
-    alpha,
-    CssBaseline
+  Box,
+  Drawer,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Typography,
+  IconButton,
+  Tooltip,
+  useMediaQuery,
+  useTheme,
+  alpha,
+  CssBaseline,
+  Divider,
+  Chip,
 } from '@mui/material';
-import { motion, AnimatePresence } from 'framer-motion';
-import PushPinIcon from '@mui/icons-material/PushPin';
+
+import { motion } from 'framer-motion';
+
+import PushPinRoundedIcon from '@mui/icons-material/PushPinRounded';
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
-import MenuIcon from '@mui/icons-material/Menu';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import CalculateIcon from '@mui/icons-material/Calculate';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import BarChartIcon from '@mui/icons-material/BarChart';
+import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+
+import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded';
+import CalculateOutlinedIcon from '@mui/icons-material/CalculateOutlined';
+import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
+import BarChartRoundedIcon from '@mui/icons-material/BarChartRounded';
+import AnalyticsOutlinedIcon from '@mui/icons-material/AnalyticsOutlined';
+import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
+
+
+/* ============================================================================
+   CONFIGURATION
+============================================================================ */
+
+const COLLAPSED_WIDTH = 76;
+const EXPANDED_WIDTH = 268;
+const NAVBAR_HEIGHT = 64;
+
+
+/* ============================================================================
+   DESIGN TOKENS
+============================================================================ */
+
+const COLORS = {
+  navy: '#1A2B4B',
+  navyDark: '#13213A',
+
+  primary: '#2563EB',
+  primaryDark: '#1D4ED8',
+  primarySoft: '#EFF6FF',
+
+  textPrimary: '#1E293B',
+  textSecondary: '#64748B',
+  textMuted: '#94A3B8',
+
+  border: '#E2E8F0',
+  borderSoft: '#F1F5F9',
+
+  surface: '#FFFFFF',
+  background: '#F8FAFC',
+};
+
+
+/* ============================================================================
+   MENU CONFIGURATION
+============================================================================ */
+
+const MENU_ITEMS = [
+  {
+    text: 'Data File Checks',
+    description: 'Validate uploaded datasets',
+    icon: CheckCircleOutlineRoundedIcon,
+    path: '/data-file-checks',
+  },
+  {
+    text: 'Calculated Columns',
+    description: 'Build calculated variables',
+    icon: CalculateOutlinedIcon,
+    path: '/calculated-columns-builder',
+  },
+  {
+    text: 'Dependency Model',
+    description: 'Analyse variable relationships',
+    icon: AccountTreeOutlinedIcon,
+    path: '/dependency-model',
+  },
+  {
+    text: 'Visualize Data',
+    description: 'Explore charts and insights',
+    icon: BarChartRoundedIcon,
+    path: '/visualize-data',
+  },
+];
+
+
+/* ============================================================================
+   SIDEBAR LAYOUT
+============================================================================ */
 
 const SidebarLayout = ({ children }) => {
-    const [open, setOpen] = useState(false);
-    const [permanentDrawer, setPermanentDrawer] = useState(false);
-    const navigate = useNavigate();
-    const location = useLocation();
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigateSafe();
+  const location = useLocationSafe();
 
-    const menuItems = [
-        {
-            text: 'Data File Checks',
-            icon: <CheckCircleOutlineIcon />,
-            path: '/data-file-checks'
-        },
-        {
-            text: 'Calculated Columns Builder',
-            icon: <CalculateIcon />,
-            path: '/calculated-columns-builder'
-        },
-        {
-            text: 'Dependency Model',
-            icon: <AccountTreeIcon />,
-            path: '/dependency-model'
-        },
-        {
-            text: 'Visualize Data',
-            icon: <BarChartIcon />,
-            path: '/visualize-data'
-        }
-    ];
+  const theme = useTheme();
 
-    const handleOptionClick = useCallback((path) => {
-        navigate(path);
+  const isMobile = useMediaQuery(
+    theme.breakpoints.down('sm')
+  );
 
-        if (isMobile) {
-            setOpen(false);
-        }
-    }, [navigate, isMobile]);
 
-    const togglePermanentDrawer = useCallback(() => {
-        setPermanentDrawer(!permanentDrawer);
-        setOpen(!permanentDrawer);
-    }, [permanentDrawer]);
+  /* ==========================================================================
+     STATE
+  ========================================================================== */
 
-    const toggleMobileMenu = useCallback(() => {
-        setOpen(!open);
-    }, [open]);
+  const [hovered, setHovered] = useState(false);
 
-    const drawerWidth = open || permanentDrawer ? 260 : 80;
+  const [permanentDrawer, setPermanentDrawer] =
+    useState(false);
 
-    const renderMobileMenuButton = () => (
-        <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={toggleMobileMenu}
-            sx={{
-                position: 'fixed',
-                left: 16,
-                top: 12,
-                zIndex: theme.zIndex.drawer + 2,
-                bgcolor: 'background.paper',
-                boxShadow: 1,
-                '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.08),
-                },
-            }}
-        >
-            <MenuIcon />
-        </IconButton>
+  const [mobileOpen, setMobileOpen] =
+    useState(false);
+
+
+  /* ==========================================================================
+     DRAWER STATE
+  ========================================================================== */
+
+  const expanded =
+    isMobile
+      ? mobileOpen
+      : permanentDrawer || hovered;
+
+
+  const drawerWidth =
+    expanded
+      ? EXPANDED_WIDTH
+      : COLLAPSED_WIDTH;
+
+
+  /* ==========================================================================
+     NAVIGATION
+  ========================================================================== */
+
+  const handleOptionClick = useCallback(
+    (path) => {
+      navigate(path);
+
+      if (isMobile) {
+        setMobileOpen(false);
+      }
+    },
+    [navigate, isMobile]
+  );
+
+
+  /* ==========================================================================
+     PIN DRAWER
+  ========================================================================== */
+
+  const togglePermanentDrawer = useCallback(() => {
+    setPermanentDrawer((previous) => !previous);
+  }, []);
+
+
+  /* ==========================================================================
+     MOBILE DRAWER
+  ========================================================================== */
+
+  const toggleMobileMenu = useCallback(() => {
+    setMobileOpen((previous) => !previous);
+  }, []);
+
+
+  /* ==========================================================================
+     ACTIVE PAGE
+  ========================================================================== */
+
+  const activeItem = useMemo(() => {
+    return MENU_ITEMS.find(
+      (item) =>
+        location.pathname === item.path ||
+        location.pathname.startsWith(`${item.path}/`)
     );
+  }, [location.pathname]);
 
-    return (
-        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-            <CssBaseline />
-            {isMobile && renderMobileMenuButton()}
 
-            <Drawer
-                variant={isMobile ? "temporary" : (permanentDrawer ? "persistent" : "permanent")}
-                open={open}
-                onClose={() => setOpen(false)}
-                sx={{
-                    width: drawerWidth,
-                    flexShrink: 0,
-                    '& .MuiDrawer-paper': {
-                        width: drawerWidth,
-                        boxSizing: 'border-box',
-                        top: '64px',
-                        height: 'calc(100% - 64px)',
-                        borderRight: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                        backgroundColor: theme.palette.background.paper,
-                        boxShadow: theme.shadows[2],
-                        transition: theme.transitions.create(['width'], {
-                            easing: theme.transitions.easing.easeInOut,
-                            duration: theme.transitions.duration.standard,
-                        }),
-                        zIndex: theme.zIndex.appBar - 1,
-                        overflowX: 'hidden',
-                        overflowY: 'auto',
-                        '&::-webkit-scrollbar': {
-                            width: '6px',
-                        },
-                        '&::-webkit-scrollbar-track': {
-                            background: 'transparent',
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                            background: alpha(theme.palette.primary.main, 0.2),
-                            borderRadius: '3px',
-                        },
-                        '&::-webkit-scrollbar-thumb:hover': {
-                            background: alpha(theme.palette.primary.main, 0.3),
-                        },
-                    },
-                }}
-                onMouseEnter={() => !permanentDrawer && !isMobile && setOpen(true)}
-                onMouseLeave={() => !permanentDrawer && !isMobile && setOpen(false)}
+  /* ==========================================================================
+     DRAWER CONTENT
+  ========================================================================== */
+
+  const drawerContent = (
+    <Box
+      sx={{
+        height: '100%',
+
+        display: 'flex',
+        flexDirection: 'column',
+
+        overflow: 'hidden',
+      }}
+    >
+
+      {/* ======================================================================
+          SIDEBAR HEADER
+      ====================================================================== */}
+
+      <Box
+        sx={{
+          height: 70,
+
+          px: expanded ? 2 : 1.25,
+
+          display: 'flex',
+
+          alignItems: 'center',
+
+          justifyContent:
+            expanded
+              ? 'space-between'
+              : 'center',
+
+          flexShrink: 0,
+
+          borderBottom:
+            `1px solid ${COLORS.borderSoft}`,
+
+          transition:
+            'padding 180ms ease',
+        }}
+      >
+
+        {/* BRAND / SECTION */}
+
+        {expanded ? (
+          <Box
+            sx={{
+              minWidth: 0,
+
+              display: 'flex',
+
+              alignItems: 'center',
+
+              gap: 1.15,
+            }}
+          >
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+
+                flexShrink: 0,
+
+                display: 'grid',
+
+                placeItems: 'center',
+
+                borderRadius: '10px',
+
+                bgcolor: COLORS.primarySoft,
+
+                color: COLORS.primary,
+              }}
             >
-                <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    p: 1,
-                    borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                }}>
-                    {!isMobile && (
-                        <Tooltip title={permanentDrawer ? "Unpin Menu" : "Pin Menu"}>
-                            <IconButton
-                                onClick={togglePermanentDrawer}
-                                color={permanentDrawer ? "primary" : "default"}
-                            >
-                                {permanentDrawer ? <PushPinIcon /> : <PushPinOutlinedIcon />}
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                </Box>
-                <List sx={{ p: 2 }}>
-                    <AnimatePresence>
-                        {menuItems.map((item, index) => (
-                            <motion.div
-                                key={item.text}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                transition={{
-                                    duration: 0.2,
-                                    delay: index * 0.05
-                                }}
-                            >
-                                <ListItem
-                                    button
-                                    onClick={() => handleOptionClick(item.path)}
-                                    selected={location.pathname === item.path}
-                                    sx={{
-                                        borderRadius: '12px',
-                                        mb: 1,
-                                        p: 1.5,
-                                        color: location.pathname === item.path
-                                            ? theme.palette.primary.main
-                                            : theme.palette.text.secondary,
-                                        bgcolor: location.pathname === item.path
-                                            ? alpha(theme.palette.primary.main, 0.1)
-                                            : 'transparent',
-                                        transition: 'all 0.3s ease',
-                                        '&:hover': {
-                                            bgcolor: alpha(theme.palette.primary.main, 0.05),
-                                            transform: 'translateX(5px)',
-                                        },
-                                        '& .MuiListItemIcon-root': {
-                                            color: 'inherit',
-                                            minWidth: 40,
-                                        },
-                                        cursor: 'pointer',
-                                    }}
-                                >
-                                    <Tooltip title={!open && !isMobile ? item.text : ''} placement="right">
-                                        <ListItemIcon>{item.icon}</ListItemIcon>
-                                    </Tooltip>
-                                    <Fade in={open || isMobile} timeout={300}>
-                                        <ListItemText
-                                            primary={
-                                                <Typography
-                                                    sx={{
-                                                        fontWeight: open ? 600 : 400,
-                                                        fontSize: '0.95rem',
-                                                        color: location.pathname === item.path
-                                                            ? theme.palette.primary.main
-                                                            : theme.palette.text.secondary,
-                                                        opacity: open || isMobile ? 1 : 0,
-                                                        transition: 'all 0.3s ease',
-                                                    }}
-                                                >
-                                                    {item.text}
-                                                </Typography>
-                                            }
-                                        />
-                                    </Fade>
-                                </ListItem>
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-                </List>
-            </Drawer>
+              <AnalyticsOutlinedIcon
+                sx={{
+                  fontSize: 20,
+                }}
+              />
+            </Box>
+
 
             <Box
-                component="main"
-                sx={{
-                    flexGrow: 1,
-                    bgcolor: theme.palette.background.default,
-                    pt: '64px',
-                    maxWidth: '100%',
-                    width: {
-                        xs: '100%',
-                        sm: !isMobile
-                            ? `calc(100% - ${open || permanentDrawer ? drawerWidth : 80}px)`
-                            : '100%'
-                    },
-                    transition: theme.transitions.create(['width', 'margin'], {
-                        easing: theme.transitions.easing.easeInOut,
-                        duration: theme.transitions.duration.standard,
-                    }),
-                    p: 3
-                }}
+              sx={{
+                minWidth: 0,
+              }}
             >
-                {children}
+              <Typography
+                sx={{
+                  color: COLORS.textPrimary,
+
+                  fontSize: '0.75rem',
+
+                  fontWeight: 800,
+
+                  lineHeight: 1.25,
+
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                Analysis Workspace
+              </Typography>
+
+              <Typography
+                sx={{
+                  mt: 0.15,
+
+                  color: COLORS.textMuted,
+
+                  fontSize: '0.55rem',
+
+                  lineHeight: 1.3,
+                }}
+              >
+                Statistical workflow
+              </Typography>
             </Box>
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              width: 38,
+              height: 38,
+
+              display: 'grid',
+
+              placeItems: 'center',
+
+              borderRadius: '10px',
+
+              bgcolor: COLORS.primarySoft,
+
+              color: COLORS.primary,
+            }}
+          >
+            <AnalyticsOutlinedIcon
+              sx={{
+                fontSize: 20,
+              }}
+            />
+          </Box>
+        )}
+
+
+        {/* PIN / CLOSE */}
+
+        {expanded && (
+          <>
+            {isMobile ? (
+              <Tooltip title="Close menu" arrow>
+                <IconButton
+                  onClick={() => setMobileOpen(false)}
+                  size="small"
+                  sx={headerButtonSx}
+                >
+                  <CloseRoundedIcon />
+                </IconButton>
+              </Tooltip>
+            ) : (
+              <Tooltip
+                title={
+                  permanentDrawer
+                    ? 'Unpin sidebar'
+                    : 'Pin sidebar'
+                }
+                arrow
+              >
+                <IconButton
+                  onClick={togglePermanentDrawer}
+                  size="small"
+                  sx={{
+                    ...headerButtonSx,
+
+                    color:
+                      permanentDrawer
+                        ? COLORS.primary
+                        : COLORS.textMuted,
+
+                    bgcolor:
+                      permanentDrawer
+                        ? COLORS.primarySoft
+                        : 'transparent',
+                  }}
+                >
+                  {permanentDrawer ? (
+                    <PushPinRoundedIcon />
+                  ) : (
+                    <PushPinOutlinedIcon />
+                  )}
+                </IconButton>
+              </Tooltip>
+            )}
+          </>
+        )}
+
+      </Box>
+
+
+      {/* ======================================================================
+          NAVIGATION LABEL
+      ====================================================================== */}
+
+      <Box
+        sx={{
+          px: expanded ? 2.1 : 0,
+          pt: 2.1,
+          pb: 0.8,
+
+          minHeight: 42,
+
+          overflow: 'hidden',
+        }}
+      >
+        {expanded && (
+          <Typography
+            sx={{
+              color: COLORS.textMuted,
+
+              fontSize: '0.55rem',
+
+              fontWeight: 800,
+
+              textTransform: 'uppercase',
+
+              letterSpacing: '0.09em',
+            }}
+          >
+            Workflow
+          </Typography>
+        )}
+      </Box>
+
+
+      {/* ======================================================================
+          NAVIGATION
+      ====================================================================== */}
+
+      <List
+        component="nav"
+        aria-label="Analysis navigation"
+        sx={{
+          px: expanded ? 1.25 : 1,
+          py: 0,
+
+          display: 'flex',
+
+          flexDirection: 'column',
+
+          gap: 0.55,
+
+          transition:
+            'padding 180ms ease',
+        }}
+      >
+        {MENU_ITEMS.map((item, index) => {
+          const Icon = item.icon;
+
+          const selected =
+            location.pathname === item.path ||
+            location.pathname.startsWith(
+              `${item.path}/`
+            );
+
+
+          const menuButton = (
+            <motion.div
+              initial={{
+                opacity: 0,
+                x: -8,
+              }}
+              animate={{
+                opacity: 1,
+                x: 0,
+              }}
+              transition={{
+                duration: 0.2,
+                delay: index * 0.035,
+              }}
+              style={{
+                width: '100%',
+              }}
+            >
+              <ListItemButton
+                selected={selected}
+                onClick={() =>
+                  handleOptionClick(item.path)
+                }
+                aria-current={
+                  selected
+                    ? 'page'
+                    : undefined
+                }
+                sx={{
+                  position: 'relative',
+
+                  minHeight: 52,
+
+                  px:
+                    expanded
+                      ? 1.25
+                      : 0,
+
+                  justifyContent:
+                    expanded
+                      ? 'flex-start'
+                      : 'center',
+
+                  borderRadius: '10px',
+
+                  overflow: 'hidden',
+
+                  color:
+                    selected
+                      ? COLORS.primary
+                      : COLORS.textSecondary,
+
+                  bgcolor:
+                    selected
+                      ? COLORS.primarySoft
+                      : 'transparent',
+
+                  transition:
+                    'background-color 150ms ease, color 150ms ease',
+
+                  /* ACTIVE LEFT BAR */
+
+                  '&::before': {
+                    content: '""',
+
+                    position: 'absolute',
+
+                    left: 0,
+                    top: '50%',
+
+                    width: 3,
+
+                    height:
+                      selected
+                        ? 25
+                        : 0,
+
+                    borderRadius:
+                      '0 4px 4px 0',
+
+                    bgcolor: COLORS.primary,
+
+                    transform:
+                      'translateY(-50%)',
+
+                    transition:
+                      'height 160ms ease',
+                  },
+
+                  '&:hover': {
+                    bgcolor:
+                      selected
+                        ? COLORS.primarySoft
+                        : '#F8FAFC',
+
+                    color:
+                      selected
+                        ? COLORS.primary
+                        : COLORS.navy,
+                  },
+
+                  '&.Mui-selected': {
+                    bgcolor: COLORS.primarySoft,
+
+                    '&:hover': {
+                      bgcolor: '#E7F0FF',
+                    },
+                  },
+                }}
+              >
+
+                {/* ============================================================
+                    ICON
+                ============================================================ */}
+
+                <ListItemIcon
+                  sx={{
+                    minWidth:
+                      expanded
+                        ? 39
+                        : 0,
+
+                    width:
+                      expanded
+                        ? 'auto'
+                        : 38,
+
+                    height: 38,
+
+                    display: 'grid',
+
+                    placeItems: 'center',
+
+                    color: 'inherit',
+
+                    borderRadius: '9px',
+
+                    transition:
+                      'all 180ms ease',
+                  }}
+                >
+                  <Icon
+                    sx={{
+                      fontSize: 20,
+                    }}
+                  />
+                </ListItemIcon>
+
+
+                {/* ============================================================
+                    LABEL
+                ============================================================ */}
+
+                {expanded && (
+                  <ListItemText
+                    sx={{
+                      my: 0,
+
+                      minWidth: 0,
+                    }}
+                    primary={
+                      <Typography
+                        noWrap
+                        sx={{
+                          color: 'inherit',
+
+                          fontSize: '0.68rem',
+
+                          fontWeight:
+                            selected
+                              ? 750
+                              : 650,
+
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {item.text}
+                      </Typography>
+                    }
+                    secondary={
+                      <Typography
+                        noWrap
+                        sx={{
+                          mt: 0.18,
+
+                          color:
+                            selected
+                              ? alpha(
+                                  COLORS.primary,
+                                  0.68
+                                )
+                              : COLORS.textMuted,
+
+                          fontSize: '0.51rem',
+
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {item.description}
+                      </Typography>
+                    }
+                  />
+                )}
+
+
+                {/* ============================================================
+                    ACTIVE ARROW
+                ============================================================ */}
+
+                {expanded && selected && (
+                  <ChevronRightRoundedIcon
+                    sx={{
+                      ml: 0.5,
+
+                      flexShrink: 0,
+
+                      color: COLORS.primary,
+
+                      fontSize: 17,
+                    }}
+                  />
+                )}
+
+              </ListItemButton>
+            </motion.div>
+          );
+
+
+          /* TOOLTIP FOR COLLAPSED SIDEBAR */
+
+          if (!expanded && !isMobile) {
+            return (
+              <Tooltip
+                key={item.path}
+                title={
+                  <Box
+                    sx={{
+                      py: 0.3,
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontSize: '0.66rem',
+
+                        fontWeight: 700,
+                      }}
+                    >
+                      {item.text}
+                    </Typography>
+
+                    <Typography
+                      sx={{
+                        mt: 0.15,
+
+                        fontSize: '0.52rem',
+
+                        opacity: 0.8,
+                      }}
+                    >
+                      {item.description}
+                    </Typography>
+                  </Box>
+                }
+                placement="right"
+                arrow
+              >
+                <Box>
+                  {menuButton}
+                </Box>
+              </Tooltip>
+            );
+          }
+
+
+          return (
+            <Box key={item.path}>
+              {menuButton}
+            </Box>
+          );
+        })}
+      </List>
+
+
+      {/* ======================================================================
+          SPACER
+      ====================================================================== */}
+
+      <Box sx={{ flex: 1 }} />
+
+
+      {/* ======================================================================
+          CURRENT PAGE
+      ====================================================================== */}
+
+      {expanded && activeItem && (
+        <Box
+          sx={{
+            px: 1.5,
+            pb: 1.5,
+          }}
+        >
+          <Divider
+            sx={{
+              mb: 1.5,
+
+              borderColor: COLORS.borderSoft,
+            }}
+          />
+
+          <Box
+            sx={{
+              p: 1.25,
+
+              border:
+                `1px solid ${COLORS.border}`,
+
+              borderRadius: '10px',
+
+              bgcolor: COLORS.background,
+            }}
+          >
+            <Typography
+              sx={{
+                color: COLORS.textMuted,
+
+                fontSize: '0.5rem',
+
+                fontWeight: 750,
+
+                textTransform: 'uppercase',
+
+                letterSpacing: '0.07em',
+              }}
+            >
+              Current Step
+            </Typography>
+
+            <Box
+              sx={{
+                mt: 0.65,
+
+                display: 'flex',
+
+                alignItems: 'center',
+
+                justifyContent: 'space-between',
+
+                gap: 1,
+              }}
+            >
+              <Typography
+                noWrap
+                sx={{
+                  color: COLORS.textPrimary,
+
+                  fontSize: '0.62rem',
+
+                  fontWeight: 700,
+                }}
+              >
+                {activeItem.text}
+              </Typography>
+
+              <Chip
+                label={
+                  MENU_ITEMS.findIndex(
+                    (item) =>
+                      item.path ===
+                      activeItem.path
+                  ) + 1
+                }
+                size="small"
+                sx={{
+                  width: 23,
+                  height: 23,
+
+                  flexShrink: 0,
+
+                  bgcolor: COLORS.primarySoft,
+
+                  color: COLORS.primary,
+
+                  fontSize: '0.52rem',
+
+                  fontWeight: 800,
+
+                  '& .MuiChip-label': {
+                    px: 0,
+                  },
+                }}
+              />
+            </Box>
+          </Box>
         </Box>
-    );
+      )}
+
+
+      {/* ======================================================================
+          COLLAPSED PIN
+      ====================================================================== */}
+
+      {!expanded && !isMobile && (
+        <Box
+          sx={{
+            px: 1,
+            pb: 1.5,
+
+            display: 'flex',
+
+            justifyContent: 'center',
+          }}
+        >
+          <Tooltip
+            title="Pin sidebar"
+            placement="right"
+            arrow
+          >
+            <IconButton
+              onClick={togglePermanentDrawer}
+              sx={{
+                width: 38,
+                height: 38,
+
+                borderRadius: '9px',
+
+                color: COLORS.textMuted,
+
+                '&:hover': {
+                  bgcolor: COLORS.primarySoft,
+
+                  color: COLORS.primary,
+                },
+              }}
+            >
+              <PushPinOutlinedIcon
+                sx={{
+                  fontSize: 18,
+                }}
+              />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
+
+    </Box>
+  );
+
+
+  /* ==========================================================================
+     RENDER
+  ========================================================================== */
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+
+        minHeight: '100vh',
+
+        bgcolor: COLORS.background,
+      }}
+    >
+      <CssBaseline />
+
+
+      {/* ======================================================================
+          MOBILE MENU BUTTON
+      ====================================================================== */}
+
+      {isMobile && !mobileOpen && (
+        <Tooltip
+          title="Open navigation"
+          arrow
+        >
+          <IconButton
+            onClick={toggleMobileMenu}
+            aria-label="Open navigation"
+            sx={{
+              position: 'fixed',
+
+              top: NAVBAR_HEIGHT + 12,
+              left: 14,
+
+              zIndex:
+                theme.zIndex.drawer + 2,
+
+              width: 42,
+              height: 42,
+
+              border:
+                `1px solid ${COLORS.border}`,
+
+              borderRadius: '10px',
+
+              bgcolor: COLORS.surface,
+
+              color: COLORS.navy,
+
+              boxShadow:
+                '0 5px 15px rgba(15,23,42,0.10)',
+
+              '&:hover': {
+                bgcolor: COLORS.primarySoft,
+
+                color: COLORS.primary,
+              },
+            }}
+          >
+            <MenuRoundedIcon />
+          </IconButton>
+        </Tooltip>
+      )}
+
+
+      {/* ======================================================================
+          SIDEBAR
+      ====================================================================== */}
+
+      <Drawer
+        variant={
+          isMobile
+            ? 'temporary'
+            : 'permanent'
+        }
+        open={
+          isMobile
+            ? mobileOpen
+            : true
+        }
+        onClose={() =>
+          setMobileOpen(false)
+        }
+        ModalProps={{
+          keepMounted: true,
+        }}
+        onMouseEnter={() => {
+          if (
+            !isMobile &&
+            !permanentDrawer
+          ) {
+            setHovered(true);
+          }
+        }}
+        onMouseLeave={() => {
+          if (
+            !isMobile &&
+            !permanentDrawer
+          ) {
+            setHovered(false);
+          }
+        }}
+        sx={{
+          width:
+            isMobile
+              ? EXPANDED_WIDTH
+              : drawerWidth,
+
+          flexShrink: 0,
+
+          transition:
+            'width 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+
+          '& .MuiDrawer-paper': {
+            width:
+              isMobile
+                ? EXPANDED_WIDTH
+                : drawerWidth,
+
+            top:
+              isMobile
+                ? 0
+                : `${NAVBAR_HEIGHT}px`,
+
+            height:
+              isMobile
+                ? '100%'
+                : `calc(100% - ${NAVBAR_HEIGHT}px)`,
+
+            boxSizing: 'border-box',
+
+            overflowX: 'hidden',
+
+            overflowY: 'hidden',
+
+            borderRight:
+              `1px solid ${COLORS.border}`,
+
+            bgcolor: COLORS.surface,
+
+            backgroundImage: 'none',
+
+            boxShadow:
+              isMobile
+                ? '8px 0 30px rgba(15,23,42,0.14)'
+                : '2px 0 10px rgba(15,23,42,0.025)',
+
+            transition:
+              'width 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+
+            zIndex:
+              isMobile
+                ? theme.zIndex.drawer
+                : theme.zIndex.appBar - 1,
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+
+
+      {/* ======================================================================
+          MAIN CONTENT
+      ====================================================================== */}
+
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+
+          minWidth: 0,
+
+          minHeight: '100vh',
+
+          pt:
+            `${NAVBAR_HEIGHT}px`,
+
+          bgcolor: COLORS.background,
+
+          transition:
+            'margin 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+
+          overflowX: 'hidden',
+        }}
+      >
+        <Box
+          sx={{
+            width: '100%',
+
+            p: {
+              xs: 2,
+              sm: 2.5,
+              md: 3,
+            },
+
+            pt: {
+              xs: 3,
+              sm: 2.5,
+              md: 3,
+            },
+          }}
+        >
+          {children}
+        </Box>
+      </Box>
+
+    </Box>
+  );
 };
+
+
+/* ============================================================================
+   ROUTER HOOK WRAPPERS
+
+   These simply keep the router imports/function calls together.
+   You can also use useNavigate/useLocation directly if preferred.
+============================================================================ */
+
+import {
+  useNavigate,
+  useLocation,
+} from 'react-router-dom';
+
+
+const useNavigateSafe = () => {
+  return useNavigate();
+};
+
+
+const useLocationSafe = () => {
+  return useLocation();
+};
+
+
+/* ============================================================================
+   SHARED STYLES
+============================================================================ */
+
+const headerButtonSx = {
+  width: 32,
+  height: 32,
+
+  flexShrink: 0,
+
+  borderRadius: '8px',
+
+  color: COLORS.textMuted,
+
+  '& svg': {
+    fontSize: 17,
+  },
+
+  '&:hover': {
+    bgcolor: COLORS.primarySoft,
+
+    color: COLORS.primary,
+  },
+};
+
+
+/* ============================================================================
+   EXPORT
+============================================================================ */
 
 export default SidebarLayout;

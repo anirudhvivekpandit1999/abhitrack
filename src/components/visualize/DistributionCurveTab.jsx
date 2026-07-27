@@ -112,8 +112,8 @@ const AxisControlPanel = ({
     };
 
     return (
-        <Card sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'grey.200' }}>
-            <Box sx={{ p: 1.5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', '&:hover': { bgcolor: 'action.hover' } }} onClick={() => setShowAdvanced(!showAdvanced)}>
+        <Card elevation={0} sx={{ mb: 2, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', overflow: 'hidden' }}>
+            <Box sx={{ px: 2, py: 1.5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#FAFBFD', transition: 'background-color .18s ease', '&:hover': { bgcolor: '#F4F7FB' } }} onClick={() => setShowAdvanced(!showAdvanced)}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><SettingsIcon fontSize="small" color="primary" /><Typography variant="subtitle2" sx={{ fontWeight: 500 }}>{title} Axis Settings</Typography></Box>
                 <IconButton size="small" sx={{ transform: showAdvanced ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}><ExpandMoreIcon /></IconButton>
             </Box>
@@ -451,6 +451,43 @@ const DistributionCurveTab = ({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+
+    // =========================================================================
+    // UI design tokens
+    // =========================================================================
+    const ui = {
+        page: {
+            minHeight: '100%',
+            background: 'linear-gradient(180deg, #F6F8FC 0%, #FBFCFE 38%, #FFFFFF 100%)',
+            borderRadius: 3,
+        },
+        surface: {
+            border: '1px solid #E5EAF2',
+            borderRadius: 3,
+            boxShadow: '0 8px 28px rgba(15, 23, 42, 0.055)',
+            backgroundImage: 'none',
+            bgcolor: '#FFFFFF',
+        },
+        softSurface: {
+            border: '1px solid #E8EDF5',
+            borderRadius: 2.5,
+            boxShadow: 'none',
+            backgroundImage: 'none',
+            bgcolor: '#FAFBFD',
+        },
+        sectionTitle: {
+            fontWeight: 800,
+            color: '#172B4D',
+            letterSpacing: '-0.015em',
+        },
+        eyebrow: {
+            fontSize: '0.68rem',
+            fontWeight: 800,
+            letterSpacing: '0.08em',
+            color: '#94A3B8',
+            textTransform: 'uppercase',
+        },
+    };
 
     // ========================================================================
     // Helpers
@@ -1623,7 +1660,7 @@ const DistributionCurveTab = ({
     // Main Render
     // ========================================================================
     return (
-        <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+        <Box sx={{ ...ui.page, p: { xs: 1.5, sm: 2.5, md: 3 } }}>
             <ChartSettingsModal
                 open={settingsModalOpen}
                 onClose={handleSettingsModalClose}
@@ -1649,81 +1686,446 @@ const DistributionCurveTab = ({
                 colorOptions={DEFAULT_COMBINED_COLOR_OPTIONS}
             />
 
-            {/* View Mode Toggle */}
-            <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, sm: 4 } }}>
-                <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'secondary.main' }}>View Mode</Typography>
-                    <ToggleButtonGroup value={viewMode} exclusive onChange={(e, newMode) => newMode && setViewMode(newMode)} fullWidth size="small">
-                        <ToggleButton value="combined">Combined</ToggleButton>
-                        <ToggleButton value="separate">Separate</ToggleButton>
-                    </ToggleButtonGroup>
+            {/* ================================================================
+                PAGE HEADER
+            ================================================================= */}
+            <Card
+                elevation={0}
+                sx={{
+                    ...ui.surface,
+                    mb: 2.5,
+                    position: 'relative',
+                    overflow: 'hidden',
+                }}
+            >
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        width: 240,
+                        height: 240,
+                        borderRadius: '50%',
+                        bgcolor: '#EEF4FF',
+                        right: -85,
+                        top: -135,
+                        pointerEvents: 'none',
+                    }}
+                />
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        width: 100,
+                        height: 100,
+                        borderRadius: '50%',
+                        bgcolor: '#F5F3FF',
+                        right: 120,
+                        bottom: -75,
+                        pointerEvents: 'none',
+                    }}
+                />
+
+                <CardContent
+                    sx={{
+                        p: { xs: 2, md: 2.75 },
+                        '&:last-child': { pb: { xs: 2, md: 2.75 } },
+                        position: 'relative',
+                    }}
+                >
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: { xs: 'flex-start', md: 'center' },
+                            flexDirection: { xs: 'column', md: 'row' },
+                            gap: 2,
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box
+                                sx={{
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: 2.5,
+                                    display: 'grid',
+                                    placeItems: 'center',
+                                    bgcolor: '#172B4D',
+                                    color: '#FFFFFF',
+                                    flexShrink: 0,
+                                    boxShadow: '0 8px 20px rgba(23,43,77,.18)',
+                                }}
+                            >
+                                <BarChartIcon />
+                            </Box>
+
+                            <Box>
+                                <Typography
+                                    variant="h5"
+                                    sx={{
+                                        fontWeight: 850,
+                                        color: '#0F172A',
+                                        letterSpacing: '-0.025em',
+                                        fontSize: { xs: '1.25rem', md: '1.55rem' },
+                                    }}
+                                >
+                                    Distribution Curve
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#64748B', mt: 0.3, maxWidth: 680 }}>
+                                    Explore variable distributions across datasets, compare patterns, and tune the visualization without losing analytical context.
+                                </Typography>
+                            </Box>
+                        </Box>
+
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                gap: 1,
+                                flexWrap: 'wrap',
+                                width: { xs: '100%', md: 'auto' },
+                            }}
+                        >
+                            <Button
+                                variant="outlined"
+                                startIcon={<SettingsIcon />}
+                                onClick={openSettingsModal}
+                                sx={{
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    fontWeight: 700,
+                                    bgcolor: '#FFFFFF',
+                                    borderColor: '#D8E0EC',
+                                    color: '#334155',
+                                }}
+                            >
+                                Chart Settings
+                            </Button>
+                            <Button
+                                variant="contained"
+                                startIcon={<DownloadIcon />}
+                                onClick={downloadPageAsPNG}
+                                sx={{
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    fontWeight: 700,
+                                    boxShadow: 'none',
+                                    bgcolor: '#172B4D',
+                                    '&:hover': { bgcolor: '#223A61', boxShadow: 'none' },
+                                }}
+                            >
+                                Export Page
+                            </Button>
+                        </Box>
+                    </Box>
+
+                    {/* Context strip */}
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 1,
+                            mt: 2.25,
+                        }}
+                    >
+                        <Chip
+                            size="small"
+                            label={`${allDatasets.length} dataset${allDatasets.length === 1 ? '' : 's'}`}
+                            sx={{ bgcolor: '#F1F5F9', color: '#475569', fontWeight: 700 }}
+                        />
+                        <Chip
+                            size="small"
+                            label={`${selectedColumns.length} X variable${selectedColumns.length === 1 ? '' : 's'} selected`}
+                            sx={{ bgcolor: '#EFF6FF', color: '#2563EB', fontWeight: 700 }}
+                        />
+                        <Chip
+                            size="small"
+                            label={`${binCount} bins`}
+                            sx={{ bgcolor: '#F5F3FF', color: '#7C3AED', fontWeight: 700 }}
+                        />
+                        {filterColumn && (
+                            <Chip
+                                size="small"
+                                label={`Filtered by ${filterColumn}`}
+                                sx={{ bgcolor: '#ECFDF5', color: '#047857', fontWeight: 700 }}
+                            />
+                        )}
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* ================================================================
+                VIEW + AXIS CONFIGURATION
+            ================================================================= */}
+            <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
+                <Grid item xs={12} lg={3}>
+                    <Card elevation={0} sx={{ ...ui.surface, height: '100%' }}>
+                        <CardContent sx={{ p: 2.25, '&:last-child': { pb: 2.25 } }}>
+                            <Typography sx={ui.eyebrow}>Layout</Typography>
+                            <Typography variant="subtitle1" sx={{ ...ui.sectionTitle, mt: 0.35, mb: 1.5 }}>
+                                View Mode
+                            </Typography>
+
+                            <ToggleButtonGroup
+                                value={viewMode}
+                                exclusive
+                                onChange={(e, newMode) => newMode && setViewMode(newMode)}
+                                fullWidth
+                                size="small"
+                                sx={{
+                                    bgcolor: '#F8FAFC',
+                                    p: 0.4,
+                                    borderRadius: 2,
+                                    '& .MuiToggleButton-root': {
+                                        border: 0,
+                                        borderRadius: '7px !important',
+                                        textTransform: 'none',
+                                        fontWeight: 700,
+                                        color: '#64748B',
+                                        py: 0.8,
+                                    },
+                                    '& .Mui-selected': {
+                                        bgcolor: '#FFFFFF !important',
+                                        color: '#172B4D !important',
+                                        boxShadow: '0 2px 8px rgba(15,23,42,.08)',
+                                    },
+                                }}
+                            >
+                                <ToggleButton value="combined">Combined</ToggleButton>
+                                <ToggleButton value="separate">Separate</ToggleButton>
+                            </ToggleButtonGroup>
+
+                            <Typography variant="caption" sx={{ display: 'block', color: '#94A3B8', mt: 1.25, lineHeight: 1.45 }}>
+                                {viewMode === 'combined'
+                                    ? 'Overlay selected variables and datasets in one analytical view.'
+                                    : 'Inspect each dataset in its own chart for cleaner comparison.'}
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid item xs={12} lg={9}>
+                    <Box
+                        sx={{
+                            '& > .MuiCard-root': {
+                                mb: '0 !important',
+                                height: '100%',
+                                borderRadius: '12px !important',
+                                border: '1px solid #E5EAF2 !important',
+                                boxShadow: '0 8px 28px rgba(15,23,42,.055) !important',
+                            },
+                            height: '100%',
+                        }}
+                    >
+                        <CombinedAxisSelectionCard />
+                    </Box>
                 </Grid>
             </Grid>
 
-            {/* Combined X & Y Axis Selection Card */}
-            <CombinedAxisSelectionCard />
-
-            {/* Distribution Settings */}
-            <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Distribution Settings</Typography>
-                    <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} md={6}>
-                            <Box sx={{ px: 1 }}>
-                                <Typography variant="body2" gutterBottom>Number of Bins: {binCount}</Typography>
-                                <Slider value={binCount} onChange={(e, val) => setBinCount(val)} min={5} max={50} step={1} valueLabelDisplay="auto"
-                                    marks={[{ value: 5, label: '5' }, { value: 20, label: '20' }, { value: 35, label: '35' }, { value: 50, label: '50' }]} />
+            {/* ================================================================
+                DISTRIBUTION + FILTER CONTROLS
+            ================================================================= */}
+            <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
+                <Grid item xs={12} lg={7}>
+                    <Card elevation={0} sx={{ ...ui.surface, height: '100%' }}>
+                        <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, mb: 2 }}>
+                                <Box>
+                                    <Typography sx={ui.eyebrow}>Visualization</Typography>
+                                    <Typography variant="subtitle1" sx={{ ...ui.sectionTitle, mt: 0.35 }}>
+                                        Distribution Settings
+                                    </Typography>
+                                </Box>
+                                <Chip
+                                    size="small"
+                                    label={`${binCount} bins`}
+                                    sx={{ bgcolor: '#F5F3FF', color: '#7C3AED', fontWeight: 750 }}
+                                />
                             </Box>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <FormControlLabel control={<Switch checked={showAreaChart} onChange={(e) => setShowAreaChart(e.target.checked)} />} label="Show Area Chart" />
-                            <FormControlLabel control={<Switch checked={showNumberOfPoints} onChange={(e) => setShowNumberOfPoints(e.target.checked)} />} label="Show Count Bars" />
-                            <FormControlLabel control={<Switch checked={showDataPoints} onChange={(e) => setShowDataPoints(e.target.checked)} />} label="Show Data Points" />
-                            <FormControlLabel control={<Switch checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />} label="Show Grid" />
-                        </Grid>
-                    </Grid>
-                </CardContent>
-            </Card>
 
-            {/* Data Filter Card */}
-            <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 1, bgcolor: 'grey.50' }}>
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Data Filter</Typography>
-                    <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="center">
-                        <Grid item xs={12} sm={6} md={3}>
-                            <Autocomplete options={availableColumns} value={filterColumn} onChange={(event, newValue) => setFilterColumn(newValue || '')}
-                                renderInput={(params) => <TextField {...params} label="Filter Column" variant="outlined" fullWidth size="small" />}
-                                disableClearable={false} size="small" />
-                        </Grid>
-                        <Grid item xs={6} sm={3} md={2.5}>
-                            <TextField type={columnIsDateTime ? 'datetime-local' : 'number'} label={columnIsDateTime ? 'Min (datetime)' : 'Min'}
-                                value={filterMin} onChange={(e) => setFilterMin(e.target.value)} disabled={!filterColumn} variant="outlined" fullWidth size="small" />
-                        </Grid>
-                        <Grid item xs={6} sm={3} md={2.5}>
-                            <TextField type={columnIsDateTime ? 'datetime-local' : 'number'} label={columnIsDateTime ? 'Max (datetime)' : 'Max'}
-                                value={filterMax} onChange={(e) => setFilterMax(e.target.value)} disabled={!filterColumn} variant="outlined" fullWidth size="small" />
-                        </Grid>
-                        <Grid item xs={12} sm={12} md={4}>
-                            <Button onClick={resetLocalFilter} variant="outlined" size="small"
-                                sx={{ textTransform: 'none', width: { xs: '100%', md: 'auto' }, minWidth: '120px' }}>Reset Filter</Button>
-                        </Grid>
-                    </Grid>
-                </CardContent>
-            </Card>
+                            <Grid container spacing={2.5} alignItems="center">
+                                <Grid item xs={12} md={6}>
+                                    <Box sx={{ px: 0.5 }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                            <Typography variant="body2" sx={{ color: '#475569', fontWeight: 650 }}>
+                                                Histogram resolution
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ color: '#172B4D', fontWeight: 800 }}>
+                                                {binCount}
+                                            </Typography>
+                                        </Box>
+                                        <Slider
+                                            value={binCount}
+                                            onChange={(e, val) => setBinCount(val)}
+                                            min={5}
+                                            max={50}
+                                            step={1}
+                                            valueLabelDisplay="auto"
+                                            marks={[
+                                                { value: 5, label: '5' },
+                                                { value: 20, label: '20' },
+                                                { value: 35, label: '35' },
+                                                { value: 50, label: '50' },
+                                            ]}
+                                            sx={{ color: '#2563EB' }}
+                                        />
+                                    </Box>
+                                </Grid>
 
-            <div ref={pageRef}>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
-                    <MuiTooltip title="Download entire page as PNG">
-                        <Button color="primary" onClick={downloadPageAsPNG} variant="outlined" size="small"
-                            startIcon={<DownloadIcon />} sx={{ textTransform: 'none', fontWeight: 500 }}>Download Page</Button>
-                    </MuiTooltip>
+                                <Grid item xs={12} md={6}>
+                                    <Grid container spacing={1}>
+                                        {[
+                                            ['Area chart', showAreaChart, setShowAreaChart],
+                                            ['Count bars', showNumberOfPoints, setShowNumberOfPoints],
+                                            ['Data points', showDataPoints, setShowDataPoints],
+                                            ['Grid lines', showGrid, setShowGrid],
+                                        ].map(([label, checked, setter]) => (
+                                            <Grid item xs={6} key={label}>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between',
+                                                        gap: 1,
+                                                        px: 1.25,
+                                                        py: 0.55,
+                                                        borderRadius: 2,
+                                                        border: '1px solid #E8EDF5',
+                                                        bgcolor: checked ? '#F8FBFF' : '#FAFBFD',
+                                                    }}
+                                                >
+                                                    <Typography variant="caption" sx={{ color: '#475569', fontWeight: 650 }}>
+                                                        {label}
+                                                    </Typography>
+                                                    <Switch
+                                                        size="small"
+                                                        checked={checked}
+                                                        onChange={(e) => setter(e.target.checked)}
+                                                    />
+                                                </Box>
+                                            </Grid>
+                                        ))}
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid item xs={12} lg={5}>
+                    <Card elevation={0} sx={{ ...ui.surface, height: '100%' }}>
+                        <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                <Box>
+                                    <Typography sx={ui.eyebrow}>Scope</Typography>
+                                    <Typography variant="subtitle1" sx={{ ...ui.sectionTitle, mt: 0.35 }}>
+                                        Data Filter
+                                    </Typography>
+                                </Box>
+                                {filterColumn && (
+                                    <Button
+                                        onClick={resetLocalFilter}
+                                        size="small"
+                                        sx={{ textTransform: 'none', fontWeight: 700, minWidth: 0 }}
+                                    >
+                                        Clear
+                                    </Button>
+                                )}
+                            </Box>
+
+                            <Autocomplete
+                                options={availableColumns}
+                                value={filterColumn}
+                                onChange={(event, newValue) => setFilterColumn(newValue || '')}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Filter column"
+                                        placeholder="Choose a variable"
+                                        fullWidth
+                                        size="small"
+                                    />
+                                )}
+                                disableClearable={false}
+                                size="small"
+                                sx={{ mb: 1.5 }}
+                            />
+
+                            <Grid container spacing={1.25}>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        type={columnIsDateTime ? 'datetime-local' : 'number'}
+                                        label={columnIsDateTime ? 'Minimum time' : 'Minimum'}
+                                        value={filterMin}
+                                        onChange={(e) => setFilterMin(e.target.value)}
+                                        disabled={!filterColumn}
+                                        fullWidth
+                                        size="small"
+                                        InputLabelProps={columnIsDateTime ? { shrink: true } : undefined}
+                                    />
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <TextField
+                                        type={columnIsDateTime ? 'datetime-local' : 'number'}
+                                        label={columnIsDateTime ? 'Maximum time' : 'Maximum'}
+                                        value={filterMax}
+                                        onChange={(e) => setFilterMax(e.target.value)}
+                                        disabled={!filterColumn}
+                                        fullWidth
+                                        size="small"
+                                        InputLabelProps={columnIsDateTime ? { shrink: true } : undefined}
+                                    />
+                                </Grid>
+                            </Grid>
+
+                            {!filterColumn && (
+                                <Typography variant="caption" sx={{ color: '#94A3B8', display: 'block', mt: 1.2 }}>
+                                    Choose a column to constrain the rows used by the distribution analysis.
+                                </Typography>
+                            )}
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* ================================================================
+                VISUALIZATION OUTPUT
+            ================================================================= */}
+            <div ref={pageRef} id="visualization-content">
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: { xs: 'flex-start', sm: 'center' },
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: 1,
+                        mb: 1.5,
+                        px: 0.25,
+                    }}
+                >
+                    <Box>
+                        <Typography sx={ui.eyebrow}>Analysis Output</Typography>
+                        <Typography variant="h6" sx={{ ...ui.sectionTitle, mt: 0.2 }}>
+                            {viewMode === 'combined' ? 'Combined Distribution' : 'Dataset Distributions'}
+                        </Typography>
+                    </Box>
+                    <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+                        {allDatasets.reduce((sum, d) => sum + (d.data?.length || 0), 0).toLocaleString()} filtered rows available
+                    </Typography>
                 </Box>
 
-                {viewMode === 'combined' && renderCombinedChart()}
-                {viewMode === 'separate' && renderSeparateCharts()}
+                <Box
+                    sx={{
+                        '& > .MuiCard-root': {
+                            border: '1px solid #E5EAF2',
+                            borderRadius: '12px',
+                            boxShadow: '0 8px 28px rgba(15,23,42,.055)',
+                            backgroundImage: 'none',
+                        },
+                    }}
+                >
+                    {viewMode === 'combined' && renderCombinedChart()}
+                    {viewMode === 'separate' && renderSeparateCharts()}
 
-                {viewMode === 'combined' && selectedColumns.length > 0 && <SummaryCards />}
-                {viewMode === 'separate' && <InsightsPanel />}
+                    {viewMode === 'combined' && selectedColumns.length > 0 && <SummaryCards />}
+                    {viewMode === 'separate' && <InsightsPanel />}
+                </Box>
             </div>
         </Box>
     );
