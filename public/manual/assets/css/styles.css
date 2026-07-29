@@ -82,7 +82,7 @@ body {
 .sidebar-toggle:focus {
     outline: 2px solid #000000;
     outline-offset: 2px;
-}
+
     display: inline-flex;
     align-items: center;
     gap: 6px;

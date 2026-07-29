@@ -1,275 +1,544 @@
-/* Print Styles for PDF Generation */
+/* ==========================================================
+   ABHISTAT PROFESSIONAL PDF PRINT STYLES
+   ========================================================== */
 
 @media print {
-    /* Reset for print */
+
+    /* ------------------------------------------------------
+       Global Reset
+    ------------------------------------------------------ */
+
     * {
         -webkit-print-color-adjust: exact !important;
-        color-adjust: exact !important;
         print-color-adjust: exact !important;
+        accent-color: exact !important;
+        box-sizing: border-box;
     }
 
-    /* Page setup */
+    html,
+    body {
+        background: white !important;
+        color: #1f2937;
+        font-family:
+            "Segoe UI",
+            Inter,
+            Helvetica,
+            Arial,
+            sans-serif;
+
+        font-size: 11pt;
+        line-height: 1.7;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* ------------------------------------------------------
+       PAGE
+    ------------------------------------------------------ */
+
     @page {
+
         size: A4;
-        margin: 2cm 1.5cm;
-        
+
+        margin:
+            1.8cm
+            1.8cm
+            2cm
+            1.8cm;
+
         @top-center {
+
             content: "AbhiStat User Manual";
             font-size: 10pt;
-            color: #666;
+            color: #777;
+
         }
-        
-        @bottom-right {
+
+        @bottom-center {
+
             content: "Page " counter(page);
             font-size: 10pt;
-            color: #666;
+            color: #777;
+
         }
+
     }
 
-    /* Hide navigation and interactive elements */
+    /* ------------------------------------------------------
+       Hide UI
+    ------------------------------------------------------ */
+
     .sidebar,
     .sidebar-toggle,
     .search-container,
     .breadcrumb-container,
-    .skip-to-content,
     .feedback-section,
-    .interactive-element {
+    .skip-to-content,
+    .interactive-element,
+    .navbar,
+    .header-actions,
+    .footer-actions {
         display: none !important;
     }
 
-    /* Adjust main content for print */
+    /* ------------------------------------------------------
+       Layout
+    ------------------------------------------------------ */
+
     .main-content {
-        margin-left: 0 !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
         width: 100% !important;
         max-width: none !important;
+
     }
 
     .content-wrapper {
-        padding: 0 !important;
-        margin: 0 !important;
+
+        padding: 0;
+        margin: 0;
+
     }
 
-    /* Typography adjustments */
-    body {
-        font-size: 11pt;
-        line-height: 1.4;
-        color: #000;
-        background: white;
+    /* ------------------------------------------------------
+       Headings
+    ------------------------------------------------------ */
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+
+        font-weight: 700;
+        color: #123458;
+        page-break-after: avoid;
+        break-after: avoid;
+        line-height: 1.25;
+
     }
 
     h1 {
-        font-size: 18pt;
-        margin-bottom: 12pt;
-        page-break-after: avoid;
-        color: #2c3e50;
+
+        font-size: 24pt;
+        border-bottom: 3px solid #2563eb;
+        padding-bottom: 10px;
+        margin-top: 0;
+        margin-bottom: 18px;
+
     }
 
     h2 {
-        font-size: 16pt;
-        margin-top: 18pt;
-        margin-bottom: 10pt;
-        page-break-after: avoid;
-        color: #2c3e50;
+
+        font-size: 19pt;
+        border-left: 6px solid #2563eb;
+        padding-left: 12px;
+        margin-top: 28px;
+        margin-bottom: 14px;
+
     }
 
     h3 {
-        font-size: 14pt;
-        margin-top: 14pt;
-        margin-bottom: 8pt;
-        page-break-after: avoid;
-        color: #2c3e50;
+
+        font-size: 15pt;
+        margin-top: 22px;
+        margin-bottom: 10px;
+
     }
 
-    h4, h5, h6 {
-        font-size: 12pt;
-        margin-top: 12pt;
-        margin-bottom: 6pt;
-        page-break-after: avoid;
-        color: #2c3e50;
+    h4 {
+
+        font-size: 13pt;
+
+        margin-top: 16px;
+        margin-bottom: 8px;
+
     }
+
+    /* ------------------------------------------------------
+       Paragraphs
+    ------------------------------------------------------ */
 
     p {
-        margin-bottom: 8pt;
+
+        margin: 0 0 12px;
         orphans: 3;
         widows: 3;
+
     }
 
-    /* Lists */
-    ul, ol {
-        margin-bottom: 8pt;
-        padding-left: 20pt;
+    /* ------------------------------------------------------
+       Lists
+    ------------------------------------------------------ */
+
+    ul,
+    ol {
+
+        margin: 10px 0 14px;
+        padding-left: 24px;
+
     }
 
     li {
-        margin-bottom: 4pt;
+
+        margin-bottom: 7px;
+
     }
 
-    /* Code blocks */
-    .code-block,
+    /* ------------------------------------------------------
+       Code
+    ------------------------------------------------------ */
+
     pre,
-    code {
-        font-family: 'Courier New', monospace;
-        font-size: 9pt;
-        background: #f8f9fa;
-        border: 1pt solid #dee2e6;
-        padding: 6pt;
-        margin: 8pt 0;
-        page-break-inside: avoid;
-    }
-
+    code,
     .code-block {
-        border-left: 3pt solid #3498db;
+
+        font-family:
+            Consolas,
+            "Courier New",
+            monospace;
+
+        font-size: 9pt;
+
     }
 
-    /* Tables */
+    pre,
+    .code-block {
+
+        background: #f5f7fb;
+        border: 1px solid #d8dee8;
+        border-left: 5px solid #2563eb;
+        border-radius: 8px;
+        padding: 14px;
+        overflow-wrap: break-word;
+        white-space: pre-wrap;
+        page-break-inside: avoid;
+        margin: 16px 0;
+
+    }
+
+    code {
+
+        background: #eef3ff;
+        padding: 2px 6px;
+        border-radius: 4px;
+
+    }
+
+    /* ------------------------------------------------------
+       Tables
+    ------------------------------------------------------ */
+
     table {
+
         width: 100%;
         border-collapse: collapse;
-        margin: 12pt 0;
+        margin: 20px 0;
         font-size: 10pt;
         page-break-inside: avoid;
+
     }
 
-    th, td {
-        border: 1pt solid #dee2e6;
-        padding: 6pt;
-        text-align: left;
+    thead {
+
+        background: #2563eb;
+        color: white;
+
     }
 
     th {
-        background: #f8f9fa;
-        font-weight: bold;
+
+        padding: 10px;
+        text-align: left;
+        font-weight: 600;
+
     }
 
-    /* Alerts and callouts */
-    .alert {
-        border: 1pt solid #dee2e6;
-        padding: 8pt;
-        margin: 8pt 0;
-        page-break-inside: avoid;
+    td {
+
+        border: 1px solid #d9dee7;
+        padding: 9px;
+
     }
 
-    .alert-info {
-        background: #e3f2fd;
-        border-color: #2196f3;
+    tr:nth-child(even) {
+
+        background: #f8fafc;
+
     }
 
-    .alert-warning {
-        background: #fff3e0;
-        border-color: #ff9800;
-    }
+    /* ------------------------------------------------------
+       Images
+    ------------------------------------------------------ */
 
-    .alert-danger {
-        background: #ffebee;
-        border-color: #f44336;
-    }
-
-    .alert-success {
-        background: #e8f5e8;
-        border-color: #4caf50;
-    }
-
-    /* Images */
     img {
+
         max-width: 100%;
-        height: auto;
+        border-radius: 8px;
+        border: 1px solid #d9dee7;
+        box-shadow: none;
+        margin: 18px 0;
         page-break-inside: avoid;
+
     }
 
     .screenshot {
-        border: 1pt solid #dee2e6;
-        margin: 8pt 0;
+
+        padding: 6px;
+        background: #fafafa;
+
+    }
+
+    /* ------------------------------------------------------
+       Callouts
+    ------------------------------------------------------ */
+
+    .alert {
+
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin: 16px 0;
         page-break-inside: avoid;
+        border-left: 6px solid;
+
     }
 
-    /* Page breaks */
-    .page-break {
-        page-break-before: always;
+    .alert-info {
+
+        background: #eff6ff;
+        border-color: #2563eb;
+
     }
 
-    .no-break {
-        page-break-inside: avoid;
+    .alert-success {
+
+        background: #ecfdf5;
+        border-color: #16a34a;
+
     }
 
-    /* Links */
+    .alert-warning {
+
+        background: #fffbeb;
+        border-color: #d97706;
+
+    }
+
+    .alert-danger {
+
+        background: #fef2f2;
+        border-color: #dc2626;
+
+    }
+
+    /* ------------------------------------------------------
+       Links
+    ------------------------------------------------------ */
+
     a {
-        color: #2c3e50;
+
+        color: #2563eb;
         text-decoration: none;
+        font-weight: 500;
+
     }
 
     a[href]:after {
+
         content: " (" attr(href) ")";
-        font-size: 9pt;
-        color: #666;
+        font-size: 8pt;
+        color: #888;
+
     }
 
-    /* Don't show URLs for internal links */
     a[href^="#"]:after,
     a[href^="/"]:after,
     a[href*="abhistat"]:after {
+
         content: "";
+
     }
 
-    /* Table of contents for print */
+    /* ------------------------------------------------------
+       TOC
+    ------------------------------------------------------ */
+
     .print-toc {
+
         display: block !important;
         page-break-after: always;
+
     }
 
     .print-toc h2 {
-        margin-bottom: 16pt;
+
+        border: none;
+        padding: 0;
+        margin-bottom: 20px;
+
     }
 
     .print-toc ul {
+
         list-style: none;
-        padding-left: 0;
+        padding: 0;
+
     }
 
     .print-toc li {
-        margin-bottom: 4pt;
+
         display: flex;
         justify-content: space-between;
+        border-bottom: 1px dotted #bbb;
+        padding: 8px 0;
+
     }
 
-    .print-toc a {
-        text-decoration: none;
-        color: #2c3e50;
+    .page-number {
+
+        color: #777;
+
     }
 
-    .print-toc .page-number {
-        font-weight: normal;
-    }
+    /* ------------------------------------------------------
+       Section spacing
+    ------------------------------------------------------ */
 
-    /* Step numbers */
-    .step-number {
-        font-weight: bold;
-        color: #3498db;
-    }
-
-    /* Ensure proper spacing */
     .section {
-        margin-bottom: 24pt;
+
+        margin-bottom: 40px;
+
     }
 
     .subsection {
-        margin-bottom: 16pt;
+
+        margin-bottom: 24px;
+
     }
+
+    /* ------------------------------------------------------
+       Utilities
+    ------------------------------------------------------ */
+
+    .page-break {
+
+        page-break-before: always;
+
+    }
+
+    .no-break {
+
+        page-break-inside: avoid;
+
+    }
+
+    blockquote {
+
+        margin: 16px 0;
+        padding: 12px 18px;
+        border-left: 5px solid #2563eb;
+        background: #f9fbff;
+        font-style: italic;
+
+    }
+
+    hr {
+
+        border: none;
+        border-top: 1px solid #d9dee7;
+        margin: 28px 0;
+
+    }
+
+    .step-number {
+
+        display: inline-block;
+        width: 28px;
+        height: 28px;
+        line-height: 28px;
+        text-align: center;
+        background: #2563eb;
+        color: white;
+        border-radius: 50%;
+        font-weight: bold;
+        margin-right: 8px;
+
+    }
+
 }
 
-/* Screen styles for PDF preview */
+/* ==========================================================
+   PDF Preview (Screen)
+   ========================================================== */
+
 .pdf-preview {
-    max-width: 210mm;
-    margin: 0 auto;
+
+    width: 210mm;
+    min-height: 297mm;
+
+    margin: 40px auto;
+
     background: white;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    padding: 2cm 1.5cm;
+
+    border-radius: 14px;
+
+    box-shadow:
+        0 15px 45px rgba(0,0,0,.08),
+        0 3px 10px rgba(0,0,0,.05);
+
+    padding:
+        2cm
+        1.8cm;
+
+    transition: .25s ease;
+
 }
 
-.pdf-preview .sidebar {
+.pdf-preview:hover {
+
+    box-shadow:
+        0 20px 55px rgba(0,0,0,.12),
+        0 6px 20px rgba(0,0,0,.08);
+
+}
+
+.pdf-preview .sidebar,
+.pdf-preview .sidebar-toggle {
+
     display: none;
+
 }
 
 .pdf-preview .main-content {
-    margin-left: 0;
+
+    margin: 0;
     width: 100%;
+
+}
+
+.pdf-preview h1 {
+
+    color: #123458;
+
+}
+
+.pdf-preview h2 {
+
+    color: #1d4ed8;
+
+}
+
+.pdf-preview table {
+
+    border-radius: 8px;
+    overflow: hidden;
+
+}
+
+.pdf-preview pre {
+
+    border-radius: 10px;
+
 }

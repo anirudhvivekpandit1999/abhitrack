@@ -9,7 +9,6 @@ import {
   Alert,
   Autocomplete,
   Paper,
-  FormControl,
   ToggleButtonGroup,
   ToggleButton,
   IconButton,
@@ -34,14 +33,12 @@ import ZoomOutIcon from "@mui/icons-material/ZoomOut";
 import CenterFocusStrongIcon from "@mui/icons-material/CenterFocusStrong";
 import PanToolIcon from "@mui/icons-material/PanTool";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import SettingsIcon from "@mui/icons-material/Settings";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import InfoIcon from "@mui/icons-material/Info";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import ScaleIcon from "@mui/icons-material/Scale";
-import ShowChartIcon from "@mui/icons-material/ShowChart";
 import ScatterPlotIcon from "@mui/icons-material/ScatterPlot";
 import TuneIcon from "@mui/icons-material/Tune";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
@@ -338,6 +335,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const [customYRange, setCustomYRange] = useState({ min: "", max: "", auto: true });
   const [fixedXRange, setFixedXRange] = useState(null);
   const [datasetLabels, setDatasetLabels] = useState({});
+  const [editingLegendDataset, setEditingLegendDataset] = useState(null);
   const [datasetColors, setDatasetColors] = useState({});
   // Custom color overrides for individual selected X-Y plots.
   // If a pair has no override, it continues to use the existing dataset colors.
@@ -2007,6 +2005,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const openSettingsModal = () => {
     setDraftSettings({
       ...chartSettings,
+      showLines,
+      showArea,
+      areaOpacity,
+      lineWidth,
       datasetColors: getDefaultDatasetColors(),
       pairColors: { ...pairColors },
       pairDatasetColors: { ...pairDatasetColors },
@@ -2020,9 +2022,17 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       datasetColors: nextDatasetColors,
       pairColors: nextPairColors,
       pairDatasetColors: nextPairDatasetColors,
+      showLines: nextShowLines,
+      showArea: nextShowArea,
+      areaOpacity: nextAreaOpacity,
+      lineWidth: nextLineWidth,
       ...nextChartSettings
     } = draftSettings;
     setChartSettings(nextChartSettings);
+    setShowLines(!!nextShowLines);
+    setShowArea(!!nextShowArea);
+    setAreaOpacity(nextAreaOpacity ?? 0.15);
+    setLineWidth(nextLineWidth ?? 2);
     if (nextDatasetColors) setDatasetColors({ ...nextDatasetColors });
     if (nextPairColors) setPairColors({ ...nextPairColors });
     if (nextPairDatasetColors) setPairDatasetColors({ ...nextPairDatasetColors });
@@ -2036,7 +2046,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     });
     // Clearing pairColors restores the normal dataset-level colors for points/areas
     // and the generated palette for pair-specific trend/connecting lines.
-    setDraftSettings({ pointSize: 8, opacity: 0.7, showGrid: true, showTrendLines: true, trendLineMode: 'average', showOutliers: false, showCorrelation: false, withProductColorOverride: {}, withoutProductColorOverride: {}, datasetColors: nextColors, pairColors: {}, pairDatasetColors: {} });
+    setDraftSettings({ pointSize: 8, opacity: 0.7, showGrid: true, showTrendLines: true, trendLineMode: 'average', showOutliers: false, showCorrelation: false, withProductColorOverride: {}, withoutProductColorOverride: {}, showLines: false, showArea: false, areaOpacity: 0.15, lineWidth: 2, datasetColors: nextColors, pairColors: {}, pairDatasetColors: {} });
 };
 
   const SummaryCards = () => (
@@ -2195,12 +2205,12 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>Line & Area Settings</Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
-            <FormControlLabel control={<Switch checked={showLines} onChange={e => setShowLines(e.target.checked)} />} label="Show Connecting Lines" />
-            <FormControlLabel control={<Switch checked={showArea} onChange={e => setShowArea(e.target.checked)} />} label="Show Area Under Lines" />
+            <FormControlLabel control={<Switch checked={!!draftSettings?.showLines} onChange={e => setDraftSettings(ds => ({ ...ds, showLines: e.target.checked }))} />} label="Show Connecting Lines" />
+            <FormControlLabel control={<Switch checked={!!draftSettings?.showArea} onChange={e => setDraftSettings(ds => ({ ...ds, showArea: e.target.checked }))} />} label="Show Area Under Lines" />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <CustomSlider value={lineWidth} onChange={(value) => setLineWidth(value)} min={1} max={5} step={0.5} label="Line Width" formatValue={(val) => `${val}px`} />
-            <CustomSlider value={areaOpacity} onChange={(value) => setAreaOpacity(value)} min={0.1} max={0.7} step={0.05} label="Area Transparency" formatValue={(val) => `${Math.round(val * 100)}%`} />
+            <CustomSlider value={draftSettings?.lineWidth ?? 2} onChange={(value) => setDraftSettings(ds => ({ ...ds, lineWidth: value }))} min={1} max={5} step={0.5} label="Line Width" formatValue={(val) => `${val}px`} />
+            <CustomSlider value={draftSettings?.areaOpacity ?? 0.15} onChange={(value) => setDraftSettings(ds => ({ ...ds, areaOpacity: value }))} min={0.1} max={0.7} step={0.05} label="Area Transparency" formatValue={(val) => `${Math.round(val * 100)}%`} />
           </Grid>
         </Grid>
       </Box>,
@@ -2374,8 +2384,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       }));
 
     return (
-      <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>Legend</Typography>
+      <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 20, pointerEvents: 'auto', width: { xs: 'calc(100% - 24px)', sm: 'auto' }, maxWidth: { sm: 430 }, maxHeight: 210, overflowY: 'auto', p: 1.25, bgcolor: 'rgba(255,255,255,.96)', borderRadius: 2, border: '1px solid', borderColor: 'divider', boxShadow: '0 4px 16px rgba(15,23,42,.12)' }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'primary.main' }}>Legend <Typography component="span" variant="caption" sx={{ color: 'text.secondary', fontWeight: 400 }}>(click a dataset name to edit)</Typography></Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 1.5 }}>
           {datasetLegend.map((item) => (
             <Box key={item.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -2384,9 +2394,22 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               }} sx={{ p: 0.5 }} />
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'background.paper', px: 1, py: 0.5, borderRadius: 2, border: '1px solid', borderColor: 'grey.300' }}>
                 <Box sx={{ width: 13, height: 13, borderRadius: '50%', bgcolor: item.color, flexShrink: 0, border: `1px solid ${darkenColor(item.color, 0.3)}` }} />
-                <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                  {item.label}
-                </Typography>
+                {editingLegendDataset === item.name ? (
+                  <DebouncedTextField
+                    autoFocus
+                    size="small"
+                    value={item.label}
+                    onChange={(event) => setDatasetLabels(prev => ({ ...prev, [item.name]: event.target.value }))}
+                    onBlur={() => setEditingLegendDataset(null)}
+                    onKeyDown={(event) => { if (event.key === 'Enter' || event.key === 'Escape') setEditingLegendDataset(null); }}
+                    inputProps={{ 'aria-label': `Legend label for ${item.name}` }}
+                    sx={{ width: 132, '& .MuiInputBase-input': { fontSize: 12, fontWeight: 600, py: .25 } }}
+                  />
+                ) : (
+                  <Typography component="button" type="button" variant="caption" onClick={() => setEditingLegendDataset(item.name)} sx={{ p: 0, border: 0, bgcolor: 'transparent', color: 'text.primary', fontWeight: 600, cursor: 'text', fontFamily: 'inherit' }}>
+                    {item.label}
+                  </Typography>
+                )}
               </Box>
             </Box>
           ))}
@@ -2444,12 +2467,14 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       minHeight: "100%",
       bgcolor: "#F7F9FC",
       background: "linear-gradient(180deg, #F5F8FC 0%, #FAFBFD 36%, #FFFFFF 100%)",
-      borderRadius: 3
+      borderRadius: 3,
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       <SettingsModal />
 
-      {/* Scale Mode Selection */}
-      <Card elevation={0} sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: 'none', bgcolor: '#FAFBFD' }}>
+      {/* VIEW + AXIS CONFIGURATION */}
+      <Card elevation={0} sx={{ order: 1, mb: 2.5, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: 'none', bgcolor: '#FAFBFD' }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <ScaleIcon color="primary" />
@@ -2491,7 +2516,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       </Card>
 
       {/* Variable Selection */}
-      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 3, sm: 4 } }}>
+      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ order: 2, mb: 2.5, p: { xs: 2, sm: 2.5 }, border: '1px solid #E5EAF2', borderRadius: 2.5, bgcolor: '#fff', boxShadow: '0 4px 16px rgba(15,23,42,.04)' }}>
         <Grid item xs={12} sm={6} md={4}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'primary.main' }}>Select X (Independent) Variables</Typography>
           <Autocomplete multiple options={availableColumns} value={selectedXVars} onChange={(_, v) => setSelectedXVars(v)} renderInput={(params) => <DebouncedTextField {...params} label="X Variables" variant="outlined" size="small" />} />
@@ -2510,7 +2535,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       </Grid>
 
       {/* Data Filter */}
-      <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
+      <Card sx={{ order: 3, mb: 2.5, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Data Filter</Typography>
           <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="center">
@@ -2531,7 +2556,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       </Card>
 
       {/* Active Variable Pairs */}
-      <Card elevation={0} sx={{ mb: 3, borderRadius: 3, border: "1px solid #E5EAF2", boxShadow: "0 8px 28px rgba(15,23,42,.055)", backgroundImage: "none" }}>
+      <Card elevation={0} sx={{ order: 4, mb: 2.5, borderRadius: 3, border: "1px solid #E5EAF2", boxShadow: "0 8px 28px rgba(15,23,42,.055)", backgroundImage: "none" }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Active Variable Pairs</Typography>
           <Paper elevation={0} sx={{ maxHeight: 120, overflowY: 'auto', p: 2, bgcolor: 'grey.100', borderRadius: 2, boxShadow: 0 }}>
@@ -2575,78 +2600,9 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         </CardContent>
       </Card>
 
-      {/* Dataset Color Customization */}
-      <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
-        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Dataset Colors</Typography>
-          <Grid container spacing={2}>
-            {allDatasets.map((ds, idx) => (
-              <Grid item xs={12} sm={6} md={4} key={ds.name}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, bgcolor: 'white', borderRadius: 2, border: '1px solid', borderColor: 'grey.200' }}>
-                  <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], border: `2px solid ${darkenColor(datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], 0.25)}` }} />
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>{ds.name}</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <input
-                        type="color"
-                        value={datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length]}
-                        onChange={(e) => setDatasetColors(prev => ({ ...prev, [ds.name]: e.target.value }))}
-                        style={{ width: 40, height: 28, border: '1px solid #ccc', borderRadius: 4, cursor: 'pointer' }}
-                      />
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>Click to edit</Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Line & Area Settings Toggle */}
-      <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
-        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            <ShowChartIcon color="primary" />
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'primary.main' }}>Line & Area Display Settings:</Typography>
-            <FormControlLabel control={<Switch checked={showLines} onChange={e => setShowLines(e.target.checked)} />} label="Show Connecting Lines" />
-            <FormControlLabel control={<Switch checked={showArea} onChange={e => setShowArea(e.target.checked)} />} label="Show Area Under Lines" />
-            {showArea && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, ml: 2 }}>
-                <Typography variant="body2">Area Opacity:</Typography>
-                <input
-                  type="range"
-                  min={0.1}
-                  max={0.7}
-                  step={0.05}
-                  value={areaOpacity}
-                  onChange={(e) => setAreaOpacity(parseFloat(e.target.value))}
-                  style={{ width: 150 }}
-                />
-                <Typography variant="body2">{Math.round(areaOpacity * 100)}%</Typography>
-              </Box>
-            )}
-            {showLines && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Typography variant="body2">Line Width:</Typography>
-                <input
-                  type="range"
-                  min={1}
-                  max={5}
-                  step={0.5}
-                  value={lineWidth}
-                  onChange={(e) => setLineWidth(parseFloat(e.target.value))}
-                  style={{ width: 150 }}
-                />
-                <Typography variant="body2">{lineWidth}px</Typography>
-              </Box>
-            )}
-          </Box>
-        </CardContent>
-      </Card>
-
       {/* Dashboard Header */}
       <Card elevation={0} sx={{
+        order: 0,
         mb: 2.5,
         border: '1px solid #E5EAF2',
         borderRadius: 3,
@@ -2729,7 +2685,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         </CardContent>
       </Card>
 
-      <div ref={pageRef}>
+      <div ref={pageRef} style={{ order: 7 }}>
         <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
           <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
@@ -2773,8 +2729,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               </Alert>
             </Box>
 
-            {renderLegendBlock()}
-
             {/* Axis Scale Controls */}
             {scaleMode !== "perVariable" && (
               <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
@@ -2815,9 +2769,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                 <MuiTooltip title="Reset Zoom"><Button onClick={resetZoom} sx={{ minWidth: "40px", px: 1 }}><CenterFocusStrongIcon fontSize="small" /></Button></MuiTooltip>
               </ButtonGroup>
               <Box sx={{ display: "flex", gap: 1, alignItems: 'center' }}>
-                <MuiTooltip title="Chart Settings">
-                  <Button variant="outlined" color="primary" onClick={openSettingsModal} startIcon={<SettingsIcon />} size="small" sx={{ textTransform: 'none', height: 32 }}>Settings</Button>
-                </MuiTooltip>
                 <SaveVisualizationButton elementId="visualization-content" fileNamePrefix="multivariate_scatter" variableNames={[...selectedXVars, ...selectedYVars].filter(Boolean)} />
                 <MuiTooltip title="Download Plot as PNG">
                   <Button variant="outlined" color="primary" onClick={downloadChartAsPNG} startIcon={<DownloadIcon />} size="small" sx={{ textTransform: 'none', height: 32 }}>Download PNG</Button>
@@ -2867,6 +2818,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                         onMouseUp={() => setIsDragging(false)}
                         onMouseLeave={() => { setIsDragging(false); handleCanvasMouseOut(); }}
                       />
+                      {renderLegendBlock()}
                       {/* <Box sx={{ position: 'absolute', top: 10, right: 20, zIndex: 1000, pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 1, background: 'rgba(255,255,255,0.95)', p: '4px 10px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.1)', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
                         <Box sx={{ width: 22, height: 22 }}><img src={logo} alt="Abhitech Logo" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'contain' }} /></Box>
                         <Box><Box sx={{ fontSize: '8px', lineHeight: '1' }}>Powered by</Box><Box sx={{ fontSize: '9px', fontWeight: 'bold', color: '#1976d2', lineHeight: '1.1' }}>Abhitech's AbhiStat</Box></Box>
