@@ -95,9 +95,7 @@ const BootstrappingTab = ({
     const [columnSearchTerm, setColumnSearchTerm] = useState('');
     const tableRef = useRef(null);
 
-    // Bootstrap calculation function
     const performBootstrapAnalysis = useCallback((withProduct, withoutProduct, column, nBootstraps = 10000, confidenceLevel = 0.95) => {
-        // Extract values from the column
         const withValues = withProduct
             .map(row => row?.[column])
             .filter(val => val !== null && val !== undefined && !isNaN(Number(val)))
@@ -112,15 +110,12 @@ const BootstrappingTab = ({
             return null;
         }
         
-        // Calculate observed mean difference
         const meanWith = withValues.reduce((a, b) => a + b, 0) / withValues.length;
         const meanWithout = withoutValues.reduce((a, b) => a + b, 0) / withoutValues.length;
         const observedDiff = meanWith - meanWithout;
         
-        // Bootstrap sampling
         const bootstrapDiffs = [];
         for (let i = 0; i < nBootstraps; i++) {
-            // Sample with replacement from both groups
             const bootWith = Array(withValues.length).fill().map(() => 
                 withValues[Math.floor(Math.random() * withValues.length)]
             );
@@ -133,7 +128,6 @@ const BootstrappingTab = ({
             bootstrapDiffs.push(bootMeanWith - bootMeanWithout);
         }
         
-        // Sort bootstrap differences for confidence interval
         bootstrapDiffs.sort((a, b) => a - b);
         const lowerPercentile = (1 - confidenceLevel) / 2;
         const upperPercentile = 1 - lowerPercentile;
@@ -143,12 +137,10 @@ const BootstrappingTab = ({
         const ciLower = bootstrapDiffs[lowerIndex];
         const ciUpper = bootstrapDiffs[upperIndex];
         
-        // Calculate standard deviation
         const meanBootstrap = bootstrapDiffs.reduce((a, b) => a + b, 0) / bootstrapDiffs.length;
         const variance = bootstrapDiffs.reduce((sum, val) => sum + Math.pow(val - meanBootstrap, 2), 0) / bootstrapDiffs.length;
         const stdDev = Math.sqrt(variance);
         
-        // Determine significance (CI does not include 0)
         const isSignificant = (ciLower > 0) || (ciUpper < 0);
         
         return {
@@ -166,7 +158,6 @@ const BootstrappingTab = ({
         };
     }, []);
 
-    // Run bootstrap analysis for all columns with chunking to prevent UI blocking
     const runFullBootstrapAnalysis = useCallback(async () => {
         if (!availableColumns.length || !withProductData.length || !withoutProductData.length) {
             return;
@@ -177,7 +168,6 @@ const BootstrappingTab = ({
         const significantResults = [];
         const nonSignificantResults = [];
         
-        // Process columns in chunks to keep UI responsive
         const CHUNK_SIZE = 5;
         for (let i = 0; i < availableColumns.length; i += CHUNK_SIZE) {
             const chunk = availableColumns.slice(i, i + CHUNK_SIZE);
@@ -193,11 +183,9 @@ const BootstrappingTab = ({
                 }
             }
             
-            // Yield to main thread after each chunk
             await new Promise(resolve => setTimeout(resolve, 0));
         }
         
-        // Sort significant by absolute mean difference (highest impact first)
         significantResults.sort((a, b) => Math.abs(b.mean_difference) - Math.abs(a.mean_difference));
         nonSignificantResults.sort((a, b) => Math.abs(b.mean_difference) - Math.abs(a.mean_difference));
         
@@ -210,14 +198,12 @@ const BootstrappingTab = ({
         setIsLoading(false);
     }, [availableColumns, withProductData, withoutProductData, performBootstrapAnalysis]);
 
-    // Run analysis when data changes
     useEffect(() => {
         if (availableColumns.length > 0 && withProductData.length > 0 && withoutProductData.length > 0) {
             runFullBootstrapAnalysis();
         }
     }, [availableColumns, withProductData, withoutProductData, runFullBootstrapAnalysis]);
 
-    // Set initial selected column
     useEffect(() => {
         if (availableColumns.length > 0 && !selectedColumn) {
             setSelectedColumn(availableColumns[0]);
@@ -266,7 +252,6 @@ const BootstrappingTab = ({
         return sortedNonSignificantColumns.slice(startIndex, startIndex + itemsPerPage);
     }, [sortedNonSignificantColumns, nonSignificantPage, itemsPerPage]);
 
-    // Generate custom filename
     const generateFileName = (visualizationName) => {
         const parts = [];
         if (clientName) parts.push(clientName.replace(/\s+/g, '_'));
@@ -434,7 +419,6 @@ const BootstrappingTab = ({
                     />
                 </Box>
                 
-                {/* Download PNG Button */}
                 <Box sx={{ 
                     mb: 2, 
                     display: 'flex', 
@@ -818,7 +802,6 @@ const BootstrappingTab = ({
         );
     };
 
-    // Loading state
     if (isLoading) {
         return (
             <Box sx={{ 
@@ -839,7 +822,6 @@ const BootstrappingTab = ({
         );
     }
 
-    // No data state
     if (!withProductData.length && !withoutProductData.length) {
         return (
             <Box sx={{ p: 3 }}>

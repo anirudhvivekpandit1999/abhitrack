@@ -174,7 +174,6 @@ function CalculatedColumnsList({
                     boxShadow: '0 10px 30px rgba(15, 23, 42, 0.055)'
                 }}
             >
-                {/* Header */}
                 <Box
                     sx={{
                         position: 'relative',
@@ -267,7 +266,6 @@ function CalculatedColumnsList({
                     </Box>
                 </Box>
 
-                {/* Status summary */}
                 {hasColumns && (
                     <Box
                         sx={{
@@ -348,7 +346,6 @@ function CalculatedColumnsList({
                     </Box>
                 )}
 
-                {/* Column list */}
                 <Box
                     sx={{
                         flex: 1,
@@ -510,7 +507,6 @@ function CalculatedColumnsList({
                 </Box>
             </Paper>
 
-            {/* Save action */}
             <Paper
                 elevation={0}
                 sx={{

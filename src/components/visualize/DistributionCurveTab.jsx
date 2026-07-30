@@ -24,45 +24,41 @@ import html2canvas from "html2canvas";
 import ChartSettingsModal from '../ChartSettingsModal';
 import SaveVisualizationButton from '../SaveVisualizationButton';
 
-// ============================================================================
-// Color system: each column index gets a pair [with=deep, without=light]
-// Both are solid fills — no dashes, visually distinct by hue + lightness
-// ============================================================================
+
 const COLOR_PAIRS = [
-    { with: '#2563EB', without: '#93C5FD' },  // Blue deep / Blue light
-    { with: '#DC2626', without: '#FCA5A5' },  // Red deep / Red light
-    { with: '#059669', without: '#6EE7B7' },  // Green deep / Green light
-    { with: '#D97706', without: '#FCD34D' },  // Amber deep / Amber light
-    { with: '#7C3AED', without: '#C4B5FD' },  // Purple deep / Purple light
-    { with: '#DB2777', without: '#F9A8D4' },  // Pink deep / Pink light
-    { with: '#0891B2', without: '#67E8F9' },  // Cyan deep / Cyan light
-    { with: '#EA580C', without: '#FDBA74' },  // Orange deep / Orange light
-    { with: '#4338CA', without: '#A5B4FC' },  // Indigo deep / Indigo light
-    { with: '#0D9488', without: '#5EEAD4' },  // Teal deep / Teal light
+    { with: '#2563EB', without: '#93C5FD' },  
+    { with: '#DC2626', without: '#FCA5A5' },  
+    { with: '#059669', without: '#6EE7B7' },  
+    { with: '#D97706', without: '#FCD34D' },  
+    { with: '#7C3AED', without: '#C4B5FD' }, 
+    { with: '#DB2777', without: '#F9A8D4' },  
+    { with: '#0891B2', without: '#67E8F9' },  
+    { with: '#EA580C', without: '#FDBA74' },  
+    { with: '#4338CA', without: '#A5B4FC' },  
+    { with: '#0D9488', without: '#5EEAD4' },  
 ];
 
-// Fixed colors for single/separate views
 const SINGLE_COLORS = {
-    withProduct:    { area: '#2563EB', bar: '#93C5FD' },   // Blue family
-    withoutProduct: { area: '#DC2626', bar: '#FCA5A5' },   // Red family
+    withProduct:    { area: '#2563EB', bar: '#93C5FD' },   
+    withoutProduct: { area: '#DC2626', bar: '#FCA5A5' },   
 };
 const DATASET_COLORS = [
-    { area: '#2563EB', bar: '#93C5FD' },  // Blue
-    { area: '#DC2626', bar: '#FCA5A5' },  // Red
-    { area: '#059669', bar: '#6EE7B7' },  // Green
-    { area: '#D97706', bar: '#FCD34D' },  // Amber
-    { area: '#7C3AED', bar: '#C4B5FD' },  // Purple
-    { area: '#DB2777', bar: '#F9A8D4' },  // Pink
-    { area: '#0891B2', bar: '#67E8F9' },  // Cyan
-    { area: '#EA580C', bar: '#FDBA74' },  // Orange
-    { area: '#065F46', bar: '#6EE7B7' },  // Dark Green
-    { area: '#7C2D12', bar: '#FDBA74' },  // Dark Orange
-    { area: '#1E1B4B', bar: '#A5B4FC' },  // Dark Indigo
-    { area: '#134E4A', bar: '#5EEAD4' },  // Dark Teal
-    { area: '#4A1D96', bar: '#DDD6FE' },  // Dark Purple
-    { area: '#831843', bar: '#FBCFE8' },  // Dark Pink
-    { area: '#713F12', bar: '#FDE68A' },  // Dark Amber
-    { area: '#1C1917', bar: '#D6D3D1' },  // Dark Grey
+    { area: '#2563EB', bar: '#93C5FD' },  
+    { area: '#DC2626', bar: '#FCA5A5' },  
+    { area: '#059669', bar: '#6EE7B7' },  
+    { area: '#D97706', bar: '#FCD34D' },  
+    { area: '#7C3AED', bar: '#C4B5FD' },  
+    { area: '#DB2777', bar: '#F9A8D4' },  
+    { area: '#0891B2', bar: '#67E8F9' },  
+    { area: '#EA580C', bar: '#FDBA74' },  
+    { area: '#065F46', bar: '#6EE7B7' },  
+    { area: '#7C2D12', bar: '#FDBA74' },  
+    { area: '#1E1B4B', bar: '#A5B4FC' },  
+    { area: '#134E4A', bar: '#5EEAD4' },  
+    { area: '#4A1D96', bar: '#DDD6FE' },  
+    { area: '#831843', bar: '#FBCFE8' },  
+    { area: '#713F12', bar: '#FDE68A' },  
+    { area: '#1C1917', bar: '#D6D3D1' },  
 ];
 
 const DEFAULT_COMBINED_COLOR_OPTIONS = [
@@ -120,15 +116,12 @@ const AxisControlPanel = ({
             <Collapse in={showAdvanced}><Divider />
                 <CardContent sx={{ p: 2 }}>
                     <Grid container spacing={2}>
-                        {/* X-Axis Label */}
                         <Grid item xs={12} sm={6}>
                             <TextField label="X-Axis Label" value={localXLabel} onChange={handleXLabelChange} fullWidth size="small" placeholder={`e.g., ${columnName || 'Variable'}`} />
                         </Grid>
-                        {/* Y-Axis Label */}
                         <Grid item xs={12} sm={6}>
                             <TextField label="Y-Axis Label" value={localYLabel} onChange={handleYLabelChange} fullWidth size="small" placeholder="e.g., Mean of Parameter" />
                         </Grid>
-                        {/* X-Axis Range */}
                         <Grid item xs={12} sm={6}>
                             <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>X-Axis Range (Optional)</Typography>
                             <Box sx={{ display: 'flex', gap: 2 }}>
@@ -136,7 +129,6 @@ const AxisControlPanel = ({
                                 <TextField label={`Max (Data: ${dataMax?.toFixed(2) || 'N/A'})`} type="number" value={xMax} onChange={(e) => setXMax(e.target.value)} size="small" placeholder="Auto" sx={{ flex: 1 }} />
                             </Box>
                         </Grid>
-                        {/* Y-Axis Range */}
                         <Grid item xs={12} sm={6}>
                             <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>Y-Axis Range (Optional)</Typography>
                             <Box sx={{ display: 'flex', gap: 2 }}>
@@ -229,14 +221,11 @@ const DistributionCurveTab = ({
     datasets = [],
     clientName = '', plantName = '', productName = ''
 }) => {
-    // ========================================================================
-    // State
-    // ========================================================================
+    
     const [selectedColumns, setSelectedColumns] = useState([]);
     const [viewMode, setViewMode] = useState('combined');
     const [singleViewType, setSingleViewType] = useState('withProduct');
 
-    // Y-axis column selection
     const [yAxisColumn, setYAxisColumn] = useState('');
     const [singleYAxisColumn, setSingleYAxisColumn] = useState('');
     const [separateYAxisColumn, setSeparateYAxisColumn] = useState('');
@@ -246,7 +235,6 @@ const DistributionCurveTab = ({
     const [showInsights, setShowInsights] = useState(false);
     const [showSummaryCards, setShowSummaryCards] = useState(false);
 
-    // Combined View Settings
     const [combinedLegendLabels, setCombinedLegendLabels] = useState({});
     const [combinedXAxisLabel, setCombinedXAxisLabel] = useState('');
     const [combinedYAxisLabel, setCombinedYAxisLabel] = useState('');
@@ -259,7 +247,6 @@ const DistributionCurveTab = ({
     const [columnColorMap, setColumnColorMap] = useState({});
     const [datasetLabels, setDatasetLabels] = useState({});
     const [hiddenDatasets, setHiddenDatasets] = useState({});
-    // Single View Settings
     const [singleColumn, setSingleColumn] = useState('');
     const [singleLegendLabel, setSingleLegendLabel] = useState('Value');
     const [singleXAxisLabel, setSingleXAxisLabel] = useState('');
@@ -269,7 +256,6 @@ const DistributionCurveTab = ({
     const [singleYAxisMin, setSingleYAxisMin] = useState('');
     const [singleYAxisMax, setSingleYAxisMax] = useState('');
 
-    // Separate View Settings
     const [separateColumn, setSeparateColumn] = useState('');
     const [separateLegendLabels, setSeparateLegendLabels] = useState({
         withProduct: 'With Product', withoutProduct: 'Without Product',
@@ -281,7 +267,6 @@ const DistributionCurveTab = ({
     const [separateYAxisMin, setSeparateYAxisMin] = useState('');
     const [separateYAxisMax, setSeparateYAxisMax] = useState('');
 
-    // Chart Feature Settings
     const [showGrid, setShowGrid] = useState(true);
     const [showDataPoints, setShowDataPoints] = useState(false);
     const [showNumberOfPoints, setShowNumberOfPoints] = useState(true);
@@ -291,12 +276,10 @@ const DistributionCurveTab = ({
     const [showStatistics, setShowStatistics] = useState(false);
     const [showOutliers, setShowOutliers] = useState(false);
 
-    // Filter Settings
     const [filterColumn, setFilterColumn] = useState('');
     const [filterMin, setFilterMin] = useState('');
     const [filterMax, setFilterMax] = useState('');
 
-    // Refs
     const combinedChartRef = useRef(null);
     const withoutProductChartRef = useRef(null);
     const withProductChartRef = useRef(null);
@@ -378,9 +361,7 @@ const DistributionCurveTab = ({
         return isDateTimeColumn(all, filterColumn);
     }, [withProductData, withoutProductData, filterColumn]);
 
-    // Build unified datasets array
-    // If new "datasets" prop is passed, use it
-    // Otherwise fall back to old withProductData/withoutProductData
+    
     const allDatasets = useMemo(() => {
         const applyFilter = (data) => {
             if (!filterColumn || !data) return data || [];
@@ -452,9 +433,7 @@ const DistributionCurveTab = ({
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-    // =========================================================================
-    // UI design tokens
-    // =========================================================================
+    
     const ui = {
         page: {
             minHeight: '100%',
@@ -489,9 +468,7 @@ const DistributionCurveTab = ({
         },
     };
 
-    // ========================================================================
-    // Helpers
-    // ========================================================================
+    
     const generateFileName = (visualizationName) => {
         const parts = [];
         if (clientName) parts.push(clientName.replace(/\s+/g, '_'));
@@ -501,7 +478,6 @@ const DistributionCurveTab = ({
         return parts.join('-');
     };
 
-    // Assign color pairs to columns as they are added
     useEffect(() => {
         const newMap = { ...columnColorMap };
         let idx = Object.keys(columnColorMap).length;
@@ -514,7 +490,6 @@ const DistributionCurveTab = ({
         setColumnColorMap(newMap);
     }, [selectedColumns]);
 
-    // Initialize single/separate columns
     useEffect(() => {
         if (availableColumns.length > 0 && !singleColumn) setSingleColumn(availableColumns[0]);
         if (availableColumns.length > 0 && !separateColumn) setSeparateColumn(availableColumns[0]);
@@ -570,9 +545,7 @@ const DistributionCurveTab = ({
 
     const resetLocalFilter = () => { setFilterColumn(''); setFilterMin(''); setFilterMax(''); };
 
-    // ========================================================================
-    // Core aggregation helper
-    // ========================================================================
+    
     const buildBinnedData = (rows, xCol, yCol, globalMin, globalMax, nBins, aggregation) => {
         if (!rows.length || !xCol) return new Array(nBins).fill(null);
         const binWidth = (globalMax - globalMin) / nBins;
@@ -598,9 +571,7 @@ const DistributionCurveTab = ({
         });
     };
 
-    // ========================================================================
-    // Statistics functions
-    // ========================================================================
+    
     const calculateDistributionStats = (data, column) => {
         if (!data || data.length === 0) return null;
         const values = data.map(row => parseRowValue(row, column)).filter(val => val != null);
@@ -656,13 +627,10 @@ const DistributionCurveTab = ({
         return { quality, score: Math.max(0, score), completeness: completeness.toFixed(1), outlierPercentage: outlierPct.toFixed(1) };
     };
 
-    // ========================================================================
-    // Combined chart data
-    // ========================================================================
+    
     const combinedChartData = useMemo(() => {
         if (selectedColumns.length === 0) return [];
         
-        // Collect all X values in a single pass
         const allXValues = [];
         const dataLength = selectedColumns.length * allDatasets.length;
         allXValues.reserve = dataLength; // Hint for array allocation
@@ -690,7 +658,6 @@ const DistributionCurveTab = ({
             return { binStart: start, binEnd: end, binMiddle: parseFloat(((start + end) / 2).toFixed(4)), data: {} };
         });
         
-        // Build binned data for each column/dataset combination
         for (const column of selectedColumns) {
             for (let datasetIndex = 0; datasetIndex < allDatasets.length; datasetIndex++) {
                 const dataset = allDatasets[datasetIndex];
@@ -708,13 +675,10 @@ const DistributionCurveTab = ({
         return bins;
     }, [selectedColumns, filteredWithProductData, filteredWithoutProductData, binCount, yAxisColumn, yAggregation, allDatasets]);
 
-    // ========================================================================
-    // Single / Separate view bins
-    // ========================================================================
+    
     const buildViewBins = useCallback((rows, xCol, yCol, aggregation, nBins) => {
         if (!rows.length || !xCol) return [];
         
-        // Collect X values in a single pass
         const xValues = [];
         for (let i = 0; i < rows.length; i++) {
             const val = parseRowValue(rows[i], xCol);
@@ -734,7 +698,6 @@ const DistributionCurveTab = ({
             return { binStart: start, binEnd: end, binMiddle: parseFloat(((start + end) / 2).toFixed(4)), yVals: [], count: 0 };
         });
         
-        // Populate bins in a single pass
         for (let i = 0; i < rows.length; i++) {
             const xVal = parseRowValue(rows[i], xCol);
             if (xVal == null) continue;
@@ -748,7 +711,6 @@ const DistributionCurveTab = ({
             }
         }
         
-        // Calculate final values
         for (let i = 0; i < bins.length; i++) {
             const bin = bins[i];
             let yValue;
@@ -774,13 +736,7 @@ const DistributionCurveTab = ({
         return buildViewBins(data, singleColumn, singleYAxisColumn, yAggregation, binCount);
     }, [filteredWithProductData, filteredWithoutProductData, singleColumn, singleYAxisColumn, singleViewType, yAggregation, binCount]);
 
-    // const withProductStats = useMemo(() => calculateDistributionStats(filteredWithProductData, separateColumn), [filteredWithProductData, separateColumn]);
-    // const withoutProductStats = useMemo(() => calculateDistributionStats(filteredWithoutProductData, separateColumn), [filteredWithoutProductData, separateColumn]);
-    // const withProductSkewness = useMemo(() => calculateSkewness(filteredWithProductData, separateColumn), [filteredWithProductData, separateColumn]);
-    // const withoutProductSkewness = useMemo(() => calculateSkewness(filteredWithoutProductData, separateColumn), [filteredWithoutProductData, separateColumn]);
-    // const withProductQuality = useMemo(() => assessDataQuality(filteredWithProductData, separateColumn), [filteredWithProductData, separateColumn]);
-    // const withoutProductQuality = useMemo(() => assessDataQuality(filteredWithoutProductData, separateColumn), [filteredWithoutProductData, separateColumn]);
-
+    
     const getDefaultYLabel = (yCol, agg) => {
         if (!yCol) return 'Frequency (count)';
         if (agg === 'frequency') return 'Frequency (count)';
@@ -803,9 +759,7 @@ const DistributionCurveTab = ({
 
     const isDateChartValue = (column) => Boolean(column && columnDateTimeMap?.[column]);
 
-    // ========================================================================
-    // Watermark
-    // ========================================================================
+    
     const WatermarkContent = () => (
         <div style={{
             position: 'absolute', top: isMobile ? '5px' : '0px', right: isMobile ? '10px' : '50px',
@@ -825,9 +779,7 @@ const DistributionCurveTab = ({
         </div>
     );
 
-    // ========================================================================
-    // Download functions
-    // ========================================================================
+    
     const downloadChartAsPNG = (chartRef, title) => {
         if (!chartRef?.current) return;
         const svgElement = chartRef.current.querySelector('svg');
@@ -883,9 +835,7 @@ const DistributionCurveTab = ({
         const link = document.createElement('a'); link.download = `${generateFileName('DistributionCurve_Page')}.png`; link.href = canvas.toDataURL('image/png'); link.click();
     };
 
-    // ========================================================================
-    // Summary Cards
-    // ========================================================================
+    
     const combinedStats = useMemo(() => {
         if (selectedColumns.length === 0) return null;
         const firstColumn = selectedColumns[0];
@@ -1060,9 +1010,7 @@ const DistributionCurveTab = ({
         );
     };
 
-    // ========================================================================
-    // Settings Modal
-    // ========================================================================
+    
     const [draftSettings, setDraftSettings] = useState(null);
     const resetSettingsDraft = () => {
         setDraftSettings({
@@ -1101,9 +1049,7 @@ const DistributionCurveTab = ({
         setSettingsModalOpen(false); setDraftSettings(null);
     };
 
-    // ========================================================================
-    // Combined X & Y Selection Card (side by side)
-    // ========================================================================
+    
     const CombinedAxisSelectionCard = () => {
             const yCol = viewMode === 'combined' ? yAxisColumn : separateYAxisColumn;
             const setYCol = viewMode === 'combined' ? setYAxisColumn : setSeparateYAxisColumn;
@@ -1152,7 +1098,6 @@ const DistributionCurveTab = ({
                             )}
                         </Grid>
                         
-                        {/* Y-Axis Selection Section */}
                         <Grid item xs={12} md={6}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'secondary.main' }}>Y-Axis (Dependent Variable / Aggregation)</Typography>
                             
@@ -1195,9 +1140,7 @@ const DistributionCurveTab = ({
         );
     };
 
-    // ========================================================================
-    // Color Legend Block — shown above combined chart
-    // ========================================================================
+    
     const ColorLegendBlock = ({ columns }) => (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
             {columns.map(col => (
@@ -1262,9 +1205,7 @@ const DistributionCurveTab = ({
         </Box>
     );
 
-    // ========================================================================
-    // Combined Chart Render
-    // ========================================================================
+    
     const renderCombinedChart = () => {
         if (!combinedChartData.length || selectedColumns.length === 0) {
             return <Alert severity="info" sx={{ width: '100%' }}>Please select at least one column to display the combined chart.</Alert>;
@@ -1343,7 +1284,6 @@ const DistributionCurveTab = ({
 
                     <ColorLegendBlock columns={selectedColumns} />
 
-                    {/* Logo at top of chart */}
                     <Box sx={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1405,9 +1345,7 @@ const DistributionCurveTab = ({
         );
     };
 
-    // ========================================================================
-    // Single / Separate distribution chart — solid fills, no dashes
-    // ========================================================================
+    
     const renderDistributionChart = (
         data, title, areaColor, barColor, chartRef,
         legendLabel = 'Value', xAxisLabel = null, yAxisLabel = '',
@@ -1440,7 +1378,6 @@ const DistributionCurveTab = ({
                         </Box>
                     </Box>
 
-                    {/* Logo at top */}
                     <Box sx={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1515,9 +1452,7 @@ const DistributionCurveTab = ({
         );
     };
 
-    // ========================================================================
-    // Separate Charts Render
-    // ========================================================================
+    
     const renderSeparateCharts = () => {
         return (
             <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
@@ -1527,7 +1462,6 @@ const DistributionCurveTab = ({
                                 : index === 1 ? withoutProductChartRef 
                                 : { current: null };
 
-                    // filter this dataset's rows
                     const filteredData = filterColumn
                         ? (dataset.data || []).filter(row => {
                             const raw = row?.[filterColumn];
@@ -1562,7 +1496,6 @@ const DistributionCurveTab = ({
                         ? { min: Math.min(...allValues), max: Math.max(...allValues) }
                         : { min: 0, max: 0 };
 
-                    // skip hidden datasets in separate view
                     if (isDatasetHidden(dataset.name)) {
                         return (
                             <Grid item xs={12} lg={6} key={index}>
@@ -1621,9 +1554,7 @@ const DistributionCurveTab = ({
         );
     };
 
-    // ========================================================================
-    // Single Chart Render
-    // ========================================================================
+    
     const renderSingleChart = () => {
         const isWithProduct = singleViewType === 'withProduct';
         const title = `${isWithProduct ? 'With Product' : 'Without Product'} Distribution`;
@@ -1656,9 +1587,7 @@ const DistributionCurveTab = ({
         );
     };
 
-    // ========================================================================
-    // Main Render
-    // ========================================================================
+    
     return (
         <Box sx={{ ...ui.page, p: { xs: 1.5, sm: 2.5, md: 3 } }}>
             <ChartSettingsModal
@@ -1686,9 +1615,7 @@ const DistributionCurveTab = ({
                 colorOptions={DEFAULT_COMBINED_COLOR_OPTIONS}
             />
 
-            {/* ================================================================
-                PAGE HEADER
-            ================================================================= */}
+            
             <Card
                 elevation={0}
                 sx={{
@@ -1815,7 +1742,6 @@ const DistributionCurveTab = ({
                         </Box>
                     </Box>
 
-                    {/* Context strip */}
                     <Box
                         sx={{
                             display: 'flex',
@@ -1850,9 +1776,7 @@ const DistributionCurveTab = ({
                 </CardContent>
             </Card>
 
-            {/* ================================================================
-                VIEW + AXIS CONFIGURATION
-            ================================================================= */}
+            
             <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
                 <Grid item xs={12} lg={3}>
                     <Card elevation={0} sx={{ ...ui.surface, height: '100%' }}>
@@ -1918,9 +1842,7 @@ const DistributionCurveTab = ({
                 </Grid>
             </Grid>
 
-            {/* ================================================================
-                DISTRIBUTION + FILTER CONTROLS
-            ================================================================= */}
+            
             <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
                 <Grid item xs={12} lg={7}>
                     <Card elevation={0} sx={{ ...ui.surface, height: '100%' }}>
@@ -2084,9 +2006,7 @@ const DistributionCurveTab = ({
                 </Grid>
             </Grid>
 
-            {/* ================================================================
-                VISUALIZATION OUTPUT
-            ================================================================= */}
+            
             <div ref={pageRef} id="visualization-content">
                 <Box
                     sx={{

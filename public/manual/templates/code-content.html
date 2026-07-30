@@ -1,21 +1,16 @@
-<!-- Code Content Template -->
-<!-- Use this template for sections that include code examples, formulas, and technical references -->
+
 
 <div class="content-section" id="section-id">
-    <!-- Breadcrumb Navigation -->
     <nav class="breadcrumb">
         <span class="breadcrumb-item"><a href="#home">Home</a></span>
         <span class="breadcrumb-item"><a href="#parent-section">Parent Section</a></span>
         <span class="breadcrumb-item">Current Section</span>
     </nav>
 
-    <!-- Main Heading -->
     <h1>Code Examples and Technical Reference</h1>
     
-    <!-- Introduction -->
     <p>This section provides code examples, formulas, and technical implementation details for [specific feature].</p>
 
-    <!-- Basic Syntax Example -->
     <h2>Basic Syntax</h2>
     <p>The basic syntax for creating formulas follows this pattern:</p>
     
@@ -24,7 +19,6 @@ column_name = expression
 
 percentage = (value / total) * 100</code></pre>
 
-    <!-- Available Operators -->
     <h3>Available Operators</h3>
     <table>
         <thead>
@@ -75,7 +69,6 @@ percentage = (value / total) * 100</code></pre>
         </tbody>
     </table>
 
-    <!-- Mathematical Functions -->
     <h3>Mathematical Functions</h3>
     <p>The following mathematical functions are available for use in formulas:</p>
 
@@ -99,7 +92,6 @@ asin_value = asin(value)
 acos_value = acos(value)
 atan_value = atan(value)</code></pre>
 
-    <!-- Statistical Functions -->
     <h3>Statistical Functions</h3>
     <p>Use these functions for statistical calculations:</p>
 
@@ -116,7 +108,6 @@ max_value = max(column_name)
 percentile_25 = percentile(column_name, 25)
 percentile_75 = percentile(column_name, 75)</code></pre>
 
-    <!-- Complex Formula Examples -->
     <h2>Complex Formula Examples</h2>
     
     <h3>Example 1: Z-Score Calculation</h3>
@@ -138,7 +129,6 @@ status = if(score >= 90, "Excellent",
           if(score >= 80, "Good", 
           if(score >= 70, "Average", "Below Average")))</code></pre>
 
-    <!-- Column References -->
     <h3>Column References</h3>
     <p>Reference other columns in your formulas using these methods:</p>
 
@@ -149,7 +139,6 @@ result = "Column A" + "Column B"
 
 result = [Column-A] + [Column_B]</code></pre>
 
-    <!-- Error Handling -->
     <h3>Error Handling</h3>
     <p>Handle potential errors in your formulas:</p>
 
@@ -160,7 +149,6 @@ clean_value = if(isnull(column_name), 0, column_name)
 
 safe_log = if(value > 0, log(value), null)</code></pre>
 
-    <!-- API Code Examples -->
     <h2>API Integration Examples</h2>
     <p>For advanced users, here are examples of API interactions:</p>
 
@@ -168,20 +156,16 @@ safe_log = if(value > 0, log(value), null)</code></pre>
     <pre><code>import requests
 import json
 
-# API endpoint
 url = "https://api.abhistat.com/v1/calculate"
 
-# Request payload
 payload = {
     "session_id": "your_session_id",
     "formula": "result = column_a * 2 + column_b",
     "column_name": "calculated_result"
 }
 
-# Make request
 response = requests.post(url, json=payload)
 
-# Handle response
 if response.status_code == 200:
     result = response.json()
     print("Calculation successful:", result)
@@ -216,7 +200,6 @@ const calculateColumn = async (formula, columnName) => {
     }
 };</code></pre>
 
-    <!-- Best Practices -->
     <div class="alert alert-success">
         <strong>Best Practices:</strong>
         <ul>
@@ -227,7 +210,6 @@ const calculateColumn = async (formula, columnName) => {
         </ul>
     </div>
 
-    <!-- Common Errors -->
     <div class="alert alert-danger">
         <strong>Common Errors:</strong>
         <ul>
@@ -238,7 +220,6 @@ const calculateColumn = async (formula, columnName) => {
         </ul>
     </div>
 
-    <!-- Related Technical References -->
     <h3>Related Technical References</h3>
     <ul>
         <li><a href="#api-documentation">API Documentation</a></li>

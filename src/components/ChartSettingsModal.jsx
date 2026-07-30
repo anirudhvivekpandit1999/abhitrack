@@ -24,9 +24,7 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 
 import GradientColorPicker from "./GradientColorPicker";
 
-/* ============================================================================
-   CHART SETTINGS MODAL
-============================================================================ */
+
 
 const ChartSettingsModal = ({
   open,
@@ -47,9 +45,7 @@ const ChartSettingsModal = ({
 }) => {
   const pairCount = colorPairs.length;
 
-  /* ==========================================================================
-     HANDLERS
-  ========================================================================== */
+  
 
   const handleReset = () => {
     if (typeof onReset === "function") {
@@ -69,9 +65,7 @@ const ChartSettingsModal = ({
     }
   };
 
-  /* ==========================================================================
-     COLOR SECTION
-  ========================================================================== */
+  
 
   const renderColorSection = () => {
     if (!colorSection) {
@@ -89,7 +83,6 @@ const ChartSettingsModal = ({
           bgcolor: "#FFFFFF",
         }}
       >
-        {/* Section Header */}
 
         <Box
           sx={{
@@ -176,7 +169,6 @@ const ChartSettingsModal = ({
           )}
         </Box>
 
-        {/* Section Body */}
 
         <CardContent
           sx={{
@@ -187,9 +179,7 @@ const ChartSettingsModal = ({
           }}
         >
           {pairCount === 0 ? (
-            /* ================================================================
-               EMPTY STATE
-            ================================================================= */
+           
 
             <Box
               sx={{
@@ -244,9 +234,7 @@ const ChartSettingsModal = ({
               </Typography>
             </Box>
           ) : (
-            /* ================================================================
-               COLOR PAIRS
-            ================================================================= */
+            
 
             <Grid container spacing={2}>
               {colorPairs.map((pair, index) => (
@@ -258,9 +246,7 @@ const ChartSettingsModal = ({
                   key={pair.key || index}
                 >
                   {multiDatasetColors ? (
-                    /* ========================================================
-                       MULTI-DATASET COLOR CARD
-                    ========================================================= */
+                    
 
                     <Box
                       sx={{
@@ -280,7 +266,6 @@ const ChartSettingsModal = ({
                         },
                       }}
                     >
-                      {/* Pair name */}
 
                       <Box
                         sx={{
@@ -337,7 +322,6 @@ const ChartSettingsModal = ({
                           gap: 2,
                         }}
                       >
-                        {/* With Product */}
 
                         <Box>
                           <Typography
@@ -362,7 +346,6 @@ const ChartSettingsModal = ({
                           />
                         </Box>
 
-                        {/* Without Product */}
 
                         <Box>
                           <Typography
@@ -389,9 +372,7 @@ const ChartSettingsModal = ({
                       </Box>
                     </Box>
                   ) : (
-                    /* ========================================================
-                       SINGLE COLOR PAIR
-                    ========================================================= */
+                    
 
                     <Box
                       sx={{
@@ -428,9 +409,7 @@ const ChartSettingsModal = ({
     );
   };
 
-  /* ==========================================================================
-     RENDER
-  ========================================================================== */
+  
 
   return (
     <Dialog
@@ -460,9 +439,7 @@ const ChartSettingsModal = ({
         },
       }}
     >
-      {/* ======================================================================
-          HEADER
-      ====================================================================== */}
+      
 
       <DialogTitle
         sx={{
@@ -479,7 +456,6 @@ const ChartSettingsModal = ({
             py: { xs: 2, sm: 2.4 },
           }}
         >
-          {/* Decorative background */}
 
           <Box
             sx={{
@@ -516,7 +492,6 @@ const ChartSettingsModal = ({
               gap: 2,
             }}
           >
-            {/* Heading */}
 
             <Box
               sx={{
@@ -575,7 +550,6 @@ const ChartSettingsModal = ({
               </Box>
             </Box>
 
-            {/* Header controls */}
 
             <Box
               sx={{
@@ -631,9 +605,7 @@ const ChartSettingsModal = ({
         </Box>
       </DialogTitle>
 
-      {/* ======================================================================
-          CONTENT
-      ====================================================================== */}
+      
 
       <DialogContent
         dividers={false}
@@ -668,10 +640,7 @@ const ChartSettingsModal = ({
             },
           }}
         >
-          {/* ==================================================================
-              FEATURE SECTIONS
-          ================================================================== */}
-
+          
           {featureSections.length > 0 && (
             <Box sx={{ mb: colorSection ? 2.5 : 0 }}>
               <Box
@@ -758,15 +727,11 @@ const ChartSettingsModal = ({
             </Box>
           )}
 
-          {/* ==================================================================
-              COLOR CONFIGURATION
-          ================================================================== */}
+          
 
           {renderColorSection()}
 
-          {/* ==================================================================
-              CUSTOM CHILD CONTENT
-          ================================================================== */}
+          
 
           {children && (
             <Box
@@ -783,9 +748,7 @@ const ChartSettingsModal = ({
         </Box>
       </DialogContent>
 
-      {/* ======================================================================
-          FOOTER
-      ====================================================================== */}
+      
 
       <DialogActions
         sx={{
@@ -807,7 +770,6 @@ const ChartSettingsModal = ({
           gap: 2,
         }}
       >
-        {/* Reset */}
 
         <Button
           onClick={handleReset}
@@ -834,7 +796,6 @@ const ChartSettingsModal = ({
           Reset Defaults
         </Button>
 
-        {/* Main actions */}
 
         <Box
           sx={{

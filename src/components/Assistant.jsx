@@ -298,7 +298,6 @@ let actionQueue = [];
           className="hidden md:flex flex-col fixed right-4 top-24 bottom-6 z-40 w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-[24px] border border-slate-200/80 bg-white/95 shadow-[0_24px_70px_rgba(15,23,42,0.18)] backdrop-blur-xl"
           style={{ animation: 'subtle-pop 260ms ease-out both' }}
         >
-          {/* Header */}
           <div className="relative overflow-hidden border-b border-slate-100 bg-white px-4 py-4">
             <div className="pointer-events-none absolute -right-10 -top-16 h-36 w-36 rounded-full bg-blue-50" />
             <div className="pointer-events-none absolute right-20 -top-16 h-24 w-24 rounded-full bg-violet-50" />
@@ -337,7 +336,6 @@ let actionQueue = [];
             </div>
           </div>
 
-          {/* Conversation */}
           <div
             ref={containerRef}
             className="flex-1 overflow-y-auto bg-gradient-to-b from-slate-50/80 via-white to-white px-4 py-4"
@@ -428,7 +426,6 @@ let actionQueue = [];
             )}
           </div>
 
-          {/* Composer */}
           <div className="border-t border-slate-100 bg-white p-3">
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-2 transition focus-within:border-blue-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-50">
               <textarea

@@ -1,6 +1,4 @@
-/**
- * Feedback Collection System for AbhiStat User Manual
- */
+
 
 class FeedbackSystem {
     constructor() {
@@ -9,27 +7,21 @@ class FeedbackSystem {
         this.init();
     }
 
-    /**
-     * Initialize the feedback system
-     */
+    
     init() {
         this.createFeedbackWidget();
         this.loadStoredFeedback();
         this.bindEvents();
     }
 
-    /**
-     * Get current page name for feedback context
-     */
+    
     getCurrentPageName() {
         const path = window.location.pathname;
         const filename = path.split('/').pop();
         return filename || 'index.html';
     }
 
-    /**
-     * Create feedback widget HTML
-     */
+    
     createFeedbackWidget() {
         const feedbackHTML = `
             <div id="feedback-widget" class="feedback-widget">
@@ -94,7 +86,6 @@ class FeedbackSystem {
             </div>
         `;
 
-        // Add CSS styles
         const feedbackCSS = `
             <style>
                 .feedback-widget {
@@ -311,16 +302,12 @@ class FeedbackSystem {
             </style>
         `;
 
-        // Add CSS to head
         document.head.insertAdjacentHTML('beforeend', feedbackCSS);
         
-        // Add widget to body
         document.body.insertAdjacentHTML('beforeend', feedbackHTML);
     }
 
-    /**
-     * Bind event listeners
-     */
+    
     bindEvents() {
         const toggle = document.getElementById('feedback-toggle');
         const panel = document.getElementById('feedback-panel');
@@ -330,12 +317,10 @@ class FeedbackSystem {
         const ratingBtns = document.querySelectorAll('.rating-btn');
         const newFeedback = document.getElementById('feedback-new');
 
-        // Toggle panel
         toggle.addEventListener('click', () => {
             panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
         });
 
-        // Close panel
         [close, cancel].forEach(btn => {
             btn.addEventListener('click', () => {
                 panel.style.display = 'none';
@@ -343,7 +328,6 @@ class FeedbackSystem {
             });
         });
 
-        // Rating buttons
         ratingBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 ratingBtns.forEach(b => b.classList.remove('selected'));
@@ -351,18 +335,15 @@ class FeedbackSystem {
             });
         });
 
-        // Form submission
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             this.submitFeedback();
         });
 
-        // New feedback button
         newFeedback.addEventListener('click', () => {
             this.showForm();
         });
 
-        // Close on outside click
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.feedback-widget')) {
                 panel.style.display = 'none';
@@ -370,9 +351,7 @@ class FeedbackSystem {
         });
     }
 
-    /**
-     * Submit feedback
-     */
+    
     async submitFeedback() {
         const form = document.getElementById('feedback-form');
         const formData = new FormData(form);
@@ -391,11 +370,8 @@ class FeedbackSystem {
         };
 
         try {
-            // Store feedback locally
             this.storeFeedback(feedback);
             
-            // In a real implementation, you would send this to a server
-            // await this.sendToServer(feedback);
             
             this.showSuccess();
             
@@ -405,14 +381,11 @@ class FeedbackSystem {
         }
     }
 
-    /**
-     * Store feedback locally
-     */
+    
     storeFeedback(feedback) {
         let storedFeedback = JSON.parse(localStorage.getItem('abhistat-feedback') || '[]');
         storedFeedback.push(feedback);
         
-        // Keep only last 100 feedback items
         if (storedFeedback.length > 100) {
             storedFeedback = storedFeedback.slice(-100);
         }
@@ -421,55 +394,33 @@ class FeedbackSystem {
         this.feedbackData = storedFeedback;
     }
 
-    /**
-     * Load stored feedback
-     */
+   
     loadStoredFeedback() {
         this.feedbackData = JSON.parse(localStorage.getItem('abhistat-feedback') || '[]');
     }
 
-    /**
-     * Send feedback to server (placeholder)
-     */
+    
     async sendToServer(feedback) {
-        // This would be implemented to send feedback to your backend
-        // For now, we'll just log it
+        
         console.log('Feedback to be sent to server:', feedback);
         
-        // Example implementation:
-        // const response = await fetch('/api/feedback', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify(feedback)
-        // });
-        // 
-        // if (!response.ok) {
-        //     throw new Error('Failed to submit feedback');
-        // }
+        
     }
 
-    /**
-     * Show success message
-     */
+    
     showSuccess() {
         document.getElementById('feedback-form').style.display = 'none';
         document.getElementById('feedback-success').style.display = 'block';
     }
 
-    /**
-     * Show form (hide success)
-     */
+    
     showForm() {
         document.getElementById('feedback-form').style.display = 'block';
         document.getElementById('feedback-success').style.display = 'none';
         this.resetForm();
     }
 
-    /**
-     * Reset form
-     */
+    
     resetForm() {
         const form = document.getElementById('feedback-form');
         form.reset();
@@ -478,9 +429,7 @@ class FeedbackSystem {
         });
     }
 
-    /**
-     * Get feedback analytics
-     */
+    
     getAnalytics() {
         const analytics = {
             totalFeedback: this.feedbackData.length,
@@ -494,13 +443,11 @@ class FeedbackSystem {
             return analytics;
         }
 
-        // Calculate average rating
         const ratings = this.feedbackData.filter(f => f.rating).map(f => parseInt(f.rating));
         if (ratings.length > 0) {
             analytics.averageRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
         }
 
-        // Category breakdown
         this.feedbackData.forEach(feedback => {
             analytics.categoryBreakdown[feedback.category] = 
                 (analytics.categoryBreakdown[feedback.category] || 0) + 1;
@@ -509,7 +456,6 @@ class FeedbackSystem {
                 (analytics.pageBreakdown[feedback.page] || 0) + 1;
         });
 
-        // Recent feedback (last 10)
         analytics.recentFeedback = this.feedbackData
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
             .slice(0, 10);
@@ -517,9 +463,7 @@ class FeedbackSystem {
         return analytics;
     }
 
-    /**
-     * Export feedback data
-     */
+    
     exportFeedback() {
         const data = {
             exportDate: new Date().toISOString(),
@@ -539,12 +483,10 @@ class FeedbackSystem {
     }
 }
 
-// Initialize feedback system when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.feedbackSystem = new FeedbackSystem();
 });
 
-// Export for use in other scripts
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = FeedbackSystem;
 }

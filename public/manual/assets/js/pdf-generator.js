@@ -1,6 +1,4 @@
-/**
- * PDF Generation Utilities for AbhiStat User Manual
- */
+
 
 class PDFGenerator {
     constructor() {
@@ -17,25 +15,18 @@ class PDFGenerator {
         ];
     }
 
-    /**
-     * Generate a complete PDF version of the manual
-     */
+    
     async generateCompletePDF() {
         try {
-            // Create a new window for PDF generation
             const printWindow = window.open('', '_blank');
             
-            // Build the complete HTML document
             const htmlContent = await this.buildCompleteHTML();
             
-            // Write content to the new window
             printWindow.document.write(htmlContent);
             printWindow.document.close();
             
-            // Wait for content to load
             await this.waitForContentLoad(printWindow);
             
-            // Trigger print dialog
             printWindow.print();
             
             return true;
@@ -45,9 +36,7 @@ class PDFGenerator {
         }
     }
 
-    /**
-     * Build complete HTML document for PDF
-     */
+    
     async buildCompleteHTML() {
         let completeHTML = `
 <!DOCTYPE html>
@@ -59,7 +48,6 @@ class PDFGenerator {
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/print.css">
     <style>
-        /* Additional PDF-specific styles */
         .pdf-page {
             page-break-before: always;
         }
@@ -78,13 +66,10 @@ class PDFGenerator {
         <div class="content-wrapper">
 `;
 
-        // Add title page
         completeHTML += this.generateTitlePage();
 
-        // Add table of contents
         completeHTML += await this.generateTableOfContents();
 
-        // Add each page content
         for (const page of this.pages) {
             try {
                 const content = await this.fetchPageContent(page.file);
@@ -110,9 +95,7 @@ class PDFGenerator {
         return completeHTML;
     }
 
-    /**
-     * Generate title page
-     */
+    
     generateTitlePage() {
         const currentDate = new Date().toLocaleDateString();
         return `
@@ -134,9 +117,7 @@ class PDFGenerator {
         `;
     }
 
-    /**
-     * Generate table of contents
-     */
+    
     async generateTableOfContents() {
         return `
             <div class="pdf-page print-toc">
@@ -156,9 +137,7 @@ class PDFGenerator {
         `;
     }
 
-    /**
-     * Fetch content from a page file
-     */
+    
     async fetchPageContent(filename) {
         try {
             const response = await fetch(filename);
@@ -167,13 +146,11 @@ class PDFGenerator {
             }
             const html = await response.text();
             
-            // Extract content from the main content area
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             const contentArea = doc.querySelector('#content-area');
             
             if (contentArea) {
-                // Remove interactive elements
                 const interactiveElements = contentArea.querySelectorAll(
                     '.search-container, .breadcrumb-container, .sidebar-toggle, .feedback-section'
                 );
@@ -189,14 +166,11 @@ class PDFGenerator {
         }
     }
 
-    /**
-     * Wait for content to load in print window
-     */
+   
     waitForContentLoad(printWindow) {
         return new Promise((resolve) => {
             const checkLoad = () => {
                 if (printWindow.document.readyState === 'complete') {
-                    // Wait a bit more for images and styles to load
                     setTimeout(resolve, 1000);
                 } else {
                     setTimeout(checkLoad, 100);
@@ -206,24 +180,18 @@ class PDFGenerator {
         });
     }
 
-    /**
-     * Generate PDF using browser's print functionality
-     */
+    
     printCurrentPage() {
-        // Add print styles temporarily
         const printLink = document.createElement('link');
         printLink.rel = 'stylesheet';
         printLink.href = 'assets/css/print.css';
         printLink.media = 'print';
         document.head.appendChild(printLink);
 
-        // Trigger print
         window.print();
     }
 
-    /**
-     * Download instructions for PDF generation
-     */
+    
     showPDFInstructions() {
         const instructions = `
             <div class="alert alert-info">
@@ -250,10 +218,8 @@ class PDFGenerator {
     }
 }
 
-// Initialize PDF generator
 const pdfGenerator = new PDFGenerator();
 
-// Export for use in other scripts
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = PDFGenerator;
 }

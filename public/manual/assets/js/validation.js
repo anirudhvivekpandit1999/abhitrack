@@ -1,4 +1,3 @@
-// AbhiStat User Manual - Validation and Quality Assurance Script
 
 class DocumentationValidator {
     constructor() {
@@ -14,13 +13,11 @@ class DocumentationValidator {
         };
         
         this.requirements = {
-            // From requirements 8.1, 8.3, 8.5
             navigation: [
                 'Table of contents with page-by-page navigation',
                 'Cross-references and links between sections',
                 'Consistent formatting and visual hierarchy'
             ],
-            // From requirements 8.2, 8.4
             interactive: [
                 'Clickable table of contents with smooth scrolling',
                 'Interactive code examples with copy functionality',
@@ -30,7 +27,6 @@ class DocumentationValidator {
         };
     }
     
-    // Validate all documentation aspects
     async validateAll() {
         console.log('Starting comprehensive documentation validation...');
         
@@ -46,11 +42,9 @@ class DocumentationValidator {
         return this.generateReport();
     }
     
-    // Validate navigation functionality
     async validateNavigation() {
         const results = [];
         
-        // Test table of contents structure
         const tocLinks = document.querySelectorAll('.toc-link');
         results.push({
             test: 'Table of Contents Links',
@@ -59,7 +53,6 @@ class DocumentationValidator {
             requirement: '8.1'
         });
         
-        // Test expandable sections
         const expandableItems = document.querySelectorAll('.toc-expandable');
         results.push({
             test: 'Expandable TOC Sections',
@@ -68,7 +61,6 @@ class DocumentationValidator {
             requirement: '8.1'
         });
         
-        // Test breadcrumb navigation
         const breadcrumbs = document.getElementById('breadcrumbs');
         results.push({
             test: 'Breadcrumb Navigation',
@@ -77,7 +69,6 @@ class DocumentationValidator {
             requirement: '8.2'
         });
         
-        // Test smooth scrolling
         const smoothScroll = getComputedStyle(document.documentElement).scrollBehavior;
         results.push({
             test: 'Smooth Scrolling',
@@ -86,7 +77,6 @@ class DocumentationValidator {
             requirement: '8.2'
         });
         
-        // Test search functionality
         const searchInput = document.getElementById('searchInput');
         const searchResults = document.getElementById('searchResults');
         results.push({
@@ -100,11 +90,9 @@ class DocumentationValidator {
         return results;
     }
     
-    // Validate content structure and completeness
     async validateContent() {
         const results = [];
         
-        // Required sections based on design document
         const requiredSections = [
             'getting-started',
             'data-management',
@@ -125,7 +113,6 @@ class DocumentationValidator {
             });
         });
         
-        // Test for consistent formatting
         const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
         results.push({
             test: 'Heading Structure',
@@ -134,7 +121,6 @@ class DocumentationValidator {
             requirement: '8.5'
         });
         
-        // Test for visual hierarchy
         const h1Count = document.querySelectorAll('h1').length;
         results.push({
             test: 'Visual Hierarchy (H1 Usage)',
@@ -147,11 +133,9 @@ class DocumentationValidator {
         return results;
     }
     
-    // Validate accessibility features
     async validateAccessibility() {
         const results = [];
         
-        // Test skip to content link
         const skipLink = document.querySelector('.skip-to-content');
         results.push({
             test: 'Skip to Content Link',
@@ -160,7 +144,6 @@ class DocumentationValidator {
             requirement: 'WCAG 2.1'
         });
         
-        // Test focus indicators
         const focusableElements = document.querySelectorAll('a, button, input, [tabindex]');
         results.push({
             test: 'Focusable Elements',
@@ -169,7 +152,6 @@ class DocumentationValidator {
             requirement: 'WCAG 2.1'
         });
         
-        // Test alt text for images
         const images = document.querySelectorAll('img');
         const imagesWithAlt = document.querySelectorAll('img[alt]');
         results.push({
@@ -179,7 +161,6 @@ class DocumentationValidator {
             requirement: 'WCAG 2.1'
         });
         
-        // Test color contrast (simplified check)
         results.push({
             test: 'Color Contrast',
             status: 'pass',
@@ -187,7 +168,6 @@ class DocumentationValidator {
             requirement: 'WCAG 2.1'
         });
         
-        // Test keyboard navigation
         results.push({
             test: 'Keyboard Navigation',
             status: 'pass',
@@ -199,11 +179,9 @@ class DocumentationValidator {
         return results;
     }
     
-    // Validate performance metrics
     async validatePerformance() {
         const results = [];
         
-        // Page load time
         const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
         results.push({
             test: 'Page Load Time',
@@ -212,7 +190,6 @@ class DocumentationValidator {
             requirement: 'Performance'
         });
         
-        // Resource count
         const resources = performance.getEntriesByType('resource');
         results.push({
             test: 'Resource Count',
@@ -221,7 +198,6 @@ class DocumentationValidator {
             requirement: 'Performance'
         });
         
-        // DOM complexity
         const domElements = document.querySelectorAll('*').length;
         results.push({
             test: 'DOM Complexity',
@@ -230,7 +206,6 @@ class DocumentationValidator {
             requirement: 'Performance'
         });
         
-        // CSS file count
         const cssFiles = Array.from(document.styleSheets).length;
         results.push({
             test: 'CSS Files',
@@ -262,7 +237,6 @@ class DocumentationValidator {
             requirement: 'Responsive'
         });
         
-        // Mobile navigation toggle
         const sidebarToggle = document.getElementById('sidebarToggle');
         results.push({
             test: 'Mobile Navigation Toggle',
@@ -307,7 +281,6 @@ class DocumentationValidator {
             requirement: '8.2'
         });
         
-        // Tooltip system
         const tooltipTerms = document.querySelectorAll('.tooltip-term');
         const tooltipContainer = document.getElementById('tooltip-container');
         results.push({
@@ -317,7 +290,6 @@ class DocumentationValidator {
             requirement: '8.2'
         });
         
-        // Cross-references
         const crossRefLinks = document.querySelectorAll('.cross-ref-link');
         results.push({
             test: 'Cross-Reference Links',
@@ -326,7 +298,6 @@ class DocumentationValidator {
             requirement: '8.2'
         });
         
-        // Search functionality
         const searchFunctionality = typeof window.performSearch === 'function';
         results.push({
             test: 'Search Functionality',
@@ -335,7 +306,6 @@ class DocumentationValidator {
             requirement: '8.4'
         });
         
-        // Smooth scrolling implementation
         const smoothScrollFunction = typeof window.smoothScrollToElement === 'function';
         results.push({
             test: 'Enhanced Smooth Scrolling',
@@ -359,7 +329,6 @@ class DocumentationValidator {
             requirement: '8.2'
         });
         
-        // TOC links
         const tocLinks = document.querySelectorAll('.toc-link');
         let validTocLinks = 0;
         tocLinks.forEach(link => {
@@ -376,7 +345,6 @@ class DocumentationValidator {
             requirement: '8.1'
         });
         
-        // Cross-reference links
         results.push({
             test: 'Cross-Reference System',
             status: typeof window.getCrossReferences === 'function' ? 'pass' : 'warning',
@@ -388,11 +356,9 @@ class DocumentationValidator {
         return results;
     }
     
-    // Validate screenshots and visual elements
     async validateScreenshots() {
         const results = [];
         
-        // Check for placeholder screenshots
         const screenshots = document.querySelectorAll('.screenshot-placeholder');
         results.push({
             test: 'Screenshot Placeholders',
@@ -401,7 +367,6 @@ class DocumentationValidator {
             requirement: '8.1'
         });
         
-        // Check for images
         const images = document.querySelectorAll('img');
         results.push({
             test: 'Documentation Images',
@@ -410,7 +375,6 @@ class DocumentationValidator {
             requirement: '8.1'
         });
         
-        // Check for visual elements
         const visualElements = document.querySelectorAll('.step-container, .feature-box, .chart-type');
         results.push({
             test: 'Visual Content Elements',
@@ -423,7 +387,6 @@ class DocumentationValidator {
         return results;
     }
     
-    // Generate comprehensive validation report
     generateReport() {
         const allResults = Object.values(this.validationResults).flat();
         const passed = allResults.filter(r => r.status === 'pass').length;
@@ -446,11 +409,9 @@ class DocumentationValidator {
         return report;
     }
     
-    // Generate recommendations based on validation results
     generateRecommendations() {
         const recommendations = [];
         
-        // Check for failed tests
         Object.values(this.validationResults).flat().forEach(result => {
             if (result.status === 'fail') {
                 recommendations.push({
@@ -472,7 +433,6 @@ class DocumentationValidator {
         return recommendations;
     }
     
-    // Get specific recommendations for issues
     getRecommendation(testName) {
         const recommendations = {
             'Skip to Content Link': 'Add a skip-to-content link at the beginning of the page for accessibility',
@@ -489,7 +449,6 @@ class DocumentationValidator {
         return recommendations[testName] || 'Review and fix the identified issue';
     }
     
-    // Test specific procedures against actual application
     async testProcedures() {
         const procedures = [
             {

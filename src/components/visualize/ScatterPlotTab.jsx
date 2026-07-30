@@ -100,7 +100,6 @@ const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', 
   const [filterColumn, setFilterColumn] = useState('')
   const [filterMin, setFilterMin] = useState('')
 
-  // Generate custom filename based on project information
   const generateFileName = (visualizationName) => {
     const parts = [];
     if (clientName) parts.push(clientName.replace(/\s+/g, '_'));

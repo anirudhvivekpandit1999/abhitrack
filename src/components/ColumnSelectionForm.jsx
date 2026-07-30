@@ -75,9 +75,7 @@ const ColumnSelectionForm = ({
                 overflow: 'hidden',
             }}
         >
-            {/* ============================================================
-                DECORATIVE BACKGROUND
-            ============================================================ */}
+            
 
             <Box
                 sx={{
@@ -92,9 +90,7 @@ const ColumnSelectionForm = ({
                 }}
             />
 
-            {/* ============================================================
-                HEADER
-            ============================================================ */}
+            
 
             <Box
                 sx={{
@@ -151,7 +147,6 @@ const ColumnSelectionForm = ({
                         />
                     </Box>
 
-                    {/* Title */}
 
                     <Box>
                         <Typography
@@ -180,7 +175,6 @@ const ColumnSelectionForm = ({
                     </Box>
                 </Box>
 
-                {/* Column count */}
 
                 <Chip
                     size="small"
@@ -205,9 +199,7 @@ const ColumnSelectionForm = ({
                 />
             </Box>
 
-            {/* ============================================================
-                SELECTION AREA
-            ============================================================ */}
+            
 
             <Box
                 sx={{
@@ -228,9 +220,7 @@ const ColumnSelectionForm = ({
                     alignItems: 'center',
                 }}
             >
-                {/* ========================================================
-                    DEPENDENT VARIABLE
-                ======================================================== */}
+                
 
                 <Box
                     sx={{
@@ -256,7 +246,6 @@ const ColumnSelectionForm = ({
                         },
                     }}
                 >
-                    {/* Variable information */}
 
                     <Box
                         sx={{
@@ -342,7 +331,6 @@ const ColumnSelectionForm = ({
                         />
                     </Box>
 
-                    {/* Selector */}
 
                     <FormControl
                         fullWidth
@@ -418,9 +406,7 @@ const ColumnSelectionForm = ({
                     </FormControl>
                 </Box>
 
-                {/* ========================================================
-                    RELATIONSHIP INDICATOR
-                ======================================================== */}
+                
 
                 <Box
                     sx={{
@@ -436,9 +422,7 @@ const ColumnSelectionForm = ({
                     <MuiRelationshipArrow />
                 </Box>
 
-                {/* ========================================================
-                    INDEPENDENT VARIABLE
-                ======================================================== */}
+                
 
                 <Box
                     sx={{
@@ -464,7 +448,6 @@ const ColumnSelectionForm = ({
                         },
                     }}
                 >
-                    {/* Variable information */}
 
                     <Box
                         sx={{
@@ -550,7 +533,6 @@ const ColumnSelectionForm = ({
                         />
                     </Box>
 
-                    {/* Selector */}
 
                     <FormControl
                         fullWidth
@@ -627,9 +609,7 @@ const ColumnSelectionForm = ({
                 </Box>
             </Box>
 
-            {/* ============================================================
-                CURRENT RELATIONSHIP
-            ============================================================ */}
+            
 
             {selectedColumn && secondaryColumn && (
                 <Box
@@ -707,9 +687,7 @@ const ColumnSelectionForm = ({
     );
 };
 
-/* ============================================================================
-   RELATIONSHIP ARROW
-============================================================================ */
+
 
 const MuiRelationshipArrow = () => {
     return (

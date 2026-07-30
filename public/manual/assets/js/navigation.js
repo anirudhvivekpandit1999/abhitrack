@@ -1,4 +1,3 @@
-// AbhiStat User Manual - Navigation JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeSidebar();
@@ -41,14 +40,12 @@ function initializeSidebar() {
     }
     window.addEventListener('resize', function() {
         if (window.innerWidth > 768) {
-            // Ensure mobile state is cleared when moving to desktop
             sidebar.classList.remove('active');
             document.removeEventListener('click', closeSidebarOnOutsideClick);
         }
     });
 }
 
-// Table of Contents functionality
 function initializeTableOfContents() {
     const tocLinks = document.querySelectorAll('.toc-link');
     
@@ -56,17 +53,13 @@ function initializeTableOfContents() {
         link.addEventListener('click', function(e) {
             e.preventDefault();
             
-            // Remove active class from all links
             tocLinks.forEach(l => l.classList.remove('active'));
             
-            // Add active class to clicked link
             this.classList.add('active');
             
-            // Load content based on the clicked section
             const href = this.getAttribute('href');
             loadSectionContent(href);
             
-            // Close sidebar on mobile after selection
             if (window.innerWidth <= 768) {
                 document.getElementById('sidebar').classList.remove('active');
             }
@@ -74,7 +67,6 @@ function initializeTableOfContents() {
     });
 }
 
-// Smooth scrolling for anchor links
 function initializeSmoothScrolling() {
     const links = document.querySelectorAll('a[href^="#"]');
     
@@ -94,7 +86,6 @@ function initializeSmoothScrolling() {
     });
 }
 
-// Track active section based on scroll position
 function initializeActiveSection() {
     const sections = document.querySelectorAll('[id]');
     const tocLinks = document.querySelectorAll('.toc-link');
@@ -109,7 +100,6 @@ function initializeActiveSection() {
             }
         });
         
-        // Update active TOC link
         tocLinks.forEach(link => {
             link.classList.remove('active');
             if (link.getAttribute('href') === currentSection) {
@@ -118,7 +108,6 @@ function initializeActiveSection() {
         });
     }
     
-    // Throttled scroll listener
     let ticking = false;
     window.addEventListener('scroll', function() {
         if (!ticking) {
@@ -131,11 +120,9 @@ function initializeActiveSection() {
     });
 }
 
-// Content loading functionality
 function loadSectionContent(sectionId) {
     const contentArea = document.getElementById('content-area');
     
-    // Content templates for different sections
     const contentTemplates = {
         '#getting-started': getGettingStartedContent(),
         '#account-creation': getAccountCreationContent(),
@@ -168,7 +155,6 @@ function loadSectionContent(sectionId) {
         '#administrative-functions': getAdministrativeFunctionsContent()
     };
     
-    // Load content with fade effect
     contentArea.style.opacity = '0';
     
     setTimeout(() => {
@@ -176,12 +162,10 @@ function loadSectionContent(sectionId) {
         contentArea.innerHTML = content;
         contentArea.style.opacity = '1';
         
-        // Scroll to top of content
         contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 150);
 }
 
-// Content template functions (placeholders for now)
 function getGettingStartedContent() {
     return `
         <div id="getting-started">
@@ -542,7 +526,6 @@ function getDefaultContent() {
     `;
 }
 
-// Search functionality
 function initializeSearch() {
     const searchInput = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
@@ -550,7 +533,6 @@ function initializeSearch() {
     
     if (!searchInput) return;
     
-    // Search index for better performance
     const searchIndex = buildSearchIndex();
     
     let searchTimeout;
@@ -559,12 +541,10 @@ function initializeSearch() {
     searchInput.addEventListener('input', function() {
         const query = this.value.toLowerCase().trim();
         
-        // Clear previous timeout
         if (searchTimeout) {
             clearTimeout(searchTimeout);
         }
         
-        // Debounce search to improve performance
         searchTimeout = setTimeout(() => {
             if (query.length < 2) {
                 hideSearchResults();
@@ -580,7 +560,6 @@ function initializeSearch() {
         }, 300);
     });
     
-    // Enhanced keyboard navigation
     searchInput.addEventListener('keydown', function(e) {
         const searchResults = document.getElementById('searchResults');
         const resultItems = searchResults.querySelectorAll('.search-result-item');
@@ -628,13 +607,11 @@ function initializeSearch() {
         }
     });
     
-    // Update visual selection of search results
     function updateSelectedResult(resultItems) {
         resultItems.forEach((item, index) => {
             item.classList.toggle('selected', index === selectedResultIndex);
         });
         
-        // Scroll selected item into view
         if (selectedResultIndex >= 0 && resultItems[selectedResultIndex]) {
             resultItems[selectedResultIndex].scrollIntoView({
                 block: 'nearest',
@@ -643,7 +620,6 @@ function initializeSearch() {
         }
     }
     
-    // Hide search results when clicking outside
     document.addEventListener('click', function(e) {
         if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
             hideSearchResults();
@@ -693,19 +669,16 @@ function performSearch(query, searchIndex) {
     searchIndex.forEach(section => {
         let score = 0;
         
-        // Check title match
         if (section.title.toLowerCase().includes(query)) {
             score += 10;
         }
         
-        // Check keyword matches
         section.keywords.forEach(keyword => {
             if (keyword.includes(query)) {
                 score += 5;
             }
         });
         
-        // Check partial matches
         const words = query.split(' ');
         words.forEach(word => {
             if (section.title.toLowerCase().includes(word)) {
@@ -758,7 +731,6 @@ function displaySearchResults(results) {
     searchResults.innerHTML = resultsHTML;
     searchResults.style.display = 'block';
     
-    // Add click and keyboard handlers to search results
     searchResults.querySelectorAll('.search-result-item').forEach((item, index) => {
         item.addEventListener('click', function() {
             selectSearchResult(this);
@@ -771,7 +743,6 @@ function displaySearchResults(results) {
             }
         });
         
-        // Add hover effects
         item.addEventListener('mouseenter', function() {
             selectedResultIndex = index;
             updateSelectedResult(searchResults.querySelectorAll('.search-result-item'));
@@ -788,16 +759,13 @@ function selectSearchResult(resultItem) {
     selectedResultIndex = -1;
 }
 
-// Interactive code examples functionality
 function initializeInteractiveCodeExamples() {
-    // Add copy functionality to all code blocks
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('copy-code-btn')) {
             const codeBlock = e.target.closest('.code-example').querySelector('code, pre');
             const textToCopy = codeBlock.textContent;
             
             navigator.clipboard.writeText(textToCopy).then(() => {
-                // Show success feedback
                 const originalText = e.target.textContent;
                 e.target.textContent = 'Copied!';
                 e.target.classList.add('copied');
@@ -808,14 +776,12 @@ function initializeInteractiveCodeExamples() {
                 }, 2000);
             }).catch(err => {
                 console.error('Failed to copy text: ', err);
-                // Fallback for older browsers
                 fallbackCopyTextToClipboard(textToCopy, e.target);
             });
         }
     });
 }
 
-// Fallback copy function for older browsers
 function fallbackCopyTextToClipboard(text, button) {
     const textArea = document.createElement('textarea');
     textArea.value = text;
@@ -845,15 +811,12 @@ function fallbackCopyTextToClipboard(text, button) {
     document.body.removeChild(textArea);
 }
 
-// Enhanced tooltip system for technical terms
 function initializeTooltipSystem() {
-    // Create tooltip container
     const tooltipContainer = document.createElement('div');
     tooltipContainer.id = 'tooltip-container';
     tooltipContainer.className = 'tooltip-container';
     document.body.appendChild(tooltipContainer);
     
-    // Tooltip definitions
     const tooltipDefinitions = {
         'API': 'Application Programming Interface - A set of protocols and tools for building software applications',
         'CSV': 'Comma-Separated Values - A file format that stores tabular data in plain text',
@@ -876,7 +839,6 @@ function initializeTooltipSystem() {
         'Drag and Drop': 'A user interface method for moving objects by clicking and dragging'
     };
     
-    // Add tooltip functionality to elements with data-tooltip attribute
     document.addEventListener('mouseover', function(e) {
         const element = e.target.closest('[data-tooltip]');
         if (element) {
@@ -893,7 +855,6 @@ function initializeTooltipSystem() {
         }
     });
     
-    // Auto-detect technical terms and add tooltips
     document.addEventListener('DOMContentLoaded', function() {
         autoAddTooltips();
     });
@@ -908,14 +869,12 @@ function initializeTooltipSystem() {
         `;
         tooltip.style.display = 'block';
         
-        // Position tooltip
         const rect = element.getBoundingClientRect();
         const tooltipRect = tooltip.getBoundingClientRect();
         
         let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
         let top = rect.top - tooltipRect.height - 10;
         
-        // Adjust if tooltip goes off screen
         if (left < 10) left = 10;
         if (left + tooltipRect.width > window.innerWidth - 10) {
             left = window.innerWidth - tooltipRect.width - 10;
@@ -970,13 +929,11 @@ function initializeTooltipSystem() {
             NodeFilter.SHOW_TEXT,
             {
                 acceptNode: function(node) {
-                    // Skip script and style elements
                     if (node.parentElement.tagName === 'SCRIPT' || 
                         node.parentElement.tagName === 'STYLE' ||
                         node.parentElement.hasAttribute('data-tooltip')) {
                         return NodeFilter.FILTER_REJECT;
                     }
-                    // Only include text nodes with actual content
                     if (node.textContent.trim().length > 0) {
                         return NodeFilter.FILTER_ACCEPT;
                     }
@@ -994,9 +951,7 @@ function initializeTooltipSystem() {
     }
 }
 
-// Enhanced smooth scrolling for table of contents
 function initializeEnhancedSmoothScrolling() {
-    // Override the existing smooth scrolling with enhanced version
     const tocLinks = document.querySelectorAll('.toc-link');
     
     tocLinks.forEach(link => {
@@ -1005,13 +960,10 @@ function initializeEnhancedSmoothScrolling() {
             
             const href = this.getAttribute('href');
             
-            // Handle external page links
             if (href.includes('.html')) {
-                // For multi-page navigation, load the page and scroll to section
                 const [page, section] = href.split('#');
                 loadPage(page, section);
             } else {
-                // For same-page navigation, smooth scroll to section
                 const targetElement = document.querySelector(href);
                 if (targetElement) {
                     smoothScrollToElement(targetElement);
@@ -1022,7 +974,6 @@ function initializeEnhancedSmoothScrolling() {
                 }
             }
             
-            // Close sidebar on mobile
             if (window.innerWidth <= 768) {
                 document.getElementById('sidebar').classList.remove('active');
             }
@@ -1034,10 +985,9 @@ function smoothScrollToElement(element, offset = 80) {
     const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
     const offsetPosition = elementPosition - offset;
     
-    // Enhanced smooth scroll with easing
     const startPosition = window.pageYOffset;
     const distance = offsetPosition - startPosition;
-    const duration = Math.min(Math.abs(distance) / 2, 1000); // Max 1 second
+    const duration = Math.min(Math.abs(distance) / 2, 1000); 
     let start = null;
     
     function animation(currentTime) {
@@ -1045,7 +995,6 @@ function smoothScrollToElement(element, offset = 80) {
         const timeElapsed = currentTime - start;
         const progress = Math.min(timeElapsed / duration, 1);
         
-        // Easing function (ease-in-out)
         const easeInOutCubic = progress < 0.5 
             ? 4 * progress * progress * progress 
             : 1 - Math.pow(-2 * progress + 2, 3) / 2;
@@ -1055,7 +1004,6 @@ function smoothScrollToElement(element, offset = 80) {
         if (timeElapsed < duration) {
             requestAnimationFrame(animation);
         } else {
-            // Highlight the target element briefly
             element.classList.add('highlight-target');
             setTimeout(() => {
                 element.classList.remove('highlight-target');
@@ -1067,14 +1015,11 @@ function smoothScrollToElement(element, offset = 80) {
 }
 
 function loadPage(page, section) {
-    // This would be implemented for multi-page navigation
-    // For now, we'll focus on single-page navigation
+    
     console.log(`Loading page: ${page}, section: ${section}`);
 }
 
-// Initialize all interactive features
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize existing functionality
     initializeSidebar();
     initializeTableOfContents();
     initializeSmoothScrolling();
@@ -1084,7 +1029,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeCrossReferences();
     initializeExpandableToC();
     
-    // Initialize new interactive features
     initializeInteractiveCodeExamples();
     initializeTooltipSystem();
     initializeEnhancedSmoothScrolling();
@@ -1151,7 +1095,6 @@ function filterTocItems(query) {
         
         if (text.includes(query)) {
             item.style.display = 'block';
-            // Expand parent if this is a sub-item
             const parentList = item.closest('.toc-sublist');
             if (parentList) {
                 parentList.style.display = 'block';
@@ -1209,9 +1152,7 @@ function getSectionPath(sectionId) {
     return pathMap[sectionId] || 'Unknown';
 }
 
-// Breadcrumb navigation
 function initializeBreadcrumbs() {
-    // Build breadcrumb hierarchy mapping
     const breadcrumbMap = {
         '#getting-started': ['Home', 'Getting Started'],
         '#account-creation': ['Home', 'Getting Started', 'Account Creation & Authentication'],
@@ -1244,14 +1185,12 @@ function initializeBreadcrumbs() {
         '#administrative-functions': ['Home', 'Technical Reference', 'Administrative Functions']
     };
     
-    // Function to update breadcrumbs based on current section
     window.updateBreadcrumbs = function(sectionId) {
         const breadcrumbContainer = document.getElementById('breadcrumbs');
         if (!breadcrumbContainer) return;
         
         const breadcrumbPath = breadcrumbMap[sectionId] || ['Home'];
         
-        // Build breadcrumb HTML
         const breadcrumbHTML = breadcrumbPath.map((item, index) => {
             const isLast = index === breadcrumbPath.length - 1;
             const isHome = item === 'Home';
@@ -1261,7 +1200,6 @@ function initializeBreadcrumbs() {
             } else if (isHome) {
                 return `<a href="#" class="breadcrumb-item breadcrumb-link" data-section="home">${item}</a>`;
             } else {
-                // Find the section ID for this breadcrumb item
                 const sectionId = findSectionIdByTitle(item);
                 return `<a href="#${sectionId}" class="breadcrumb-item breadcrumb-link" data-section="${sectionId}">${item}</a>`;
             }
@@ -1269,14 +1207,12 @@ function initializeBreadcrumbs() {
         
         breadcrumbContainer.innerHTML = breadcrumbHTML;
         
-        // Add click handlers to breadcrumb links
         breadcrumbContainer.querySelectorAll('.breadcrumb-link').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 const targetSection = this.dataset.section;
                 
                 if (targetSection === 'home') {
-                    // Load home content
                     loadSectionContent('');
                     updateActiveLink('');
                 } else {
@@ -1287,7 +1223,6 @@ function initializeBreadcrumbs() {
         });
     };
     
-    // Helper function to find section ID by title
     function findSectionIdByTitle(title) {
         const titleMap = {
             'Getting Started': 'getting-started',
@@ -1360,7 +1295,6 @@ function initializeCrossReferences() {
     };
 }
 
-// Expandable Table of Contents
 function initializeExpandableToC() {
     const expandableItems = document.querySelectorAll('.toc-expandable');
     
@@ -1379,11 +1313,9 @@ function initializeExpandableToC() {
     });
 }
 
-// Enhanced content loading with breadcrumbs and cross-references
 function loadSectionContent(sectionId) {
     const contentArea = document.getElementById('content-area');
     
-    // Content templates for different sections (keeping existing ones)
     const contentTemplates = {
         '#getting-started': getGettingStartedContent(),
         '#account-creation': getAccountCreationContent(),
@@ -1416,7 +1348,6 @@ function loadSectionContent(sectionId) {
         '#administrative-functions': getAdministrativeFunctionsContent()
     };
     
-    // Load content with fade effect
     contentArea.style.opacity = '0';
     
     setTimeout(() => {
@@ -1424,20 +1355,16 @@ function loadSectionContent(sectionId) {
         contentArea.innerHTML = content;
         contentArea.style.opacity = '1';
         
-        // Update breadcrumbs
         if (window.updateBreadcrumbs) {
             window.updateBreadcrumbs(sectionId);
         }
         
-        // Add cross-references if available
         if (window.addCrossReferences) {
             window.addCrossReferences(sectionId.replace('#', ''));
         }
         
-        // Scroll to top of content
         contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
         
-        // Update URL hash without triggering scroll
         history.replaceState(null, null, sectionId);
     }, 150);
 }
@@ -1460,7 +1387,6 @@ function addCrossReferencesToContent(sectionId) {
         
         contentArea.innerHTML += crossRefHTML;
         
-        // Add click handlers to cross-reference links
         contentArea.querySelectorAll('.cross-ref-link').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -1482,12 +1408,9 @@ function updateActiveLink(sectionId) {
     });
 }
 
-// Cross-references functionality - Complete implementation
 function initializeCrossReferences() {
-    // Build cross-reference mapping
     const crossRefMap = buildCrossReferenceMap();
     
-    // Add cross-reference sections to content
     window.addCrossReferences = function(sectionId) {
         const contentArea = document.getElementById('content-area');
         const crossRefs = crossRefMap[sectionId];
@@ -1510,7 +1433,6 @@ function initializeCrossReferences() {
             
             contentArea.insertAdjacentHTML('beforeend', crossRefHTML);
             
-            // Add click handlers for cross-reference links
             contentArea.querySelectorAll('.cross-ref-link').forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -1526,7 +1448,6 @@ function initializeCrossReferences() {
     };
 }
 
-// Build cross-reference mapping between related sections
 function buildCrossReferenceMap() {
     return {
         'getting-started': [
@@ -1681,9 +1602,7 @@ function buildCrossReferenceMap() {
     };
 }
 
-// Initialize URL hash handling for direct navigation
 function initializeHashNavigation() {
-    // Handle initial page load with hash
     window.addEventListener('load', function() {
         const hash = window.location.hash;
         if (hash && hash !== '#') {
@@ -1695,7 +1614,6 @@ function initializeHashNavigation() {
         }
     });
     
-    // Handle hash changes (back/forward navigation)
     window.addEventListener('hashchange', function() {
         const hash = window.location.hash;
         if (hash && hash !== '#') {
@@ -1708,9 +1626,7 @@ function initializeHashNavigation() {
     });
 }
 
-// Add hash navigation to initialization
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize navigation functionality
     initializeSidebar();
     initializeTableOfContents();
     initializeSmoothScrolling();
@@ -1719,9 +1635,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeBreadcrumbs();
     initializeCrossReferences();
     initializeExpandableToC();
-    initializeHashNavigation(); // Add this new initialization
+    initializeHashNavigation(); 
 });
-// Utility
  function to create interactive code examples
 function createInteractiveCodeExample(code, title = 'Code Example', language = '') {
     return `
@@ -1735,20 +1650,17 @@ function createInteractiveCodeExample(code, title = 'Code Example', language = '
     `;
 }
 
-// Utility function to escape HTML
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-// Utility function to add tooltips to specific terms in content
 function addTooltipToTerm(content, term, definition) {
     const regex = new RegExp(`\\b${term}\\b`, 'gi');
     return content.replace(regex, `<span data-tooltip="${definition}" class="tooltip-term">$&</span>`);
 }
 
-// Enhanced content templates with interactive features
 function getGettingStartedContent() {
     let content = `
         <div id="getting-started" class="chapter">
@@ -1809,16 +1721,13 @@ function getGettingStartedContent() {
 }
 
 function getCalculatedColumnsContent() {
-    const formulaExample = `// Basic arithmetic operations
+    const formulaExample = `
 new_column = column_a + column_b
 
-// Statistical functions
 average_value = (column_a + column_b + column_c) / 3
 
-// Conditional logic
 status = IF(column_a > 100, "High", "Low")
 
-// Mathematical functions
 log_value = LOG(column_a)
 sqrt_value = SQRT(column_b)`;
 
@@ -1972,17 +1881,14 @@ function getDataVisualizationContent() {
     return content;
 }
 
-// Update the existing content loading function to use enhanced templates
 function loadSectionContent(sectionId) {
     const contentArea = document.getElementById('content-area');
     
-    // Enhanced content templates with interactive features
     const contentTemplates = {
         '#getting-started': getGettingStartedContent(),
         '#calculated-columns': getCalculatedColumnsContent(),
         '#dependency-modeling': getDependencyModelingContent(),
         '#data-visualization': getDataVisualizationContent(),
-        // Keep other existing templates...
         '#account-creation': getAccountCreationContent(),
         '#platform-overview': getPlatformOverviewContent(),
         '#navigation-guide': getNavigationGuideContent(),
@@ -2010,7 +1916,6 @@ function loadSectionContent(sectionId) {
         '#administrative-functions': getAdministrativeFunctionsContent()
     };
     
-    // Load content with fade effect
     contentArea.style.opacity = '0';
     
     setTimeout(() => {
@@ -2018,27 +1923,22 @@ function loadSectionContent(sectionId) {
         contentArea.innerHTML = content;
         contentArea.style.opacity = '1';
         
-        // Update breadcrumbs
         if (window.updateBreadcrumbs) {
             window.updateBreadcrumbs(sectionId);
         }
         
-        // Add cross-references if available
         if (window.addCrossReferences) {
             window.addCrossReferences(sectionId.replace('#', ''));
         }
         
-        // Re-initialize tooltips for new content
         setTimeout(() => {
             if (window.autoAddTooltips) {
                 window.autoAddTooltips();
             }
         }, 100);
         
-        // Scroll to top of content
         contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
         
-        // Update URL hash without triggering scroll
         history.replaceState(null, null, sectionId);
     }, 150);
 }

@@ -61,70 +61,57 @@
                         <h3>System Architecture Diagram</h3>
                         <div class="diagram-container">
                             <svg width="100%" height="400" viewBox="0 0 800 400">
-                                <!-- Client Layer -->
                                 <rect x="50" y="50" width="150" height="80" fill="#E3F2FD" stroke="#1976D2" stroke-width="2" rx="5"/>
                                 <text x="125" y="75" text-anchor="middle" font-size="12" font-weight="bold">Web Browser</text>
                                 <text x="125" y="95" text-anchor="middle" font-size="10">React Frontend</text>
                                 <text x="125" y="110" text-anchor="middle" font-size="10">Port 5173</text>
                                 
-                                <!-- Load Balancer/Proxy -->
                                 <rect x="300" y="50" width="150" height="80" fill="#FFF3E0" stroke="#F57C00" stroke-width="2" rx="5"/>
                                 <text x="375" y="75" text-anchor="middle" font-size="12" font-weight="bold">Web Server</text>
                                 <text x="375" y="95" text-anchor="middle" font-size="10">Nginx/Apache</text>
                                 <text x="375" y="110" text-anchor="middle" font-size="10">HTTPS/SSL</text>
                                 
-                                <!-- Backend API -->
                                 <rect x="550" y="50" width="150" height="80" fill="#E8F5E8" stroke="#388E3C" stroke-width="2" rx="5"/>
                                 <text x="625" y="75" text-anchor="middle" font-size="12" font-weight="bold">FastAPI Backend</text>
                                 <text x="625" y="95" text-anchor="middle" font-size="10">Python 3.x</text>
                                 <text x="625" y="110" text-anchor="middle" font-size="10">Port 8000</text>
                                 
-                                <!-- Database -->
                                 <rect x="550" y="200" width="150" height="80" fill="#FCE4EC" stroke="#C2185B" stroke-width="2" rx="5"/>
                                 <text x="625" y="225" text-anchor="middle" font-size="12" font-weight="bold">MongoDB</text>
                                 <text x="625" y="245" text-anchor="middle" font-size="10">User Management</text>
                                 <text x="625" y="260" text-anchor="middle" font-size="10">Session Storage</text>
                                 
-                                <!-- File Storage -->
                                 <rect x="300" y="200" width="150" height="80" fill="#F3E5F5" stroke="#7B1FA2" stroke-width="2" rx="5"/>
                                 <text x="375" y="225" text-anchor="middle" font-size="12" font-weight="bold">File System</text>
                                 <text x="375" y="245" text-anchor="middle" font-size="10">Temporary Files</text>
                                 <text x="375" y="260" text-anchor="middle" font-size="10">Data Processing</text>
                                 
-                                <!-- External Services -->
                                 <rect x="50" y="200" width="150" height="80" fill="#E0F2F1" stroke="#00796B" stroke-width="2" rx="5"/>
                                 <text x="125" y="225" text-anchor="middle" font-size="12" font-weight="bold">Google OAuth</text>
                                 <text x="125" y="245" text-anchor="middle" font-size="10">Authentication</text>
                                 <text x="125" y="260" text-anchor="middle" font-size="10">External Users</text>
                                 
-                                <!-- Arrows -->
                                 <defs>
                                     <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                                         <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
                                     </marker>
                                 </defs>
                                 
-                                <!-- Client to Web Server -->
                                 <line x1="200" y1="90" x2="300" y2="90" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
                                 <text x="250" y="85" text-anchor="middle" font-size="9">HTTPS</text>
                                 
-                                <!-- Web Server to Backend -->
                                 <line x1="450" y1="90" x2="550" y2="90" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
                                 <text x="500" y="85" text-anchor="middle" font-size="9">API Calls</text>
                                 
-                                <!-- Backend to Database -->
                                 <line x1="625" y1="130" x2="625" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
                                 <text x="640" y="165" font-size="9">MongoDB</text>
                                 
-                                <!-- Backend to File System -->
                                 <line x1="550" y1="110" x2="450" y2="220" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
                                 <text x="480" y="165" font-size="9">File I/O</text>
                                 
-                                <!-- Client to Google OAuth -->
                                 <line x1="125" y1="130" x2="125" y2="200" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
                                 <text x="140" y="165" font-size="9">OAuth</text>
                                 
-                                <!-- Technology Stack Labels -->
                                 <text x="400" y="350" text-anchor="middle" font-size="14" font-weight="bold">Technology Stack</text>
                                 <text x="100" y="370" font-size="11">Frontend: React 19, Material-UI, Vite, TanStack Query</text>
                                 <text x="100" y="385" font-size="11">Backend: FastAPI, Python 3.x, Pandas, NumPy, Scikit-learn</text>
@@ -151,13 +138,13 @@
                     <h3>Main Application Structure</h3>
                     <div class="code-block">
                         <pre><code>src/
-├── App.jsx                 # Main application component with routing
-├── main.jsx               # Application entry point
-├── components/            # Reusable UI components
-├── pages/                 # Main application pages
-├── hooks/                 # Custom React hooks
-├── utils/                 # Utility functions
-└── assets/               # Static assets</code></pre>
+├── App.jsx                 
+├── main.jsx               
+├── components/           
+├── pages/                 
+├── hooks/                 
+├── utils/                 
+└── assets/               </code></pre>
                     </div>
                     
                     <h3>Core Pages and Components</h3>
@@ -228,21 +215,21 @@
                     <h3>Directory Structure</h3>
                     <div class="code-block">
                         <pre><code>Abhitech_Statistical_Tool_Backend/
-├── main.py                # FastAPI application entry point
-├── api/                   # API route modules
-│   ├── auth.py           # Authentication endpoints
-│   ├── file_processing.py # File upload and processing
-│   ├── calculated.py     # Calculated columns functionality
-│   ├── dependency.py     # Dependency modeling endpoints
-│   └── session.py        # Session management
-├── core/                  # Core configuration and utilities
-│   ├── config.py         # Application configuration
-│   ├── db.py            # Database connection
-│   └── security.py      # Security utilities (JWT, hashing)
-├── models/               # Data models and schemas
-│   └── schemas.py       # Pydantic models for API
-├── temp_files/          # Temporary file storage
-└── utils.py             # Utility functions</code></pre>
+├── main.py                
+├── api/                   
+│   ├── auth.py           
+│   ├── file_processing.py 
+│   ├── calculated.py     
+│   ├── dependency.py     
+│   └── session.py        
+├── core/                  
+│   ├── config.py         
+│   ├── db.py            
+│   └── security.py      
+├── models/               
+│   └── schemas.py       
+├── temp_files/          
+└── utils.py             </code></pre>
                     </div>
                     
                     <h3>API Modules</h3>
@@ -315,12 +302,12 @@
                         <div class="code-block">
                             <pre><code>{
   "_id": ObjectId,
-  "name": String,           // User's full name
-  "email": String,          // Email address (unique)
-  "phone": String,          // Phone number (optional)
-  "password": String,       // Hashed password (null for Google OAuth users)
-  "google_id": String,      // Google OAuth ID (null for regular users)
-  "created_at": DateTime    // Account creation timestamp
+  "name": String,           
+  "email": String,          
+  "phone": String,          
+  "password": String,       
+  "google_id": String,      
+  "created_at": DateTime    
 }</code></pre>
                         </div>
                         
@@ -703,13 +690,13 @@
                     <h3>Session Data Structure</h3>
                     <div class="code-block">
                         <pre><code>session_data_store[session_id] = {
-    "df1": pandas.DataFrame,           # First uploaded file data
-    "df2": pandas.DataFrame,           # Second uploaded file data
-    "file1_name": str,                 # Original filename 1
-    "file2_name": str,                 # Original filename 2
-    "calculated_columns": list,        # List of calculated columns
-    "created_at": datetime,            # Session creation time
-    "last_accessed": datetime          # Last access time
+    "df1": pandas.DataFrame,          
+    "df2": pandas.DataFrame,           
+    "file1_name": str,                 
+    "file2_name": str,                 
+    "calculated_columns": list,        
+    "created_at": datetime,            
+    "last_accessed": datetime          
 }</code></pre>
                     </div>
                     
@@ -789,12 +776,11 @@ SECRET_KEY = os.getenv('JWT_SECRET', 'supersecretkey')
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-# Token Payload
 {
-  "sub": "user_id",           # User identifier
-  "email": "user@example.com", # User email
-  "exp": timestamp,           # Expiration time
-  "iat": timestamp            # Issued at time
+  "sub": "user_id",           
+  "email": "user@example.com", 
+  "exp": timestamp,           
+  "iat": timestamp            
 }</code></pre>
                     </div>
                     
@@ -831,7 +817,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
                             <div class="code-block">
                                 <pre><code>cutoff_time = datetime.now() - timedelta(hours=24)
 if file_creation_time < cutoff_time:
-    # Mark for deletion</code></pre>
+    </code></pre>
                             </div>
                         </div>
                         
@@ -848,13 +834,11 @@ if file_creation_time < cutoff_time:
                     
                     <h3>Manual Cleanup Commands</h3>
                     <div class="code-block">
-                        <pre><code># Clean all expired files
+                        <pre><code>
 python -c "from utils import cleanup_expired_files; cleanup_expired_files()"
 
-# Clean specific session
 python -c "from utils import cleanup_session; cleanup_session('session_id')"
 
-# Check storage usage
 du -sh temp_files/</code></pre>
                     </div>
                     
@@ -870,13 +854,12 @@ du -sh temp_files/</code></pre>
                     
                     <h3>Environment Variables</h3>
                     <div class="code-block">
-                        <pre><code># Backend (.env)
+                        <pre><code>
 MONGODB_URI=mongodb://localhost:27017
 JWT_SECRET=your-secure-secret-key
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
-# Frontend (config.ts)
 VITE_API_BASE_URL=https://api.abhistat.com
 VITE_GOOGLE_CLIENT_ID=your-google-client-id</code></pre>
                     </div>
@@ -884,12 +867,12 @@ VITE_GOOGLE_CLIENT_ID=your-google-client-id</code></pre>
                     <h3>CORS Configuration</h3>
                     <div class="code-block">
                         <pre><code>allow_origins=[
-    "http://localhost:5173",      # Development
-    "https://13.203.202.28",      # Production IP
-    "https://abhistat.com",       # Production domain
-    "https://www.abhistat.com",   # Production www
-    "http://abhistat.com",        # HTTP fallback
-    "http://www.abhistat.com"     # HTTP www fallback
+    "http://localhost:5173",      
+    "https://13.203.202.28",      
+    "https://abhistat.com",       
+    "https://www.abhistat.com",   
+    "http://abhistat.com",        
+    "http://www.abhistat.com"     
 ]</code></pre>
                     </div>
                     
@@ -920,11 +903,10 @@ VITE_GOOGLE_CLIENT_ID=your-google-client-id</code></pre>
                         <div class="admin-task">
                             <h5>View All Users</h5>
                             <div class="code-block">
-                                <pre><code># MongoDB Shell
+                                <pre><code>
 use abhitech_stat_tool
 db.external_users.find({}, {password: 0}).pretty()
 
-# Python Script
 from pymongo import MongoClient
 client = MongoClient('mongodb://localhost:27017')
 db = client['abhitech_stat_tool']
@@ -937,10 +919,9 @@ for user in users:
                         <div class="admin-task">
                             <h5>Delete User Account</h5>
                             <div class="code-block">
-                                <pre><code># MongoDB Shell
+                                <pre><code>
 db.external_users.deleteOne({"email": "user@example.com"})
 
-# Python Script
 result = db.external_users.delete_one({"email": "user@example.com"})
 print(f"Deleted {result.deleted_count} user(s)")</code></pre>
                             </div>
@@ -949,7 +930,7 @@ print(f"Deleted {result.deleted_count} user(s)")</code></pre>
                         <div class="admin-task">
                             <h5>Reset User Password</h5>
                             <div class="code-block">
-                                <pre><code># Python Script (requires bcrypt)
+                                <pre><code>
 from core.security import get_password_hash
 new_password_hash = get_password_hash("new_password")
 db.external_users.update_one(
@@ -968,7 +949,7 @@ db.external_users.update_one(
                         <div class="admin-task">
                             <h5>View Active Sessions</h5>
                             <div class="code-block">
-                                <pre><code># Python Script
+                                <pre><code>
 from api.session import session_data_store
 print(f"Active sessions: {len(session_data_store)}")
 for session_id, data in session_data_store.items():
@@ -995,7 +976,7 @@ else:
                         <div class="admin-task">
                             <h5>Clear All Sessions</h5>
                             <div class="code-block">
-                                <pre><code># Python Script
+                                <pre><code>
 session_count = len(session_data_store)
 session_data_store.clear()
 print(f"Cleared {session_count} sessions")</code></pre>
@@ -1011,11 +992,10 @@ print(f"Cleared {session_count} sessions")</code></pre>
                         <div class="admin-task">
                             <h5>Check Storage Usage</h5>
                             <div class="code-block">
-                                <pre><code># Linux/macOS
+                                <pre><code>
 du -sh temp_files/
 df -h .
 
-# Python Script
 import os
 from pathlib import Path
 
@@ -1039,7 +1019,7 @@ if temp_dir.exists():
                         <div class="admin-task">
                             <h5>List Session Directories</h5>
                             <div class="code-block">
-                                <pre><code># Python Script
+                                <pre><code>
 from pathlib import Path
 from datetime import datetime
 
@@ -1059,11 +1039,10 @@ if temp_dir.exists():
                         <div class="admin-task">
                             <h5>Manual Cleanup</h5>
                             <div class="code-block">
-                                <pre><code># Python Script
+                                <pre><code>
 from utils import cleanup_expired_files
 import asyncio
 
-# Run cleanup manually
 asyncio.run(cleanup_expired_files())
 print("Manual cleanup completed")</code></pre>
                             </div>
@@ -1078,10 +1057,10 @@ print("Manual cleanup completed")</code></pre>
                         <div class="admin-task">
                             <h5>API Health Check</h5>
                             <div class="code-block">
-                                <pre><code># curl command
+                                <pre><code>
 curl -X GET "http://localhost:8000/" -H "accept: application/json"
 
-# Python script
+
 import requests
 try:
     response = requests.get("http://localhost:8000/")
@@ -1098,14 +1077,12 @@ except Exception as e:
                         <div class="admin-task">
                             <h5>Database Connection Check</h5>
                             <div class="code-block">
-                                <pre><code># Python Script
+                                <pre><code>
 from core.db import mongo_client
 try:
-    # Test connection
     mongo_client.admin.command('ping')
     print("MongoDB connection is healthy")
     
-    # Check database stats
     db = mongo_client['abhitech_stat_tool']
     stats = db.command("dbstats")
     print(f"Database size: {stats['dataSize']} bytes")
@@ -1123,11 +1100,9 @@ except Exception as e:
                         <div class="admin-task">
                             <h5>Create MongoDB Backup</h5>
                             <div class="code-block">
-                                <pre><code># MongoDB dump
+                                <pre><code>
 mongodump --db abhitech_stat_tool --out ./backups/$(date +%Y%m%d_%H%M%S)
 
-# Automated backup script
-#!/bin/bash
 BACKUP_DIR="./backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 mkdir -p $BACKUP_DIR
@@ -1135,7 +1110,6 @@ mkdir -p $BACKUP_DIR
 mongodump --db abhitech_stat_tool --out $BACKUP_DIR/$DATE
 echo "Backup created: $BACKUP_DIR/$DATE"
 
-# Keep only last 7 days of backups
 find $BACKUP_DIR -type d -mtime +7 -exec rm -rf {} \;</code></pre>
                             </div>
                         </div>
@@ -1143,10 +1117,9 @@ find $BACKUP_DIR -type d -mtime +7 -exec rm -rf {} \;</code></pre>
                         <div class="admin-task">
                             <h5>Restore from Backup</h5>
                             <div class="code-block">
-                                <pre><code># MongoDB restore
+                                <pre><code>
 mongorestore --db abhitech_stat_tool ./backups/20241201_120000/abhitech_stat_tool/
 
-# Restore specific collection
 mongorestore --db abhitech_stat_tool --collection external_users ./backups/20241201_120000/abhitech_stat_tool/external_users.bson</code></pre>
                             </div>
                         </div>
@@ -1158,28 +1131,22 @@ mongorestore --db abhitech_stat_tool --collection external_users ./backups/20241
                         <div class="admin-task">
                             <h5>Rotate JWT Secret</h5>
                             <div class="code-block">
-                                <pre><code># 1. Generate new secret
+                                <pre><code>
 import secrets
 new_secret = secrets.token_urlsafe(32)
 print(f"New JWT secret: {new_secret}")
 
-# 2. Update environment variable
-# Update .env file:
-# JWT_SECRET=new_secret_here
-
-# 3. Restart application
-# All existing tokens will be invalidated</code></pre>
+</code></pre>
                             </div>
                         </div>
                         
                         <div class="admin-task">
                             <h5>Monitor Failed Login Attempts</h5>
                             <div class="code-block">
-                                <pre><code># Add to application logging
+                                <pre><code>
 import logging
 from datetime import datetime
 
-# In auth.py, add logging for failed attempts
 @router.post("/login")
 async def login_user(data: LoginRequest):
     user = external_users.find_one({"email": data.email})
@@ -1196,16 +1163,13 @@ async def login_user(data: LoginRequest):
                         <div class="admin-task">
                             <h5>Create Database Indexes</h5>
                             <div class="code-block">
-                                <pre><code># MongoDB Shell
+                                <pre><code>
 use abhitech_stat_tool
 
-# Create index on email field for faster lookups
 db.external_users.createIndex({"email": 1}, {"unique": true})
 
-# Create index on created_at for time-based queries
 db.external_users.createIndex({"created_at": 1})
 
-# View existing indexes
 db.external_users.getIndexes()</code></pre>
                             </div>
                         </div>
@@ -1213,13 +1177,11 @@ db.external_users.getIndexes()</code></pre>
                         <div class="admin-task">
                             <h5>Monitor Query Performance</h5>
                             <div class="code-block">
-                                <pre><code># MongoDB Shell - Enable profiling
+                                <pre><code>
 db.setProfilingLevel(2)
 
-# View slow queries
 db.system.profile.find().limit(5).sort({ts: -1}).pretty()
 
-# Disable profiling
 db.setProfilingLevel(0)</code></pre>
                             </div>
                         </div>

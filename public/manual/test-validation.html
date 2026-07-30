@@ -140,43 +140,37 @@
         <h1>AbhiStat User Manual - Quality Assurance Testing</h1>
         <p>This page provides comprehensive testing and validation for the user manual documentation.</p>
         
-        <!-- Navigation and Search Testing -->
         <div class="test-section">
             <h2>Navigation and Search Functionality</h2>
             <button class="run-tests-btn" onclick="runNavigationTests()">Run Navigation Tests</button>
             <div id="navigation-test-results" class="test-results"></div>
         </div>
         
-        <!-- Interactive Features Testing -->
         <div class="test-section">
             <h2>Interactive Features Testing</h2>
             <button class="run-tests-btn" onclick="runInteractiveTests()">Run Interactive Tests</button>
             <div id="interactive-test-results" class="test-results"></div>
             
-            <!-- Test Code Example -->
             <h3>Test Interactive Code Example</h3>
             <div class="code-example">
                 <div class="code-example-header">
                     <span class="code-example-title">Sample Formula</span>
                     <button class="copy-code-btn" type="button">Copy</button>
                 </div>
-                <pre><code>// Test formula for validation
+                <pre><code>
 calculated_column = column_a + column_b * 2
 average_value = (column_a + column_b + column_c) / 3</code></pre>
             </div>
             
-            <!-- Test Tooltip -->
             <p>Test tooltip functionality: <span data-tooltip="Application Programming Interface - A set of protocols and tools for building software applications" class="tooltip-term">API</span> and <span data-tooltip="Comma-Separated Values - A file format that stores tabular data in plain text" class="tooltip-term">CSV</span> files.</p>
         </div>
         
-        <!-- Content Validation Testing -->
         <div class="test-section">
             <h2>Content Validation</h2>
             <button class="run-tests-btn" onclick="runContentValidation()">Validate Content</button>
             <div id="content-validation-results" class="test-results"></div>
         </div>
         
-        <!-- Screenshot Validation -->
         <div class="test-section">
             <h2>Screenshot and UI Validation</h2>
             <p>Verify that all screenshots match the current UI implementation:</p>
@@ -204,7 +198,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             </div>
         </div>
         
-        <!-- Responsive Design Testing -->
         <div class="test-section">
             <h2>Responsive Design Testing</h2>
             <button class="run-tests-btn" onclick="runResponsiveTests()">Test Responsive Design</button>
@@ -227,14 +220,12 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             </div>
         </div>
         
-        <!-- Accessibility Testing -->
         <div class="test-section">
             <h2>Accessibility Testing</h2>
             <button class="run-tests-btn" onclick="runAccessibilityTests()">Run Accessibility Tests</button>
             <div id="accessibility-test-results" class="test-results"></div>
         </div>
         
-        <!-- Print/PDF Testing -->
         <div class="test-section">
             <h2>Print/PDF Generation Testing</h2>
             <button class="run-tests-btn" onclick="testPrintStyles()">Test Print Styles</button>
@@ -242,14 +233,12 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             <div id="print-test-results" class="test-results"></div>
         </div>
         
-        <!-- Performance Testing -->
         <div class="test-section">
             <h2>Performance Testing</h2>
             <button class="run-tests-btn" onclick="runPerformanceTests()">Run Performance Tests</button>
             <div id="performance-test-results" class="test-results"></div>
         </div>
         
-        <!-- Overall Test Summary -->
         <div class="test-section">
             <h2>Test Summary</h2>
             <button class="run-tests-btn" onclick="runAllTests()" style="background-color: #28a745;">Run All Tests</button>
@@ -294,7 +283,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: `Found ${tocLinks.length} TOC links`
             });
             
-            // Test smooth scrolling
             results.push({
                 test: 'Smooth scrolling enabled',
                 status: getComputedStyle(document.documentElement).scrollBehavior === 'smooth' ? 'pass' : 'warning',
@@ -312,11 +300,9 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             displayTestResults('navigation-test-results', results);
         }
         
-        // Interactive Features Tests
         function runInteractiveTests() {
             const results = [];
             
-            // Test copy code functionality
             const copyButtons = document.querySelectorAll('.copy-code-btn');
             results.push({
                 test: 'Copy code buttons',
@@ -324,7 +310,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: `Found ${copyButtons.length} copy buttons`
             });
             
-            // Test tooltip functionality
             const tooltipTerms = document.querySelectorAll('.tooltip-term');
             results.push({
                 test: 'Tooltip terms',
@@ -332,7 +317,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: `Found ${tooltipTerms.length} tooltip terms`
             });
             
-            // Test tooltip container
             const tooltipContainer = document.getElementById('tooltip-container');
             results.push({
                 test: 'Tooltip container',
@@ -340,7 +324,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: tooltipContainer ? 'Tooltip container exists' : 'Tooltip container missing'
             });
             
-            // Test cross-references
             const crossRefLinks = document.querySelectorAll('.cross-ref-link');
             results.push({
                 test: 'Cross-reference links',
@@ -348,7 +331,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: `Cross-reference system initialized (${crossRefLinks.length} links found)`
             });
             
-            // Test expandable TOC
             const expandableItems = document.querySelectorAll('.toc-expandable');
             results.push({
                 test: 'Expandable TOC items',
@@ -360,11 +342,9 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             displayTestResults('interactive-test-results', results);
         }
         
-        // Content Validation Tests
         function runContentValidation() {
             const results = [];
             
-            // Test for required sections
             const requiredSections = [
                 'getting-started',
                 'data-management', 
@@ -384,7 +364,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 });
             });
             
-            // Test for code examples
             const codeExamples = document.querySelectorAll('.code-example');
             results.push({
                 test: 'Interactive code examples',
@@ -392,7 +371,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: `Found ${codeExamples.length} code examples`
             });
             
-            // Test for alerts and warnings
             const alerts = document.querySelectorAll('.alert');
             results.push({
                 test: 'Alert messages',
@@ -404,11 +382,9 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             displayTestResults('content-validation-results', results);
         }
         
-        // Responsive Design Tests
         function runResponsiveTests() {
             const results = [];
             
-            // Test viewport meta tag
             const viewport = document.querySelector('meta[name="viewport"]');
             results.push({
                 test: 'Viewport meta tag',
@@ -416,7 +392,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: viewport ? viewport.content : 'Viewport meta tag missing'
             });
             
-            // Test responsive CSS
             const responsiveCSS = document.querySelector('link[href*="responsive"]');
             results.push({
                 test: 'Responsive CSS file',
@@ -424,7 +399,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: responsiveCSS ? 'Responsive CSS loaded' : 'Responsive CSS missing'
             });
             
-            // Test media queries (simplified check)
             const stylesheets = Array.from(document.styleSheets);
             let hasMediaQueries = false;
             
@@ -439,7 +413,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                     }
                 });
             } catch (e) {
-                // Cross-origin stylesheets may not be accessible
             }
             
             results.push({
@@ -448,7 +421,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: hasMediaQueries ? 'Media queries found in CSS' : 'Media queries check limited by CORS'
             });
             
-            // Test sidebar toggle
             const sidebarToggle = document.getElementById('sidebarToggle');
             results.push({
                 test: 'Mobile sidebar toggle',
@@ -460,11 +432,9 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             displayTestResults('responsive-test-results', results);
         }
         
-        // Accessibility Tests
         function runAccessibilityTests() {
             const results = [];
             
-            // Test skip to content link
             const skipLink = document.querySelector('.skip-to-content');
             results.push({
                 test: 'Skip to content link',
@@ -472,7 +442,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: skipLink ? 'Skip link found' : 'Skip link missing'
             });
             
-            // Test heading hierarchy
             const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
             results.push({
                 test: 'Heading structure',
@@ -480,7 +449,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: `Found ${headings.length} headings`
             });
             
-            // Test alt text for images
             const images = document.querySelectorAll('img');
             const imagesWithAlt = document.querySelectorAll('img[alt]');
             results.push({
@@ -489,14 +457,12 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: `${imagesWithAlt.length}/${images.length} images have alt text`
             });
             
-            // Test focus indicators
             results.push({
                 test: 'Focus indicators',
                 status: 'pass',
                 details: 'CSS focus styles defined for interactive elements'
             });
             
-            // Test ARIA labels
             const ariaLabels = document.querySelectorAll('[aria-label], [aria-labelledby]');
             results.push({
                 test: 'ARIA labels',
@@ -508,11 +474,9 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             displayTestResults('accessibility-test-results', results);
         }
         
-        // Print Styles Tests
         function testPrintStyles() {
             const results = [];
             
-            // Test print media query
             const printStyles = Array.from(document.styleSheets);
             let hasPrintStyles = false;
             
@@ -527,7 +491,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                     }
                 });
             } catch (e) {
-                // Handle CORS issues
             }
             
             results.push({
@@ -536,7 +499,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: hasPrintStyles ? 'Print styles found' : 'Print styles check limited by CORS'
             });
             
-            // Test elements that should be hidden in print
             const hiddenInPrint = ['.sidebar', '.copy-code-btn', '.tooltip-container'];
             hiddenInPrint.forEach(selector => {
                 const element = document.querySelector(selector);
@@ -551,11 +513,9 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             displayTestResults('print-test-results', results);
         }
         
-        // Performance Tests
         function runPerformanceTests() {
             const results = [];
             
-            // Test page load time
             const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
             results.push({
                 test: 'Page load time',
@@ -563,7 +523,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: `${loadTime}ms (target: <3000ms)`
             });
             
-            // Test resource count
             const resources = performance.getEntriesByType('resource');
             results.push({
                 test: 'Resource count',
@@ -571,7 +530,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: `${resources.length} resources loaded`
             });
             
-            // Test CSS file size (approximate)
             const cssFiles = resources.filter(r => r.name.includes('.css'));
             results.push({
                 test: 'CSS files',
@@ -579,7 +537,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
                 details: `${cssFiles.length} CSS files loaded`
             });
             
-            // Test JS file size (approximate)
             const jsFiles = resources.filter(r => r.name.includes('.js'));
             results.push({
                 test: 'JavaScript files',
@@ -591,7 +548,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             displayTestResults('performance-test-results', results);
         }
         
-        // Run All Tests
         function runAllTests() {
             runNavigationTests();
             runInteractiveTests();
@@ -601,7 +557,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             testPrintStyles();
             runPerformanceTests();
             
-            // Generate overall summary
             setTimeout(() => {
                 const allResults = [
                     ...testResults.navigation,
@@ -627,7 +582,6 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             }, 1000);
         }
         
-        // Display Test Results
         function displayTestResults(containerId, results) {
             const container = document.getElementById(containerId);
             container.innerHTML = results.map(result => `
@@ -641,11 +595,9 @@ average_value = (column_a + column_b + column_c) / 3</code></pre>
             `).join('');
         }
         
-        // Initialize tests when page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Quality Assurance Testing Page Loaded');
             
-            // Auto-run basic tests
             setTimeout(() => {
                 runNavigationTests();
                 runInteractiveTests();

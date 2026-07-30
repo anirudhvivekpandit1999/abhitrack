@@ -1,6 +1,4 @@
-/* AbhiStat User Manual - Responsive Design */
 
-/* Tablet Styles */
 @media (max-width: 1024px) {
     .main-content {
         padding: 1.5rem;
@@ -19,7 +17,6 @@
     }
 }
 
-/* Mobile Styles */
 @media (max-width: 768px) {
     :root {
         --sidebar-width: 280px;
@@ -42,7 +39,6 @@
         padding: 1rem;
     }
     
-    /* Search adjustments for mobile */
     .search-results {
         left: 0.5rem;
         right: 0.5rem;
@@ -133,7 +129,6 @@
         font-size: 1.1rem;
     }
     
-    /* Stack table content on mobile */
     table {
         font-size: 0.9rem;
     }
@@ -142,7 +137,6 @@
         padding: 0.5rem;
     }
     
-    /* Adjust step layout for mobile */
     .step {
         padding: 1rem;
     }
@@ -158,13 +152,11 @@
         font-size: 1.1rem;
     }
     
-    /* Adjust alert boxes */
     .alert {
         padding: 0.75rem;
         font-size: 0.9rem;
     }
     
-    /* Code blocks responsive */
     pre {
         padding: 0.75rem;
         font-size: 0.85rem;
@@ -175,7 +167,6 @@
     }
 }
 
-/* Small Mobile Styles */
 @media (max-width: 480px) {
     :root {
         --sidebar-width: 100%;
@@ -221,7 +212,6 @@
         font-size: 1rem;
     }
     
-    /* Responsive tables - stack on very small screens */
     @media (max-width: 400px) {
         table, thead, tbody, th, td, tr {
             display: block;
@@ -261,7 +251,6 @@
     }
 }
 
-/* High DPI / Retina Display Support */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
     img {
         image-rendering: -webkit-optimize-contrast;
@@ -269,9 +258,7 @@
     }
 }
 
-/* Dark mode removed: force light mode consistently */
 
-/* Accessibility Improvements */
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.01ms !important;
@@ -280,7 +267,6 @@
     }
 }
 
-/* Focus styles for keyboard navigation */
 .toc-link:focus,
 .btn:focus,
 a:focus {
@@ -288,7 +274,6 @@ a:focus {
     outline-offset: 2px;
 }
 
-/* High contrast mode support */
 @media (prefers-contrast: high) {
     :root {
         --primary-color: #000;

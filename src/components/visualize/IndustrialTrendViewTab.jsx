@@ -11,9 +11,7 @@ import {
   Legend,
 } from "recharts";
 
-/* ============================================================================
-   HELPERS
-============================================================================ */
+
 
 const getNumeric = (row, key) => {
   if (!row || !key) return null;
@@ -73,9 +71,7 @@ const formatNumber = (value) => {
   });
 };
 
-/* ============================================================================
-   ICONS
-============================================================================ */
+
 
 const TrendIcon = () => (
   <svg
@@ -126,9 +122,7 @@ const DataIcon = () => (
   </svg>
 );
 
-/* ============================================================================
-   CUSTOM TOOLTIP
-============================================================================ */
+
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload || !payload.length) {
@@ -212,9 +206,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-/* ============================================================================
-   KPI CARD
-============================================================================ */
+
 
 const MetricCard = ({
   label,
@@ -299,9 +291,7 @@ const MetricCard = ({
   );
 };
 
-/* ============================================================================
-   COMPONENT
-============================================================================ */
+
 
 const IndustrialTrendViewTab = ({
   withProductData = [],
@@ -320,9 +310,7 @@ const IndustrialTrendViewTab = ({
   const [movingAverageWindow, setMovingAverageWindow] = useState(3);
   const [referenceValue, setReferenceValue] = useState(7);
 
-  /* ==========================================================================
-     INITIAL AXES
-  ========================================================================== */
+  
 
   useEffect(() => {
     if (!availableColumns.length) return;
@@ -344,9 +332,7 @@ const IndustrialTrendViewTab = ({
     });
   }, [availableColumns]);
 
-  /* ==========================================================================
-     DATA
-  ========================================================================== */
+  
 
   const mergedData = useMemo(() => {
     if (!xAxis || !yAxis) return [];
@@ -394,9 +380,7 @@ const IndustrialTrendViewTab = ({
     movingAverageWindow,
   ]);
 
-  /* ==========================================================================
-     METRICS
-  ========================================================================== */
+  
 
   const metrics = useMemo(() => {
     const withValues = mergedData
@@ -431,9 +415,7 @@ const IndustrialTrendViewTab = ({
     };
   }, [mergedData]);
 
-  /* ==========================================================================
-     STYLES
-  ========================================================================== */
+  
 
   const styles = {
     page: {
@@ -488,15 +470,11 @@ const IndustrialTrendViewTab = ({
     },
   };
 
-  /* ==========================================================================
-     RENDER
-  ========================================================================== */
+  
 
   return (
     <div style={styles.page}>
-      {/* ================================================================
-          HEADER
-      ================================================================= */}
+      
 
       <div
         style={{
@@ -614,9 +592,7 @@ const IndustrialTrendViewTab = ({
         </div>
       </div>
 
-      {/* ================================================================
-          CONFIGURATION
-      ================================================================= */}
+      
 
       <div
         style={{
@@ -738,9 +714,7 @@ const IndustrialTrendViewTab = ({
         </div>
       </div>
 
-      {/* ================================================================
-          KPI CARDS
-      ================================================================= */}
+      
 
       <div
         style={{
@@ -805,9 +779,7 @@ const IndustrialTrendViewTab = ({
         />
       </div>
 
-      {/* ================================================================
-          CHART
-      ================================================================= */}
+      
 
       <div
         style={{
@@ -815,7 +787,6 @@ const IndustrialTrendViewTab = ({
           padding: "20px",
         }}
       >
-        {/* Chart header */}
 
         <div
           style={{
@@ -862,7 +833,6 @@ const IndustrialTrendViewTab = ({
             </div>
           </div>
 
-          {/* Chart controls */}
 
           <div
             style={{
@@ -923,7 +893,6 @@ const IndustrialTrendViewTab = ({
           </div>
         </div>
 
-        {/* Custom legend */}
 
         <div
           style={{
@@ -959,7 +928,6 @@ const IndustrialTrendViewTab = ({
           )}
         </div>
 
-        {/* Actual chart */}
 
         <div
           style={{
@@ -1083,8 +1051,7 @@ const IndustrialTrendViewTab = ({
 
                 <Tooltip content={<CustomTooltip />} />
 
-                {/* Hidden native legend prevents Recharts from
-                    reserving space while custom legend is used */}
+                
                 <Legend content={() => null} />
 
                 {showReference && (
@@ -1103,7 +1070,6 @@ const IndustrialTrendViewTab = ({
                   />
                 )}
 
-                {/* WITHOUT PRODUCT RAW */}
 
                 {showRaw && (
                   <Line
@@ -1129,7 +1095,6 @@ const IndustrialTrendViewTab = ({
                   />
                 )}
 
-                {/* WITH PRODUCT RAW */}
 
                 {showRaw && (
                   <Line
@@ -1155,7 +1120,6 @@ const IndustrialTrendViewTab = ({
                   />
                 )}
 
-                {/* WITHOUT PRODUCT TREND */}
 
                 {showTrend && (
                   <Line
@@ -1171,7 +1135,6 @@ const IndustrialTrendViewTab = ({
                   />
                 )}
 
-                {/* WITH PRODUCT TREND */}
 
                 {showTrend && (
                   <Line
@@ -1191,7 +1154,6 @@ const IndustrialTrendViewTab = ({
           )}
         </div>
 
-        {/* Footer */}
 
         <div
           style={{
@@ -1218,9 +1180,6 @@ const IndustrialTrendViewTab = ({
   );
 };
 
-/* ============================================================================
-   LEGEND ITEM
-============================================================================ */
 
 const LegendItem = ({
   color,

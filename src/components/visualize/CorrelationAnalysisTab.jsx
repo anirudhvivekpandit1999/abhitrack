@@ -127,11 +127,9 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
             }
         });
 
-        // Sort both by absCorrelation descending — show ALL parameters
         const sortedWith    = [...dataWithProduct].sort((a, b) => b.absCorrelation - a.absCorrelation);
         const sortedWithout = [...dataWithoutProduct].sort((a, b) => b.absCorrelation - a.absCorrelation);
 
-        // topWithProduct used only for the collapsible table (top 20)
         const topWithProduct    = sortedWith.slice(0, 20);
         const topWithoutProduct = sortedWithout.slice(0, 20);
 
@@ -199,13 +197,11 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
             );
         }
 
-        // Use ALL variables from withProduct (sorted by abs correlation)
-        // The right side (without product) will show the same variable list
+        
         const allVariables = correlationData.withProduct.length > 0
             ? correlationData.withProduct.map(i => i.variable)
             : correlationData.withoutProduct.map(i => i.variable);
 
-        // ── Layout ──
         const cellSpacing    = 10;
         const rowHeight      = cellSize + cellSpacing;
         const maxVarLength   = Math.max(...allVariables.map(v => v.length), 10);
@@ -217,16 +213,13 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
         const paddingRight   = 20;
         const chartHeight    = allVariables.length * rowHeight;
 
-        // Total SVG width = full page width (1200px minimum)
         const totalWidth  = Math.max(1200, (varLabelWidth + heatCellWidth) * 2 + 100);
         const totalHeight = marginTop + chartHeight + marginBottom;
 
-        // Left side starts at paddingLeft
         const leftLabelStartX = paddingLeft;
         const leftLabelEndX   = leftLabelStartX + varLabelWidth;
         const leftCellX       = leftLabelEndX;
 
-        // Right side starts at the right half of the SVG
         const rightSideStartX  = totalWidth / 2;
         const rightLabelEndX   = rightSideStartX + varLabelWidth;
         const rightCellX       = rightLabelEndX;
@@ -239,16 +232,12 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                     height={totalHeight}
                     viewBox={`0 0 ${totalWidth} ${totalHeight}`}
                 >
-                    {/* White background */}
                     <rect width={totalWidth} height={totalHeight} fill="white" />
 
                     <g transform={`translate(0, ${marginTop})`}>
 
-                        {/* ══════════════════════════════════
-                            LEFT SIDE — With Product
-                        ══════════════════════════════════ */}
+                        
 
-                        {/* Left column header */}
                         <text
                             x={leftLabelEndX + heatCellWidth / 2}
                             y={-25}
@@ -260,7 +249,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                             With Product
                         </text>
 
-                        {/* Left variable name labels */}
                         {allVariables.map((variable, idx) => {
                             const truncated = variable.length > 28
                                 ? variable.substring(0, 25) + '...'
@@ -281,7 +269,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                             );
                         })}
 
-                        {/* Left horizontal grid lines */}
                         {allVariables.map((_, idx) => (
                             <line
                                 key={`left-hg-${idx}`}
@@ -294,7 +281,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                             />
                         ))}
 
-                        {/* Left heatmap cells */}
                         {allVariables.map((variable, idx) => {
                             const item = correlationData.withProduct.find(d => d.variable === variable);
                             if (!item) return null;
@@ -328,11 +314,8 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                             );
                         })}
 
-                        {/* ══════════════════════════════════
-                            RIGHT SIDE — Without Product
-                        ══════════════════════════════════ */}
+                        
 
-                        {/* Right column header */}
                         <text
                             x={rightCellX + heatCellWidth / 2}
                             y={-25}
@@ -344,7 +327,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                             Without Product
                         </text>
 
-                        {/* Right variable name labels */}
                         {allVariables.map((variable, idx) => {
                             const truncated = variable.length > 28
                                 ? variable.substring(0, 25) + '...'
@@ -365,7 +347,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                             );
                         })}
 
-                        {/* Right horizontal grid lines */}
                         {allVariables.map((_, idx) => (
                             <line
                                 key={`right-hg-${idx}`}
@@ -378,7 +359,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                             />
                         ))}
 
-                        {/* Right heatmap cells */}
                         {allVariables.map((variable, idx) => {
                             const item = correlationData.withoutProduct.find(d => d.variable === variable);
                             if (!item) return null;
@@ -414,7 +394,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
 
                     </g>
 
-                    {/* Powered by watermark */}
                     {showPoweredBy && (
                         <g transform={`translate(${totalWidth - 20}, ${totalHeight - 35})`}>
                             <text x={0} y={0}  fontSize="11" fill="#666"    textAnchor="end">Powered by</text>
@@ -518,7 +497,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
     return (
         <Box sx={{ ...ui.page, p: { xs: 1.5, sm: 2.5, md: 3 } }}>
 
-            {/* Page header */}
             <Card elevation={0} sx={{ ...ui.surface, mb: 2.5, overflow: 'hidden', position: 'relative' }}>
                 <Box
                     sx={{
@@ -596,7 +574,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                 </CardContent>
             </Card>
 
-            {/* Controls */}
             <Paper elevation={0} sx={{ ...ui.softSurface, p: { xs: 1.5, sm: 2 }, mb: 2.5 }}>
                 <Grid container spacing={2} alignItems="center">
                     <Grid item xs={12} md={7}>
@@ -656,7 +633,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                 </Grid>
             </Paper>
 
-            {/* KPI cards */}
             <Grid container spacing={2} sx={{ mb: 2.5 }}>
                 {metricCards.map((metric) => (
                     <Grid item xs={12} md={4} key={metric.label}>
@@ -712,7 +688,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                 ))}
             </Grid>
 
-            {/* Heatmap */}
             <Card elevation={0} sx={{ ...ui.surface, mb: 2.5 }}>
                 <CardContent sx={{ p: { xs: 1.5, sm: 2.5 }, '&:last-child': { pb: { xs: 1.5, sm: 2.5 } } }}>
                     <Box
@@ -803,7 +778,6 @@ const CorrelationAnalysisTab = ({ availableColumns, withProductData, withoutProd
                 </CardContent>
             </Card>
 
-            {/* Ranked correlation table */}
             <Card elevation={0} sx={{ ...ui.surface, mb: 1 }}>
                 <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
                     <Box
