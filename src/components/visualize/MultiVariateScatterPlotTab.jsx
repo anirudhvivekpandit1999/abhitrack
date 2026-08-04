@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo, useRef, useCallback, createRef } from "react";
 import DebouncedTextField from '../DebouncedTextField';
 import {
@@ -51,18 +52,17 @@ import SaveVisualizationButton from '../SaveVisualizationButton';
 import Draggable from 'react-draggable';
 
 const BASE_COLORS = [
-  "#2563EB", 
-  "#DC2626", 
-  "#059669", 
-  "#D97706", 
-  "#7C3AED", 
-  "#DB2777", 
-  "#0891B2", 
-  "#EA580C", 
-  "#4338CA", 
-  "#0D9488", 
+  "#2563EB",
+  "#DC2626",
+  "#059669",
+  "#D97706",
+  "#7C3AED",
+  "#DB2777",
+  "#0891B2",
+  "#EA580C",
+  "#4338CA",
+  "#0D9488",
 ];
-
 
 const UNIQUE_SERIES_COLORS = [
   "#2563EB", "#DC2626", "#059669", "#D97706", "#7C3AED",
@@ -300,26 +300,26 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, data: null });
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const pageRef = useRef(null);
-  
+
   const [showLines, setShowLines] = useState(false);
   const [showArea, setShowArea] = useState(false);
   const [areaOpacity, setAreaOpacity] = useState(0.15);
   const [lineWidth, setLineWidth] = useState(2);
-  
-  const [scaleMode, setScaleMode] = useState("global"); 
-  const [currentPairKey, setCurrentPairKey] = useState(null); 
+
+  const [scaleMode, setScaleMode] = useState("global");
+  const [currentPairKey, setCurrentPairKey] = useState(null);
 
   const [chartSettings, setChartSettings] = useState({
     pointSize: 6,
     opacity: 0.5,
     showGrid: true,
     showTrendLines: true,
-    trendLineMode: 'average', 
+    trendLineMode: 'average',
     showOutliers: false,
     showCorrelation: false,
     withProductColorOverride: {},
     withoutProductColorOverride: {}
-});
+  });
 
   const [draftSettings, setDraftSettings] = useState(null);
 
@@ -329,13 +329,13 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const [datasetLabels, setDatasetLabels] = useState({});
   const [editingLegendDataset, setEditingLegendDataset] = useState(null);
   const [datasetColors, setDatasetColors] = useState({});
-  
+
   const [pairColors, setPairColors] = useState({});
-  
+
   const [pairDatasetColors, setPairDatasetColors] = useState({});
-  
+
   const [perPairRanges, setPerPairRanges] = useState({});
-  
+
   const canvasRef = useRef(null);
   const [currentTransform, setCurrentTransform] = useState(d3.zoomIdentity);
   const [isDragging, setIsDragging] = useState(false);
@@ -488,9 +488,9 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     const sourceDatasets = Array.isArray(datasets) && datasets.length > 0
       ? datasets
       : [
-          { name: 'With Product', data: withProductData || [] },
-          { name: 'Without Product', data: withoutProductData || [] },
-        ];
+        { name: 'With Product', data: withProductData || [] },
+        { name: 'Without Product', data: withoutProductData || [] },
+      ];
 
     return sourceDatasets
       .filter((dataset) => Array.isArray(dataset?.data) && dataset.data.length > 0)
@@ -500,14 +500,12 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       }));
   }, [applyFilterToData, datasets, withProductData, withoutProductData]);
 
-
   useEffect(() => {
     setDatasetColors((prev) => {
       const next = { ...prev };
       allDatasets.forEach((dataset, index) => {
         const key = dataset.name || `dataset${index}`;
         if (!next[key]) {
-          
           const OFFSET = 6;
           next[key] = BASE_COLORS[(index + OFFSET) % BASE_COLORS.length];
         }
@@ -574,7 +572,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const pairColorMap = useMemo(() => {
     const map = buildPairColorMap(allPairs, visibleDatasetNames);
 
-    
     allPairs.forEach((pair) => {
       const override = pairColors[pair.key];
       if (!override || !map[pair.key]) return;
@@ -603,7 +600,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
     if (pairDatasetColors[comboKey]) return pairDatasetColors[comboKey];
 
-    
     const pairIndex = Math.max(0, allPairs.findIndex((pair) => pair.key === pairKey));
     const datasetIndex = Math.max(0, allDatasets.findIndex((ds) => ds.name === dataset));
     const seriesIndex = pairIndex * Math.max(allDatasets.length, 1) + datasetIndex;
@@ -622,7 +618,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   }, [datasetColors, visibleDatasetNames]);
 
   const getPointColor = useCallback((pairKey, dataset) => {
-    
     return getPairDatasetColor(pairKey, dataset);
   }, [getPairDatasetColor]);
 
@@ -630,7 +625,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     return getPairDatasetColor(pairKey, dataset);
   }, [getPairDatasetColor]);
 
-  
   const getSeriesVisualOffset = useCallback((pairKey, dataset) => {
     const pairIndex = Math.max(0, allPairs.findIndex((pair) => pair.key === pairKey));
     const datasetIndex = Math.max(0, allDatasets.findIndex((ds) => ds.name === dataset));
@@ -652,7 +646,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   useEffect(() => {
     setActivePairs(allPairs.map(p => p.key));
   }, [allPairs]);
-  
+
   useEffect(() => {
     const newPerPairRanges = {};
     allPairs.forEach(pair => {
@@ -763,13 +757,14 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     const sorted = [...points].sort((a, b) => a.x - b.x);
     const windowSize = Math.max(5, Math.round(sorted.length * 0.3));
     return sorted.map((pt, idx) => {
-        const start = Math.max(0, idx - Math.floor(windowSize / 2));
-        const end = Math.min(sorted.length, idx + Math.ceil(windowSize / 2));
-        const windowPoints = sorted.slice(start, end);
-        const avgY = windowPoints.reduce((sum, p) => sum + p.y, 0) / windowPoints.length;
-        return { x: pt.x, y: avgY };
+      const start = Math.max(0, idx - Math.floor(windowSize / 2));
+      const end = Math.min(sorted.length, idx + Math.ceil(windowSize / 2));
+      const windowPoints = sorted.slice(start, end);
+      const avgY = windowPoints.reduce((sum, p) => sum + p.y, 0) / windowPoints.length;
+      return { x: pt.x, y: avgY };
     });
-}, []);
+  }, []);
+
   const globalAutoRanges = useMemo(() => {
     const activePoints = allPoints.filter(pt => activePairs.includes(pt.pairKey));
 
@@ -890,7 +885,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
   const getEffectiveRanges = useCallback(() => {
     if (scaleMode === "perVariable") {
-      
       const activePairsList = allPairs.filter(p => activePairs.includes(p.key));
       if (activePairsList.length === 0) return { xMin: 0, xMax: 1, yMin: 0, yMax: 1 };
 
@@ -968,7 +962,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       });
     }
     return lines;
-}, [allPairs, allDatasets, visibleDatasetNames, visibleAnalysisPoints, calculateTrendLine, calculateCurveFitTrendLine, chartSettings.showTrendLines, chartSettings.trendLineMode]);
+  }, [allPairs, allDatasets, visibleDatasetNames, visibleAnalysisPoints, calculateTrendLine, calculateCurveFitTrendLine, chartSettings.showTrendLines, chartSettings.trendLineMode]);
 
   const handlePerPairRangeChange = useCallback((pairKey, axis, field, value) => {
     setPerPairRanges(prev => ({
@@ -1083,7 +1077,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     const svg = d3.select(svgRef.current).attr("width", width).attr("height", height);
 
     const activePairObjects = allPairs.filter(p => activePairs.includes(p.key));
-    
+
     const useDualYAxis = false;
     const useStackedPanels = datasetView === "individual" && activePairObjects.length > 1;
     const extraLeft = useStackedPanels ? 40 : 0;
@@ -1099,7 +1093,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
     const gridGroup = plotGroup.append("g").attr("class", "grid-group").attr("clip-path", "url(#plot-clip)");
     const tickCount = 8;
-    const PANEL_GAP = 40; // px of breathing room between stacked panels so axis labels don't collide
+    const PANEL_GAP = 40;
     const panelCount = useStackedPanels ? activePairObjects.length : 1;
     const panelHeight = useStackedPanels
       ? (plotHeight - PANEL_GAP * (panelCount - 1)) / panelCount
@@ -1207,7 +1201,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         .style("stroke-width", Math.max(1, size * 0.18));
     };
 
-    const useCanvasForPoints = false; 
+    const useCanvasForPoints = false;
 
     const drawLinesAndAreas = (group, points, xSc, ySc, datasetColor, pairColor, dataset, pairKey) => {
       if (!points || points.length < 2) return;
@@ -1234,7 +1228,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         const panelClipId = `panel-clip-${index}`;
         svg.select("defs").append("clipPath").attr("id", panelClipId)
           .append("rect").attr("x", 0).attr("y", 0).attr("width", plotWidth).attr("height", panelHeight);
-        
+
         const panelClass = sanitizeClassName(pair.key);
         const panelGroup = plotGroup.append("g")
           .attr("transform", `translate(0,${index * (panelHeight + PANEL_GAP)})`)
@@ -1254,7 +1248,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           panelGroup.append("g").attr("class", `grid-x-${panelClass}`).attr("transform", `translate(0,${panelHeight})`)
             .call(d3.axisBottom(xScalePair).ticks(4).tickSize(-panelHeight).tickFormat(""))
             .selectAll("line").style("stroke-dasharray", "3,3").style("opacity", 0.15);
-    
+
           panelGroup.append("g").attr("class", `grid-y-${panelClass}`)
             .call(d3.axisLeft(yScale).ticks(yTickCount).tickSize(-plotWidth).tickFormat(""))
             .selectAll("line").style("stroke-dasharray", "3,3").style("opacity", 0.15);
@@ -1272,7 +1266,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           .text(`${pair.x} vs ${pair.y}`);
 
         if (chartSettings.showTrendLines) {
-            drawPairTrendLines(pair, xScalePair, yScale, panelGroup, panelClipId);
+          drawPairTrendLines(pair, xScalePair, yScale, panelGroup, panelClipId);
         }
       });
     };
@@ -1301,7 +1295,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         if (showLines || showArea || datasetView === "individual") {
           const pairsToDraw = (scaleMode === "perPair" && currentPairKey) ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
           const activePairsToDraw = pairsToDraw.filter(p => activePairs.includes(p.key));
-          
+
           const showAreaInThisPanel = showArea && activePairsToDraw.length <= 1;
 
           for (const pair of activePairsToDraw) {
@@ -1324,14 +1318,14 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         }
 
         const drawTrendLinesDual = (xSc, yScLeft, yScRight) => {
-            plotGroup.selectAll('[class*="trend-line-"]').remove();
-            const pairsToDraw = (scaleMode === "perPair" && currentPairKey) ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
-            
-            for (const pair of pairsToDraw) {
-                const isY1 = pair.y === yVar1;
-                const ySc = isY1 ? yScLeft : yScRight;
-                drawPairTrendLines(pair, xSc, ySc, plotGroup, "plot-clip");
-            }
+          plotGroup.selectAll('[class*="trend-line-"]').remove();
+          const pairsToDraw = (scaleMode === "perPair" && currentPairKey) ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
+
+          for (const pair of pairsToDraw) {
+            const isY1 = pair.y === yVar1;
+            const ySc = isY1 ? yScLeft : yScRight;
+            drawPairTrendLines(pair, xSc, ySc, plotGroup, "plot-clip");
+          }
         };
 
         const zoom = d3.zoom()
@@ -1372,7 +1366,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
         if (showLines || showArea || datasetView === "individual") {
           const pairsToDraw = (scaleMode === "perPair" && currentPairKey) ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
-          
+
           for (const pair of pairsToDraw) {
             if (!activePairs.includes(pair.key)) continue;
             allDatasets.forEach((ds) => {
@@ -1397,12 +1391,12 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         }
 
         const drawTrendLines = (xSc, ySc) => {
-            plotGroup.selectAll('[class*="trend-line-"]').remove();
-            const pairsToDraw = (scaleMode === "perPair" && currentPairKey) ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
-            
-            for (const pair of pairsToDraw) {
-                drawPairTrendLines(pair, xSc, ySc, plotGroup, "plot-clip");
-            }
+          plotGroup.selectAll('[class*="trend-line-"]').remove();
+          const pairsToDraw = (scaleMode === "perPair" && currentPairKey) ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
+
+          for (const pair of pairsToDraw) {
+            drawPairTrendLines(pair, xSc, ySc, plotGroup, "plot-clip");
+          }
         };
 
         const zoom = d3.zoom()
@@ -1446,23 +1440,22 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           const { transform } = event;
           setCurrentTransform(transform);
           const newX = transform.rescaleX(originalXScale);
-  
+
           activePairObjects.forEach((pair) => {
             const sanitized = sanitizeClassName(pair.key);
             const yScale = originalYScales[pair.key];
             const newY = transform.rescaleY(yScale);
             const origX = (originalXScalePerPair && originalXScalePerPair[pair.key]) ? originalXScalePerPair[pair.key] : originalXScale;
             const newXForPair = transform.rescaleX(origX);
-            const panelGroup = plotGroup.selectAll('g').filter(function() {
+            const panelGroup = plotGroup.selectAll('g').filter(function () {
               return this.classList && this.classList.contains(`panel-${sanitized}`);
             });
             const panelClipId = `panel-clip-${activePairObjects.findIndex(p => p.key === pair.key)}`;
 
-            plotGroup.selectAll('g').filter(function() {
+            plotGroup.selectAll('g').filter(function () {
               return this.classList && this.classList.contains(`y-axis-${sanitized}`);
             }).call(d3.axisLeft(newY).ticks(yTickCount).tickFormat(d => formatAxisValue(d)));
 
-            
             panelGroup.selectAll(".connecting-line, .area-under-line").remove();
             if (showLines || showArea) {
               allDatasets.forEach((ds) => {
@@ -1482,15 +1475,15 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           if (chartSettings.showGrid) {
             activePairObjects.forEach((pair) => {
               const sanitized = sanitizeClassName(pair.key);
-              const panelGroup = plotGroup.selectAll('g').filter(function() {
+              const panelGroup = plotGroup.selectAll('g').filter(function () {
                 return this.classList && this.classList.contains(`panel-${sanitized}`);
               });
               const yScale = originalYScales[pair.key];
               const newY = transform.rescaleY(yScale);
-              panelGroup.selectAll('g').filter(function() {
+              panelGroup.selectAll('g').filter(function () {
                 return this.classList && this.classList.contains(`grid-x-${sanitized}`);
               }).call(d3.axisBottom(newX).ticks(4).tickSize(-panelHeight).tickFormat(""));
-              panelGroup.selectAll('g').filter(function() {
+              panelGroup.selectAll('g').filter(function () {
                 return this.classList && this.classList.contains(`grid-y-${sanitized}`);
               }).call(d3.axisLeft(newY).ticks(yTickCount).tickSize(-plotWidth).tickFormat(""));
             });
@@ -1520,19 +1513,19 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       });
     plotGroup.append("text").attr("transform", "rotate(-90)").attr("x", -plotHeight / 2).attr("y", -60)
       .style("text-anchor", "middle").style("font-size", "13px").style("font-weight", "500").style("fill", "#666")
-    .text(() => {
-      if (datasetView === 'individual' && useStackedPanels) {
-        return selectedYVars.length > 0 
-            ? `Y: ${selectedYVars.join(" / ")}` 
+      .text(() => {
+        if (datasetView === 'individual' && useStackedPanels) {
+          return selectedYVars.length > 0
+            ? `Y: ${selectedYVars.join(" / ")}`
             : "Y Variables (Individual Panels)";
-      } else if (scaleMode === "perPair" && currentPairKey) {
-        return `Y: ${currentPairKey.split("__")[1]}`;
-      } else if (selectedYVars.length > 0) {
-        return `Y: ${selectedYVars.join(", ")}`;
-      } else {
-        return "Y Variables";
-      }
-    });
+        } else if (scaleMode === "perPair" && currentPairKey) {
+          return `Y: ${currentPairKey.split("__")[1]}`;
+        } else if (selectedYVars.length > 0) {
+          return `Y: ${selectedYVars.join(", ")}`;
+        } else {
+          return "Y Variables";
+        }
+      });
 
     svg.append("text").attr("x", width / 2).attr("y", 25).attr("text-anchor", "middle")
       .style("font-size", "18px").style("font-weight", "bold").style("fill", "#333")
@@ -1542,7 +1535,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           title += " — Individual Panels";
         } else if (scaleMode === "perPair" && currentPairKey) {
           title += ` - ${currentPairKey.replace("__", " vs ")}`;
-        } 
+        }
         else if (scaleMode === "global") {
           title += " (All Selected Pairs - Dynamic Scaling)";
         } else if (scaleMode === "perVariable") {
@@ -1551,7 +1544,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         return title;
       });
 
-    
+
 
   }, [getEffectiveRanges, formatAxisValue, chartSettings.showGrid, datasetView,
     chartSettings.showTrendLines, chartSettings.trendLineMode, trendLinesData, allPairs, getTrendLineColor, getPointColor, getSeriesVisualOffset, pairColorMap, perPairAutoRanges, activePairs, scaleMode, currentPairKey, showLines, showArea, areaOpacity, lineWidth, datasetPointsByName, datasetColors, allDatasets, visibleDatasetNames, selectedYVars]);
@@ -1635,7 +1628,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     const perfPointSize = nPoints > 1200 ? Math.max(2, Math.min(chartSettings.pointSize, 6)) : chartSettings.pointSize;
     const perfOpacity = nPoints > 1200 ? Math.min(0.45, chartSettings.opacity) : Math.max(0.75, chartSettings.opacity);
 
-      for (let i = 0; i < pointsToDraw.length; i++) {
+    for (let i = 0; i < pointsToDraw.length; i++) {
       const d = pointsToDraw[i];
       let xPos;
       if (useStackedPanels) {
@@ -1669,7 +1662,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         const fillColor = getPointColor(d.pairKey, d.dataset);
         const offset = getSeriesVisualOffset(d.pairKey, d.dataset);
 
-        
         drawCanvasPoint(
           xPos + offset.dx,
           yPos + offset.dy,
@@ -1875,10 +1867,14 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       datasetColors: getDefaultDatasetColors(),
       pairColors: { ...pairColors },
       pairDatasetColors: { ...pairDatasetColors },
+      visibleDatasetNames: [...visibleDatasetNames],
+      datasetLabels: { ...datasetLabels }
     });
     setSettingsModalOpen(true);
   };
+
   const handleSettingsModalClose = () => { setSettingsModalOpen(false); setDraftSettings(null); };
+
   const handleSettingsSave = () => {
     if (!draftSettings) return;
     const {
@@ -1889,8 +1885,11 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       showArea: nextShowArea,
       areaOpacity: nextAreaOpacity,
       lineWidth: nextLineWidth,
+      visibleDatasetNames: nextVisibleDatasetNames,
+      datasetLabels: nextDatasetLabels,
       ...nextChartSettings
     } = draftSettings;
+
     setChartSettings(nextChartSettings);
     setShowLines(!!nextShowLines);
     setShowArea(!!nextShowArea);
@@ -1899,17 +1898,41 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     if (nextDatasetColors) setDatasetColors({ ...nextDatasetColors });
     if (nextPairColors) setPairColors({ ...nextPairColors });
     if (nextPairDatasetColors) setPairDatasetColors({ ...nextPairDatasetColors });
+    if (nextVisibleDatasetNames) setVisibleDatasetNames(nextVisibleDatasetNames);
+    if (nextDatasetLabels) setDatasetLabels(nextDatasetLabels);
     setSettingsModalOpen(false);
     setDraftSettings(null);
   };
+
   const resetSettings = () => {
     const nextColors = {};
     allDatasets.forEach((dataset, index) => {
       nextColors[dataset.name] = BASE_COLORS[(index + 6) % BASE_COLORS.length] || BASE_COLORS[index % BASE_COLORS.length];
     });
-    
-    setDraftSettings({ pointSize: 8, opacity: 0.7, showGrid: true, showTrendLines: true, trendLineMode: 'average', showOutliers: false, showCorrelation: false, withProductColorOverride: {}, withoutProductColorOverride: {}, showLines: false, showArea: false, areaOpacity: 0.15, lineWidth: 2, datasetColors: nextColors, pairColors: {}, pairDatasetColors: {} });
-};
+    const defaultLabels = {};
+    allDatasets.forEach(dataset => { defaultLabels[dataset.name] = dataset.name; });
+
+    setDraftSettings({
+      pointSize: 8,
+      opacity: 0.7,
+      showGrid: true,
+      showTrendLines: true,
+      trendLineMode: 'average',
+      showOutliers: false,
+      showCorrelation: false,
+      withProductColorOverride: {},
+      withoutProductColorOverride: {},
+      showLines: false,
+      showArea: false,
+      areaOpacity: 0.15,
+      lineWidth: 2,
+      datasetColors: nextColors,
+      pairColors: {},
+      pairDatasetColors: {},
+      visibleDatasetNames: allDatasets.map(d => d.name),
+      datasetLabels: defaultLabels
+    });
+  };
 
   const SummaryCards = () => (
     <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
@@ -1952,13 +1975,13 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   );
 
   const InsightsPanel = () => {
-    const insightsData = scaleMode === "perPair" && currentPairKey ? 
+    const insightsData = scaleMode === "perPair" && currentPairKey ?
       (combinedInsights && {
         correlations: { [currentPairKey]: combinedInsights.correlations?.[currentPairKey] },
         regressions: { [currentPairKey]: combinedInsights.regressions?.[currentPairKey] },
         outliers: { [currentPairKey]: combinedInsights.outliers?.[currentPairKey] || [] }
       }) : combinedInsights;
-    
+
     const pairsToShow = scaleMode === "perPair" && currentPairKey ? allPairs.filter(p => p.key === currentPairKey) : allPairs;
 
     return (
@@ -1981,12 +2004,12 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                 return (
                   <Grid item xs={12} md={scaleMode === "perPair" ? 12 : 6} key={pair.key}>
                     <Card sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2, borderLeft: `4px solid ${colors?.base || '#ccc'}` }}>
-                              <Box sx={{ display: 'flex', gap: 0.5, mb: 1, alignItems: 'center' }}>
-                              {allDatasets.filter(ds => visibleDatasetNames.includes(ds.name)).map((ds, idx) => (
-                                <Box key={ds.name} sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], border: `2px solid ${darkenColor(datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], 0.25)}` }} />
-                              ))}
-                              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary', ml: 1 }}>{pair.x} vs {pair.y}</Typography>
-                            </Box>
+                      <Box sx={{ display: 'flex', gap: 0.5, mb: 1, alignItems: 'center' }}>
+                        {allDatasets.filter(ds => visibleDatasetNames.includes(ds.name)).map((ds, idx) => (
+                          <Box key={ds.name} sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], border: `2px solid ${darkenColor(datasetColors[ds.name] || BASE_COLORS[idx % BASE_COLORS.length], 0.25)}` }} />
+                        ))}
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary', ml: 1 }}>{pair.x} vs {pair.y}</Typography>
+                      </Box>
                       <List dense>
                         <ListItem>
                           <ListItemIcon><TrendingUpIcon sx={{ color: colors?.base }} /></ListItemIcon>
@@ -2091,6 +2114,51 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           Average-Based draws a straight best-fit line. Curve-Fit follows the actual shape of the data using a smoothed line.
         </Typography>
       </Box>,
+      // NEW SECTION: Dataset Visibility & Labels
+      <Box key="dataset-legend" sx={{ mt: 3 }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#333' }}>Dataset Visibility & Labels</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+          Toggle visibility and rename datasets as they appear in the legend.
+        </Typography>
+        {allDatasets.map((dataset) => {
+          const isVisible = draftSettings?.visibleDatasetNames?.includes(dataset.name) ?? true;
+          return (
+            <Box key={dataset.name} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+              <Checkbox
+                checked={isVisible}
+                onChange={(e) => {
+                  const isChecked = e.target.checked;
+                  setDraftSettings(ds => {
+                    const currentVisible = ds?.visibleDatasetNames || allDatasets.map(d => d.name);
+                    const newVisible = isChecked
+                      ? [...currentVisible, dataset.name]
+                      : currentVisible.filter(n => n !== dataset.name);
+                    return { ...ds, visibleDatasetNames: newVisible };
+                  });
+                }}
+                size="small"
+              />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: draftSettings?.datasetColors?.[dataset.name] || datasetColors[dataset.name] || BASE_COLORS[allDatasets.indexOf(dataset) % BASE_COLORS.length] }} />
+                <DebouncedTextField
+                  size="small"
+                  value={draftSettings?.datasetLabels?.[dataset.name] ?? datasetLabels[dataset.name] ?? dataset.name}
+                  onChange={(e) => setDraftSettings(ds => ({
+                    ...ds,
+                    datasetLabels: {
+                      ...ds?.datasetLabels,
+                      [dataset.name]: e.target.value
+                    }
+                  }))}
+                  sx={{ flex: 1, '& .MuiInputBase-input': { fontSize: '0.85rem' } }}
+                  placeholder="Rename dataset"
+                />
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>,
+      // Annotations section (unchanged)
       <Box key="annotations" sx={{ mt: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, color: '#333' }}>Text Annotations</Typography>
@@ -2128,7 +2196,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         ))}
       </Box>
     ];
-
 
     const datasetColorPairs = allDatasets.map((dataset, index) => ({
       key: `dataset-${dataset.name}`,
@@ -2205,7 +2272,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   const hasData = allPoints && allPoints.length > 0;
 
   const currentPairLabel = currentPairKey ? currentPairKey.replace("__", " vs ") : "";
-  
+
   const currentXRange = scaleMode === "perPair" && currentPairKey ? perPairRanges[currentPairKey]?.xRange : customXRange;
   const currentYRange = scaleMode === "perPair" && currentPairKey ? perPairRanges[currentPairKey]?.yRange : customYRange;
   const currentAutoXRanges = scaleMode === "perPair" && currentPairKey ? perPairAutoRanges[currentPairKey] : globalAutoRanges;
@@ -2312,7 +2379,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
             ))}
           </Box>
         )}
-        
+
       </Box>
     );
   };
@@ -2331,7 +2398,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     }}>
       <SettingsModal />
 
-      {/* Shared pill-toggle styling used across the Layout / Axis Configuration panel below */}
+      {/* Shared pill‑toggle styling used across the Layout / Axis Configuration panel below */}
       {(() => null)()}
       <Card elevation={0} sx={{ order: 1, mb: 2.5, borderRadius: 3, border: '1px solid #E7EBF1', boxShadow: 'none', bgcolor: '#fff' }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
@@ -2384,85 +2451,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                   ? "Overlay every selected pair and dataset in one analytical view."
                   : "Break each variable pair out into its own panel for closer inspection."}
               </Typography>
-
-              {/* <Box sx={{ mt: 3, pt: 2.5, borderTop: '1px solid #EEF1F6' }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: '#94A3B8', mb: 0.5 }}>
-                  SCALING
-                </Typography>
-                <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#0F172A', mb: 1.5 }}>
-                  Axis Scaling Mode
-                </Typography>
-                <ToggleButtonGroup
-                  value={scaleMode}
-                  exclusive
-                  onChange={(_, v) => { if (v) { setScaleMode(v); resetZoom(); if (v == "perPair") { setActivePairs(allPairs.map(p => p.key)); if (allPairs.length > 0) { setCurrentPairKey(allPairs[0].key); } } } }}
-                  sx={{
-                    bgcolor: '#F1F5F9',
-                    borderRadius: '999px',
-                    p: 0.5,
-                    gap: 0.5,
-                    flexWrap: 'wrap',
-                    '& .MuiToggleButtonGroup-grouped': { border: 0, borderRadius: '999px !important' }
-                  }}
-                >
-                  <ToggleButton
-                    value="global"
-                    sx={{
-                      textTransform: 'none', fontWeight: 700, fontSize: '0.78rem', px: 1.75, py: 0.6, color: '#64748B',
-                      '&.Mui-selected': { bgcolor: '#fff', color: '#0F172A', boxShadow: '0 1px 3px rgba(15,23,42,.15)' },
-                      '&.Mui-selected:hover': { bgcolor: '#fff' }
-                    }}
-                  >
-                    All Pairs
-                  </ToggleButton>
-                  <ToggleButton
-                    value="perPair"
-                    sx={{
-                      textTransform: 'none', fontWeight: 700, fontSize: '0.78rem', px: 1.75, py: 0.6, color: '#64748B',
-                      '&.Mui-selected': { bgcolor: '#fff', color: '#0F172A', boxShadow: '0 1px 3px rgba(15,23,42,.15)' },
-                      '&.Mui-selected:hover': { bgcolor: '#fff' }
-                    }}
-                  >
-                    Single Pair
-                  </ToggleButton>
-                  <ToggleButton
-                    value="perVariable"
-                    sx={{
-                      textTransform: 'none', fontWeight: 700, fontSize: '0.78rem', px: 1.75, py: 0.6, color: '#64748B',
-                      '&.Mui-selected': { bgcolor: '#fff', color: '#0F172A', boxShadow: '0 1px 3px rgba(15,23,42,.15)' },
-                      '&.Mui-selected:hover': { bgcolor: '#fff' }
-                    }}
-                  >
-                    Per-Variable
-                  </ToggleButton>
-                </ToggleButtonGroup>
-
-                {scaleMode === "perPair" && allPairs.length > 0 && (
-                  <Select
-                    size="small"
-                    value={currentPairKey || (allPairs[0]?.key || "")}
-                    onChange={(e) => { setCurrentPairKey(e.target.value); resetZoom(); }}
-                    sx={{ mt: 1.5, minWidth: 220, borderRadius: 2.5, bgcolor: '#F8FAFC', '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E2E8F0' } }}
-                  >
-                    {allPairs.map(pair => (
-                      <MenuItem key={pair.key} value={pair.key}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: pairColorMap[pair.key]?.post, border: `2px solid ${pairColorMap[pair.key]?.base}` }} />
-                          <span>{pair.x} vs {pair.y}</span>
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                )}
-
-                <Typography variant="caption" sx={{ display: 'block', mt: 1.5, color: '#94A3B8', lineHeight: 1.5, maxWidth: 320 }}>
-                  {scaleMode === "global"
-                    ? "All variable pairs share the same X and Y axis scales."
-                    : scaleMode === "perPair"
-                    ? "The selected pair gets its own independent axis scales."
-                    : "Each axis uses the scale range of its specific variable."}
-                </Typography>
-              </Box> */}
             </Grid>
 
             {/* RIGHT: Axis Configuration */}
@@ -2681,9 +2669,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               </Typography>
             </Box>
 
-            
-            
-
             <Box sx={{ mb: 3 }}>
               <Alert severity="info" variant="outlined" sx={{ display: "flex", alignItems: "center", gap: 1, borderRadius: 2.5, borderColor: "#D9E7FF", bgcolor: "#F8FBFF", color: "#475569", "& .MuiAlert-icon": { color: "#2563EB" } }}>
                 <PanToolIcon fontSize="small" />
@@ -2702,7 +2687,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
             {scaleMode !== "perVariable" && (
               <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
-                
+
               </Card>
             )}
 
@@ -2762,51 +2747,51 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                         onMouseLeave={() => { setIsDragging(false); handleCanvasMouseOut(); }}
                       />
                       {renderLegendBlock()}
-                      
+
                       <Box sx={{ position: 'absolute', top: 12, right: 20, zIndex: 1000, pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 1.5, background: 'rgba(255,255,255,0.97)', p: '8px 14px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', boxShadow: '0 3px 10px rgba(0,0,0,0.15)' }}>
-                      <Box sx={{ width: 36, height: 36 }}><img src={logo} alt="Abhitech Logo" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'contain' }} /></Box>
-                      <Box>
-                        <Box sx={{ fontSize: '11px', lineHeight: '1.4', color: '#666' }}>Powered by</Box>
-                        <Box sx={{ fontSize: '13px', fontWeight: 'bold', color: '#1976d2', lineHeight: '1.4' }}>Abhitech's AbhiStat</Box>
+                        <Box sx={{ width: 36, height: 36 }}><img src={logo} alt="Abhitech Logo" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'contain' }} /></Box>
+                        <Box>
+                          <Box sx={{ fontSize: '11px', lineHeight: '1.4', color: '#666' }}>Powered by</Box>
+                          <Box sx={{ fontSize: '13px', fontWeight: 'bold', color: '#1976d2', lineHeight: '1.4' }}>Abhitech's AbhiStat</Box>
+                        </Box>
                       </Box>
-                    </Box>
-                    {visibleAnnotations.map((ann) => {
-                      if (!annotationRefs.current[ann.id]) {
-                        annotationRefs.current[ann.id] = createRef();
-                      }
-                      return (
-                        <Draggable
-                          key={ann.id}
-                          nodeRef={annotationRefs.current[ann.id]}
-                          position={annotationPositions[ann.id] || { x: 120, y: 120 }}
-                          onDrag={(e, data) => handleAnnotationDrag(ann.id, data)}
-                          onStop={(e, data) => handleAnnotationDragStop(ann.id, data)}
-                          bounds="parent"
-                        >
-                          <Box ref={annotationRefs.current[ann.id]} sx={{
-                            position: 'absolute',
-                            zIndex: 998,
-                            cursor: 'grab',
-                            background: 'rgba(255,255,255,0.96)',
-                            border: '1.5px solid #1976d2',
-                            borderRadius: '6px',
-                            padding: '6px 12px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                            minWidth: 80,
-                            userSelect: 'none',
-                          }}>
-                            {ann.field && (
-                              <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: '#1976d2', fontSize: '11px' }}>
-                                {ann.field}
+                      {visibleAnnotations.map((ann) => {
+                        if (!annotationRefs.current[ann.id]) {
+                          annotationRefs.current[ann.id] = createRef();
+                        }
+                        return (
+                          <Draggable
+                            key={ann.id}
+                            nodeRef={annotationRefs.current[ann.id]}
+                            position={annotationPositions[ann.id] || { x: 120, y: 120 }}
+                            onDrag={(e, data) => handleAnnotationDrag(ann.id, data)}
+                            onStop={(e, data) => handleAnnotationDragStop(ann.id, data)}
+                            bounds="parent"
+                          >
+                            <Box ref={annotationRefs.current[ann.id]} sx={{
+                              position: 'absolute',
+                              zIndex: 998,
+                              cursor: 'grab',
+                              background: 'rgba(255,255,255,0.96)',
+                              border: '1.5px solid #1976d2',
+                              borderRadius: '6px',
+                              padding: '6px 12px',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                              minWidth: 80,
+                              userSelect: 'none',
+                            }}>
+                              {ann.field && (
+                                <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: '#1976d2', fontSize: '11px' }}>
+                                  {ann.field}
+                                </Typography>
+                              )}
+                              <Typography variant="body2" sx={{ fontSize: '12px', color: '#333' }}>
+                                {ann.text || '(empty)'}
                               </Typography>
-                            )}
-                            <Typography variant="body2" sx={{ fontSize: '12px', color: '#333' }}>
-                              {ann.text || '(empty)'}
-                            </Typography>
-                          </Box>
-                        </Draggable>
-                      );
-                    })}
+                            </Box>
+                          </Draggable>
+                        );
+                      })}
                       {tooltip.visible && tooltip.data && (
                         <Paper elevation={3} sx={{ position: "absolute", left: Math.min(tooltip.x + 10, window.innerWidth - 320), top: Math.max(tooltip.y - 10, 10), p: { xs: 1.5, md: 2 }, backgroundColor: "background.paper", maxWidth: { xs: 250, md: 300 }, borderRadius: 2, border: "2px solid", borderColor: getPairBaseColor(tooltip.data.pairKey) || 'divider', boxShadow: "0 16px 36px rgba(15,23,42,0.16)", pointerEvents: "none", zIndex: 1000 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.5 }}>
