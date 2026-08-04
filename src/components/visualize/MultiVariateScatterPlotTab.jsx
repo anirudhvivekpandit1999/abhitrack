@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useRef, useCallback, createRef } from "react";
 import DebouncedTextField from '../DebouncedTextField';
 import {
@@ -2114,7 +2113,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           Average-Based draws a straight best-fit line. Curve-Fit follows the actual shape of the data using a smoothed line.
         </Typography>
       </Box>,
-      // NEW SECTION: Dataset Visibility & Labels
       <Box key="dataset-legend" sx={{ mt: 3 }}>
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#333' }}>Dataset Visibility & Labels</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
@@ -2158,7 +2156,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           );
         })}
       </Box>,
-      // Annotations section (unchanged)
       <Box key="annotations" sx={{ mt: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, color: '#333' }}>Text Annotations</Typography>
@@ -2702,6 +2699,25 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                 <MuiTooltip title="Download Plot as PNG">
                   <Button variant="outlined" color="primary" onClick={downloadChartAsPNG} startIcon={<DownloadIcon />} size="small" sx={{ textTransform: 'none', height: 32 }}>Download PNG</Button>
                 </MuiTooltip>
+                {/* Duplicated Chart Settings and Export Page buttons on the graph toolbar */}
+                <Button
+                  variant="outlined"
+                  startIcon={<TuneIcon />}
+                  onClick={openSettingsModal}
+                  size="small"
+                  sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, borderColor: '#D8E0EC', color: '#334155', bgcolor: '#fff', height: 32 }}
+                >
+                  Chart Settings
+                </Button>
+                <Button
+                  onClick={downloadPageAsPNG}
+                  variant="contained"
+                  startIcon={<DownloadIcon />}
+                  size="small"
+                  sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, bgcolor: '#172B4D', boxShadow: 'none', '&:hover': { bgcolor: '#223A61', boxShadow: 'none' }, height: 32 }}
+                >
+                  Export Page
+                </Button>
               </Box>
             </Box>
             {allPairs.length > 0 && (
