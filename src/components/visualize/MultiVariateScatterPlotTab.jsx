@@ -2746,7 +2746,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
                         onMouseUp={() => setIsDragging(false)}
                         onMouseLeave={() => { setIsDragging(false); handleCanvasMouseOut(); }}
                       />
-                      {renderLegendBlock()}
+                      {/* {renderLegendBlock()} */}
 
                       <Box sx={{ position: 'absolute', top: 12, right: 20, zIndex: 1000, pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 1.5, background: 'rgba(255,255,255,0.97)', p: '8px 14px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.12)', boxShadow: '0 3px 10px rgba(0,0,0,0.15)' }}>
                         <Box sx={{ width: 36, height: 36 }}><img src={logo} alt="Abhitech Logo" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'contain' }} /></Box>
