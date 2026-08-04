@@ -1078,10 +1078,41 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     setCurrentPairKey(null);
   }, [selectedXVars, selectedYVars, allPairs]);
 
+  // --- NEW: Dynamic chart height for individual view with equal panel sizes ---
+  const [chartHeight, setChartHeight] = useState(500);
+
+  useEffect(() => {
+    const activePairObjects = allPairs.filter(p => activePairs.includes(p.key));
+    const useStackedPanels = datasetView === "individual" && activePairObjects.length > 1;
+
+    if (useStackedPanels) {
+      const BASE_HEIGHT = 500;
+      const MARGIN_TOP = 80;
+      const MARGIN_BOTTOM = 80;
+      const PANEL_GAP = 40;
+      const panelCount = activePairObjects.length;
+      const panelHeight = BASE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM; // 340
+      const totalPlotHeight = panelHeight * panelCount + PANEL_GAP * (panelCount - 1);
+      const totalHeight = MARGIN_TOP + MARGIN_BOTTOM + totalPlotHeight;
+      setChartHeight(totalHeight);
+    } else {
+      setChartHeight(500);
+    }
+  }, [datasetView, activePairs, allPairs]);
+
+  // Ensure container height is updated
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.style.height = `${chartHeight}px`;
+    }
+  }, [chartHeight]);
+
+  // --- END dynamic height ---
+
   useEffect(() => {
     if (!svgRef.current || !containerRef.current) return;
     const width = containerRef.current.offsetWidth || 700;
-    const height = 500;
+    const height = chartHeight; // use dynamic height
     const baseMargin = { top: 80, right: 60, bottom: 80, left: 80 };
     d3.select(svgRef.current).selectAll("*").remove();
     const svg = d3.select(svgRef.current).attr("width", width).attr("height", height);
@@ -1105,9 +1136,17 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     const tickCount = 8;
     const PANEL_GAP = 40;
     const panelCount = useStackedPanels ? activePairObjects.length : 1;
-    const panelHeight = useStackedPanels
-      ? (plotHeight - PANEL_GAP * (panelCount - 1)) / panelCount
+    // In stacked mode, each panel should have the same height as the combined plot (340px)
+    // We define panelHeight as the plot height that a single combined chart would have (500 - 80 - 80 = 340)
+    const BASE_HEIGHT = 500;
+    const BASE_MARGIN_TOP = 80;
+    const BASE_MARGIN_BOTTOM = 80;
+    const combinedPlotHeight = BASE_HEIGHT - BASE_MARGIN_TOP - BASE_MARGIN_BOTTOM; // 340
+    const panelHeight = useStackedPanels ? combinedPlotHeight : plotHeight;
+    const totalPlotHeight = useStackedPanels
+      ? panelHeight * panelCount + PANEL_GAP * (panelCount - 1)
       : plotHeight;
+
     const yTickCount = useStackedPanels
       ? Math.max(2, Math.min(5, Math.floor(panelHeight / 35)))
       : 8;
@@ -1443,9 +1482,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     if (useStackedPanels) {
       drawStackedPanels();
 
+      // Zoom on the entire plot area (totalPlotHeight)
       const zoom = d3.zoom()
         .scaleExtent([0.5, 50])
-        .extent([[0, 0], [plotWidth, plotHeight]])
+        .extent([[0, 0], [plotWidth, totalPlotHeight]])
         .on("zoom", (event) => {
           const { transform } = event;
           setCurrentTransform(transform);
@@ -1502,7 +1542,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
       zoomRef.current = zoom;
       const zoomRect = plotGroup.append("rect")
-        .attr("width", plotWidth).attr("height", plotHeight)
+        .attr("width", plotWidth).attr("height", totalPlotHeight)
         .style("fill", "none").style("pointer-events", "all")
         .call(zoom);
       zoomRectRef.current = zoomRect.node();
@@ -1557,12 +1597,12 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
 
   }, [getEffectiveRanges, formatAxisValue, chartSettings.showGrid, datasetView,
-    chartSettings.showTrendLines, chartSettings.trendLineMode, trendLinesData, allPairs, getTrendLineColor, getPointColor, getSeriesVisualOffset, pairColorMap, perPairAutoRanges, activePairs, scaleMode, currentPairKey, showLines, showArea, areaOpacity, lineWidth, datasetPointsByName, datasetColors, allDatasets, visibleDatasetNames, selectedYVars]);
+    chartSettings.showTrendLines, chartSettings.trendLineMode, trendLinesData, allPairs, getTrendLineColor, getPointColor, getSeriesVisualOffset, pairColorMap, perPairAutoRanges, activePairs, scaleMode, currentPairKey, showLines, showArea, areaOpacity, lineWidth, datasetPointsByName, datasetColors, allDatasets, visibleDatasetNames, selectedYVars, chartHeight]);
 
   const updateCanvasPoints = useCallback(() => {
     if (!canvasRef.current || !containerRef.current) return;
     const width = containerRef.current.offsetWidth || 700;
-    const height = 500;
+    const height = chartHeight; // use dynamic height
     const margin = { top: 80, right: 60, bottom: 80, left: 80 };
     const plotWidth = width - margin.left - margin.right;
     const plotHeight = height - margin.top - margin.bottom;
@@ -1580,7 +1620,11 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
     const PANEL_GAP = 40;
     if (useStackedPanels) {
-      panelHeight = (plotHeight - PANEL_GAP * (activePairObjects.length - 1)) / activePairObjects.length;
+      const BASE_HEIGHT = 500;
+      const BASE_MARGIN_TOP = 80;
+      const BASE_MARGIN_BOTTOM = 80;
+      const combinedPlotHeight = BASE_HEIGHT - BASE_MARGIN_TOP - BASE_MARGIN_BOTTOM;
+      panelHeight = combinedPlotHeight; // each panel has same height as combined
       activePairObjects.forEach((pair, index) => {
         const yDomain = perPairAutoRanges[pair.key] || { yMin: 0, yMax: 1 };
         const yScale = d3.scaleLinear().domain([yDomain.yMin, yDomain.yMax]).range([panelHeight, 0]);
@@ -1613,7 +1657,13 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     ctx.save();
     ctx.translate(margin.left, margin.top);
     ctx.beginPath();
-    ctx.rect(0, 0, plotWidth, plotHeight);
+    if (useStackedPanels) {
+      // clip to total plot height
+      const totalPlotHeight = panelHeight * activePairObjects.length + PANEL_GAP * (activePairObjects.length - 1);
+      ctx.rect(0, 0, plotWidth, totalPlotHeight);
+    } else {
+      ctx.rect(0, 0, plotWidth, plotHeight);
+    }
     ctx.clip();
 
     const drawCanvasPoint = (x, y, color, size, opacity) => {
@@ -1682,7 +1732,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       }
     }
     ctx.restore();
-  }, [allPoints, activePairs, allPairs, currentPairPoints, chartSettings.pointSize, chartSettings.opacity, datasetView, getEffectiveRanges, getPointColor, getSeriesVisualOffset, currentTransform, pairColorMap, perPairAutoRanges, scaleMode, currentPairKey, selectedYVars]);
+  }, [allPoints, activePairs, allPairs, currentPairPoints, chartSettings.pointSize, chartSettings.opacity, datasetView, getEffectiveRanges, getPointColor, getSeriesVisualOffset, currentTransform, pairColorMap, perPairAutoRanges, scaleMode, currentPairKey, selectedYVars, chartHeight]);
 
   useEffect(() => {
     updateCanvasPoints();
@@ -1694,7 +1744,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
   useEffect(() => {
     if (!containerRef.current) return;
     const width = containerRef.current.offsetWidth || 700;
-    const height = 500;
+    const height = chartHeight;
     const margin = { top: 80, right: 60, bottom: 80, left: 80 };
     const plotWidth = width - margin.left - margin.right;
     const plotHeight = height - margin.top - margin.bottom;
@@ -1718,7 +1768,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       }
     }
     gridIndexRef.current = { grid, nCols, nRows, cellSize: gridCellSize };
-  }, [allPoints, currentPairPoints, getEffectiveRanges, currentTransform, scaleMode, currentPairKey]);
+  }, [allPoints, currentPairPoints, getEffectiveRanges, currentTransform, scaleMode, currentPairKey, chartHeight]);
 
   const handleCanvasMouseMove = useCallback((e) => {
     if (!canvasRef.current || !containerRef.current || !gridIndexRef.current) return;
@@ -2762,11 +2812,11 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', overflow: 'hidden' }}>
                 <CardContent sx={{ p: 0 }}>
                   <Box sx={{ width: '100%', position: 'relative' }}>
-                    <div ref={containerRef} className="abhitech-plot-area" style={{ width: "100%", height: "500px", position: "relative" }}>
+                    <div ref={containerRef} className="abhitech-plot-area" style={{ width: "100%", height: chartHeight, position: "relative" }}>
                       <svg ref={svgRef} style={{ width: "100%", height: "100%", display: "block", position: "absolute", top: 0, left: 0 }}></svg>
-                      <canvas ref={canvasRef} width={containerRef.current?.offsetWidth || 700} height={500} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '500px', pointerEvents: 'none' }} />
+                      <canvas ref={canvasRef} width={containerRef.current?.offsetWidth || 700} height={chartHeight} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
                       <div
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '500px', zIndex: 10, pointerEvents: 'auto', background: 'transparent', cursor: isDragging ? 'grabbing' : 'grab' }}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10, pointerEvents: 'auto', background: 'transparent', cursor: isDragging ? 'grabbing' : 'grab' }}
                         onWheel={(e) => { if (e.cancelable) e.preventDefault(); if (zoomRef.current && zoomRectRef.current) { const zoomRect = d3.select(zoomRectRef.current); const rect = zoomRectRef.current.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top; const scale = e.deltaY > 0 ? 0.9 : 1.1; zoomRect.call(zoomRef.current.scaleBy, scale, [x, y]); } }}
                         onMouseDown={(e) => { if (e.button === 0 && zoomRef.current && zoomRectRef.current) { setIsDragging(true); setDragStart({ x: e.clientX, y: e.clientY }); if (e.cancelable) e.preventDefault(); } }}
                         onMouseMove={(e) => { handleCanvasMouseMove(e); if (isDragging && zoomRef.current && zoomRectRef.current) { const dx = e.clientX - dragStart.x; const dy = e.clientY - dragStart.y; if (Math.abs(dx) > 2 || Math.abs(dy) > 2) { const zoomRect = d3.select(zoomRectRef.current); const ct = d3.zoomTransform(zoomRectRef.current); const newTransform = ct.translate(dx / ct.k, dy / ct.k); zoomRect.call(zoomRef.current.transform, newTransform); setDragStart({ x: e.clientX, y: e.clientY }); } } }}
