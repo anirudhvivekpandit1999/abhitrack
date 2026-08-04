@@ -2331,126 +2331,260 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     }}>
       <SettingsModal />
 
-      <Card elevation={0} sx={{ order: 1, mb: 2.5, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: 'none', bgcolor: '#FAFBFD' }}>
+      {/* Shared pill-toggle styling used across the Layout / Axis Configuration panel below */}
+      {(() => null)()}
+      <Card elevation={0} sx={{ order: 1, mb: 2.5, borderRadius: 3, border: '1px solid #E7EBF1', boxShadow: 'none', bgcolor: '#fff' }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            <ScaleIcon color="primary" />
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'primary.main' }}>Axis Scaling Mode:</Typography>
-            <ToggleButtonGroup value={scaleMode} exclusive onChange={(_, v) => { if (v) { setScaleMode(v); resetZoom(); if (v == "perPair"){setActivePairs(allPairs.map(p => p.key));if (allPairs.length > 0) { setCurrentPairKey(allPairs[0].key); } } } }} size="small">
-              <ToggleButton value="global" sx={{ textTransform: 'none' }}>All Selected Pairs View (All Sheets)</ToggleButton>
-              <ToggleButton value="perPair" sx={{ textTransform: 'none' }}>Single Sheet View</ToggleButton>
-              <ToggleButton value="perVariable" sx={{ textTransform: 'none' }}>Per-Variable Scale</ToggleButton>
-            </ToggleButtonGroup>
-            {scaleMode === "perPair" && allPairs.length > 0 && (
-              <>
-                <Typography variant="body2" sx={{ ml: { xs: 0, sm: 2 }, color: 'text.secondary' }}>Show pair:</Typography>
-                <Select
-                  size="small"
-                  value={currentPairKey || (allPairs[0]?.key || "")}
-                  onChange={(e) => { setCurrentPairKey(e.target.value); resetZoom(); }}
-                  sx={{ minWidth: 200 }}
+          <Grid container spacing={{ xs: 3, md: 0 }}>
+            {/* LEFT: Layout */}
+            <Grid item xs={12} md={5} sx={{ pr: { md: 3 }, borderRight: { md: '1px solid #EEF1F6' } }}>
+              <Typography sx={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: '#94A3B8', mb: 0.5 }}>
+                LAYOUT
+              </Typography>
+              <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#0F172A', mb: 1.5 }}>
+                View Mode
+              </Typography>
+
+              <ToggleButtonGroup
+                value={datasetView}
+                exclusive
+                onChange={(_, v) => { if (v) setDatasetView(v); }}
+                sx={{
+                  bgcolor: '#F1F5F9',
+                  borderRadius: '999px',
+                  p: 0.5,
+                  gap: 0.5,
+                  '& .MuiToggleButtonGroup-grouped': { border: 0, borderRadius: '999px !important' }
+                }}
+              >
+                <ToggleButton
+                  value="combined"
+                  sx={{
+                    textTransform: 'none', fontWeight: 700, fontSize: '0.85rem', px: 2.25, py: 0.75, color: '#64748B',
+                    '&.Mui-selected': { bgcolor: '#fff', color: '#0F172A', boxShadow: '0 1px 3px rgba(15,23,42,.15)' },
+                    '&.Mui-selected:hover': { bgcolor: '#fff' }
+                  }}
                 >
-                  {allPairs.map(pair => (
-                    <MenuItem key={pair.key} value={pair.key}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: pairColorMap[pair.key]?.post, border: `2px solid ${pairColorMap[pair.key]?.base}` }} />
-                        <span>{pair.x} vs {pair.y}</span>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </>
-            )}
-          </Box>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-            {scaleMode === "global" 
-              ? "All variable pairs share the same X and Y axis scales. Use this for direct comparison across pairs." 
-              : scaleMode === "perPair"
-              ? "Each variable pair has its own independent axis scales, optimized for that pair's data range. Use this to see finer details in each relationship."
-              : "Each axis uses the scale range of its specific variable across all data. Use this for consistent variable scaling across different pairs."}
-          </Typography>
-        </CardContent>
-      </Card>
+                  Combined
+                </ToggleButton>
+                <ToggleButton
+                  value="individual"
+                  sx={{
+                    textTransform: 'none', fontWeight: 700, fontSize: '0.85rem', px: 2.25, py: 0.75, color: '#64748B',
+                    '&.Mui-selected': { bgcolor: '#fff', color: '#0F172A', boxShadow: '0 1px 3px rgba(15,23,42,.15)' },
+                    '&.Mui-selected:hover': { bgcolor: '#fff' }
+                  }}
+                >
+                  Individual
+                </ToggleButton>
+              </ToggleButtonGroup>
 
-      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ order: 2, mb: 2.5, p: { xs: 2, sm: 2.5 }, border: '1px solid #E5EAF2', borderRadius: 2.5, bgcolor: '#fff', boxShadow: '0 4px 16px rgba(15,23,42,.04)' }}>
-        <Grid item xs={12} sm={6} md={4}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'primary.main' }}>Select X (Independent) Variables</Typography>
-          <Autocomplete multiple options={availableColumns} value={selectedXVars} onChange={(_, v) => setSelectedXVars(v)} renderInput={(params) => <DebouncedTextField {...params} label="X Variables" variant="outlined" size="small" />} />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'success.main' }}>Select Y (Dependent) Variables</Typography>
-          <Autocomplete multiple options={availableColumns} value={selectedYVars} onChange={(_, v) => setSelectedYVars(v)} renderInput={(params) => <DebouncedTextField {...params} label="Y Variables" variant="outlined" size="small" />} />
-        </Grid>
-        <Grid item xs={12} sm={12} md={4}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'secondary.main' }}>Chart Layout</Typography>
-          <ToggleButtonGroup value={datasetView} exclusive onChange={(_, v) => { if (v) setDatasetView(v); }} color="primary" fullWidth sx={{ height: "48px", "& .MuiToggleButton-root": { textTransform: "none", px: 1.5, fontSize: "0.875rem", border: "1px solid", borderColor: "primary.main", "&.Mui-selected": { backgroundColor: "primary.main", color: "white", "&:hover": { backgroundColor: "primary.dark" } } } }}>
-            <ToggleButton value="combined">Combined</ToggleButton>
-            <ToggleButton value="individual">Individual</ToggleButton>
-          </ToggleButtonGroup>
-        </Grid>
-      </Grid>
+              <Typography variant="caption" sx={{ display: 'block', mt: 1.5, color: '#94A3B8', lineHeight: 1.5, maxWidth: 320 }}>
+                {datasetView === "combined"
+                  ? "Overlay every selected pair and dataset in one analytical view."
+                  : "Break each variable pair out into its own panel for closer inspection."}
+              </Typography>
 
-      <Card sx={{ order: 3, mb: 2.5, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
-        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Data Filter</Typography>
-          <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="center">
-            <Grid item xs={12} sm={6} md={3}>
-              <Autocomplete options={availableColumnsForFilter} value={filterColumn} onChange={(e, v) => setFilterColumn(v || '')} renderInput={(params) => <DebouncedTextField {...params} label="Filter Column" variant="outlined" size="small" />} disableClearable={false} />
+              {/* <Box sx={{ mt: 3, pt: 2.5, borderTop: '1px solid #EEF1F6' }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: '#94A3B8', mb: 0.5 }}>
+                  SCALING
+                </Typography>
+                <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#0F172A', mb: 1.5 }}>
+                  Axis Scaling Mode
+                </Typography>
+                <ToggleButtonGroup
+                  value={scaleMode}
+                  exclusive
+                  onChange={(_, v) => { if (v) { setScaleMode(v); resetZoom(); if (v == "perPair") { setActivePairs(allPairs.map(p => p.key)); if (allPairs.length > 0) { setCurrentPairKey(allPairs[0].key); } } } }}
+                  sx={{
+                    bgcolor: '#F1F5F9',
+                    borderRadius: '999px',
+                    p: 0.5,
+                    gap: 0.5,
+                    flexWrap: 'wrap',
+                    '& .MuiToggleButtonGroup-grouped': { border: 0, borderRadius: '999px !important' }
+                  }}
+                >
+                  <ToggleButton
+                    value="global"
+                    sx={{
+                      textTransform: 'none', fontWeight: 700, fontSize: '0.78rem', px: 1.75, py: 0.6, color: '#64748B',
+                      '&.Mui-selected': { bgcolor: '#fff', color: '#0F172A', boxShadow: '0 1px 3px rgba(15,23,42,.15)' },
+                      '&.Mui-selected:hover': { bgcolor: '#fff' }
+                    }}
+                  >
+                    All Pairs
+                  </ToggleButton>
+                  <ToggleButton
+                    value="perPair"
+                    sx={{
+                      textTransform: 'none', fontWeight: 700, fontSize: '0.78rem', px: 1.75, py: 0.6, color: '#64748B',
+                      '&.Mui-selected': { bgcolor: '#fff', color: '#0F172A', boxShadow: '0 1px 3px rgba(15,23,42,.15)' },
+                      '&.Mui-selected:hover': { bgcolor: '#fff' }
+                    }}
+                  >
+                    Single Pair
+                  </ToggleButton>
+                  <ToggleButton
+                    value="perVariable"
+                    sx={{
+                      textTransform: 'none', fontWeight: 700, fontSize: '0.78rem', px: 1.75, py: 0.6, color: '#64748B',
+                      '&.Mui-selected': { bgcolor: '#fff', color: '#0F172A', boxShadow: '0 1px 3px rgba(15,23,42,.15)' },
+                      '&.Mui-selected:hover': { bgcolor: '#fff' }
+                    }}
+                  >
+                    Per-Variable
+                  </ToggleButton>
+                </ToggleButtonGroup>
+
+                {scaleMode === "perPair" && allPairs.length > 0 && (
+                  <Select
+                    size="small"
+                    value={currentPairKey || (allPairs[0]?.key || "")}
+                    onChange={(e) => { setCurrentPairKey(e.target.value); resetZoom(); }}
+                    sx={{ mt: 1.5, minWidth: 220, borderRadius: 2.5, bgcolor: '#F8FAFC', '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E2E8F0' } }}
+                  >
+                    {allPairs.map(pair => (
+                      <MenuItem key={pair.key} value={pair.key}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: pairColorMap[pair.key]?.post, border: `2px solid ${pairColorMap[pair.key]?.base}` }} />
+                          <span>{pair.x} vs {pair.y}</span>
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                )}
+
+                <Typography variant="caption" sx={{ display: 'block', mt: 1.5, color: '#94A3B8', lineHeight: 1.5, maxWidth: 320 }}>
+                  {scaleMode === "global"
+                    ? "All variable pairs share the same X and Y axis scales."
+                    : scaleMode === "perPair"
+                    ? "The selected pair gets its own independent axis scales."
+                    : "Each axis uses the scale range of its specific variable."}
+                </Typography>
+              </Box> */}
             </Grid>
-            <Grid item xs={6} sm={3} md={2.5}>
-              <DebouncedTextField type={columnIsDateTime ? 'datetime-local' : 'number'} size="small" label={columnIsDateTime ? 'Min (datetime)' : 'Min'} value={filterMin} onChange={(e) => setFilterMin(e.target.value)} disabled={!filterColumn} fullWidth />
-            </Grid>
-            <Grid item xs={6} sm={3} md={2.5}>
-              <DebouncedTextField type={columnIsDateTime ? 'datetime-local' : 'number'} size="small" label={columnIsDateTime ? 'Max (datetime)' : 'Max'} value={filterMax} onChange={(e) => setFilterMax(e.target.value)} disabled={!filterColumn} fullWidth />
-            </Grid>
-            <Grid item xs={12} sm={12} md={4}>
-              <Button onClick={resetLocalFilter} variant="outlined" size="small" sx={{ textTransform: 'none', width: { xs: '100%', md: 'auto' }, minWidth: '120px' }}>Reset Filter</Button>
+
+            {/* RIGHT: Axis Configuration */}
+            <Grid item xs={12} md={7} sx={{ pl: { md: 4 }, mt: { xs: 1, md: 0 } }}>
+              <Typography sx={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: '#94A3B8', mb: 0.5 }}>
+                AXIS CONFIGURATION
+              </Typography>
+              <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#0F172A', mb: 2 }}>
+                Variables
+              </Typography>
+
+              <Grid container spacing={2.5}>
+                <Grid item xs={12} sm={6}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#334155', mb: 1 }}>
+                    X-Axis (Independent Variable)
+                  </Typography>
+                  <Autocomplete
+                    multiple
+                    options={availableColumns}
+                    value={selectedXVars}
+                    onChange={(_, v) => setSelectedXVars(v)}
+                    renderInput={(params) => (
+                      <DebouncedTextField
+                        {...params}
+                        placeholder="Select X-axis columns to compare"
+                        variant="outlined"
+                        size="small"
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC' } }}
+                      />
+                    )}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#334155', mb: 1 }}>
+                    Y-Axis (Dependent Variable)
+                  </Typography>
+                  <Autocomplete
+                    multiple
+                    options={availableColumns}
+                    value={selectedYVars}
+                    onChange={(_, v) => setSelectedYVars(v)}
+                    renderInput={(params) => (
+                      <DebouncedTextField
+                        {...params}
+                        placeholder="Select Y-axis columns to compare"
+                        variant="outlined"
+                        size="small"
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC' } }}
+                      />
+                    )}
+                  />
+                </Grid>
+              </Grid>
             </Grid>
           </Grid>
         </CardContent>
       </Card>
 
-      <Card elevation={0} sx={{ order: 4, mb: 2.5, borderRadius: 3, border: "1px solid #E5EAF2", boxShadow: "0 8px 28px rgba(15,23,42,.055)", backgroundImage: "none" }}>
+      <Card elevation={0} sx={{ order: 2, mb: 2.5, borderRadius: 3, border: '1px solid #E7EBF1', boxShadow: 'none', bgcolor: '#fff' }}>
         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>Active Variable Pairs</Typography>
-          <Paper elevation={0} sx={{ maxHeight: 120, overflowY: 'auto', p: 2, bgcolor: 'grey.100', borderRadius: 2, boxShadow: 0 }}>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-              {allPairs.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">Select X and Y variables to see pairs.</Typography>
-              ) : (
-                allPairs.map((pair) => {
-                  return (
-                    <FormControlLabel
-                      key={pair.key}
-                      control={
-                        <Checkbox
-                          checked={activePairs.includes(pair.key)}
-                          onChange={() => setActivePairs(prev => prev.includes(pair.key) ? prev.filter(k => k !== pair.key) : [...prev, pair.key])}
-                          sx={{ color: datasetColors[allDatasets[0]?.name] || pairColorMap[pair.key]?.base || BASE_COLORS[0] }}
-                        />
-                      }
-                      label={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                            {allDatasets.filter(ds => visibleDatasetNames.includes(ds.name)).map((ds) => {
-                              const seriesColor = getPairDatasetColor(pair.key, ds.name);
-                              return (
-                                <MuiTooltip key={ds.name} title={`${pair.x} vs ${pair.y} — ${datasetLabels[ds.name] || ds.name}`}>
-                                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: seriesColor, border: `2px solid ${darkenColor(seriesColor, 0.25)}` }} />
-                                </MuiTooltip>
-                              );
-                            })}
-                          </Box>
-                          <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>{pair.x} vs {pair.y}</Typography>
-                        </Box>
-                      }
-                      sx={{ m: 0, mr: 2, mb: 1 }}
-                    />
-                  );
-                })
-              )}
-            </Box>
-          </Paper>
+          <Typography sx={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: '#94A3B8', mb: 0.5 }}>
+            FILTER
+          </Typography>
+          <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#0F172A', mb: 2 }}>
+            Data Filter
+          </Typography>
+          <Grid container spacing={{ xs: 2, sm: 2.5 }} alignItems="center">
+            <Grid item xs={12} sm={6} md={3}>
+              <Autocomplete
+                options={availableColumnsForFilter}
+                value={filterColumn}
+                onChange={(e, v) => setFilterColumn(v || '')}
+                renderInput={(params) => (
+                  <DebouncedTextField
+                    {...params}
+                    label="Filter Column"
+                    variant="outlined"
+                    size="small"
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC' } }}
+                  />
+                )}
+                disableClearable={false}
+              />
+            </Grid>
+            <Grid item xs={6} sm={3} md={2.5}>
+              <DebouncedTextField
+                type={columnIsDateTime ? 'datetime-local' : 'number'}
+                size="small"
+                label={columnIsDateTime ? 'Min (datetime)' : 'Min'}
+                value={filterMin}
+                onChange={(e) => setFilterMin(e.target.value)}
+                disabled={!filterColumn}
+                fullWidth
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC' } }}
+              />
+            </Grid>
+            <Grid item xs={6} sm={3} md={2.5}>
+              <DebouncedTextField
+                type={columnIsDateTime ? 'datetime-local' : 'number'}
+                size="small"
+                label={columnIsDateTime ? 'Max (datetime)' : 'Max'}
+                value={filterMax}
+                onChange={(e) => setFilterMax(e.target.value)}
+                disabled={!filterColumn}
+                fullWidth
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC' } }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={12} md={4}>
+              <Button
+                onClick={resetLocalFilter}
+                variant="outlined"
+                size="small"
+                sx={{
+                  textTransform: 'none', fontWeight: 700, borderRadius: 999, width: { xs: '100%', md: 'auto' },
+                  minWidth: '120px', borderColor: '#E2E8F0', color: '#334155'
+                }}
+              >
+                Reset Filter
+              </Button>
+            </Grid>
+          </Grid>
         </CardContent>
       </Card>
 
@@ -2568,32 +2702,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
 
             {scaleMode !== "perVariable" && (
               <Card sx={{ mb: 3, borderRadius: 2.5, border: '1px solid #E5EAF2', boxShadow: '0 4px 16px rgba(15,23,42,.04)', bgcolor: 'grey.50' }}>
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexDirection: { xs: "column", sm: "row" }, gap: 1 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "primary.main" }}>
-                      Axis Scale Controls{scaleMode === "perPair" && currentPairLabel ? ` (${currentPairLabel})` : ""}
-                    </Typography>
-                    <MuiTooltip title="Reset to Auto Scale"><Button onClick={resetAxisRanges} size="small" variant="outlined" startIcon={<RefreshIcon />} sx={{ textTransform: 'none' }}>Reset Auto</Button></MuiTooltip>
-                  </Box>
-                  <Grid container spacing={{ xs: 2, sm: 3 }}>
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="body2" sx={{ mb: 2, fontWeight: 500, color: "primary.main" }}>X-Axis Range:</Typography>
-                      <Grid container spacing={1} alignItems="center">
-                        <Grid item xs={5}><DebouncedTextField type="number" size="small" value={currentXRange?.min || ""} onChange={(e) => handleXRangeChange("min", e.target.value)} placeholder={currentAutoXRanges?.xMin?.toFixed(2) || "Auto"} /></Grid>
-                        <Grid item xs={2} sx={{ textAlign: 'center' }}><Typography variant="body2" sx={{ fontWeight: 500 }}>to</Typography></Grid>
-                        <Grid item xs={5}><DebouncedTextField type="number" size="small" value={currentXRange?.max || ""} onChange={(e) => handleXRangeChange("max", e.target.value)} placeholder={currentAutoXRanges?.xMax?.toFixed(2) || "Auto"} /></Grid>
-                      </Grid>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="body2" sx={{ mb: 2, fontWeight: 500, color: "success.main" }}>Y-Axis Range:</Typography>
-                      <Grid container spacing={1} alignItems="center">
-                        <Grid item xs={5}><DebouncedTextField type="number" size="small" value={currentYRange?.min || ""} onChange={(e) => handleYRangeChange("min", e.target.value)} placeholder={currentAutoYRanges?.yMin?.toFixed(2) || "Auto"} /></Grid>
-                        <Grid item xs={2} sx={{ textAlign: 'center' }}><Typography variant="body2" sx={{ fontWeight: 500 }}>to</Typography></Grid>
-                        <Grid item xs={5}><DebouncedTextField type="number" size="small" value={currentYRange?.max || ""} onChange={(e) => handleYRangeChange("max", e.target.value)} placeholder={currentAutoYRanges?.yMax?.toFixed(2) || "Auto"} /></Grid>
-                      </Grid>
-                    </Grid>
-                  </Grid>
-                </CardContent>
+                
               </Card>
             )}
 
