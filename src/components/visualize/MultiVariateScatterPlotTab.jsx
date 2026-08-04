@@ -1067,6 +1067,17 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
     return isNaN(timestamp) ? null : timestamp;
   };
 
+  // FIX: Reset custom ranges and active pairs when selected variables change
+  useEffect(() => {
+    // Reset custom ranges to auto so all data is visible
+    setCustomXRange({ min: "", max: "", auto: true });
+    setCustomYRange({ min: "", max: "", auto: true });
+    // Ensure all pairs are active (this also happens in the allPairs effect, but we do it here for safety)
+    setActivePairs(allPairs.map(p => p.key));
+    // Reset currentPairKey to null to avoid any stale pair filtering
+    setCurrentPairKey(null);
+  }, [selectedXVars, selectedYVars, allPairs]);
+
   useEffect(() => {
     if (!svgRef.current || !containerRef.current) return;
     const width = containerRef.current.offsetWidth || 700;
