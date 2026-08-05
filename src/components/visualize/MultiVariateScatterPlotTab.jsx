@@ -1228,7 +1228,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       });
     };
 
-    const drawScatterPoints = (group, points, xSc, ySc, color, size = 2, opacity = 0.4) => {
+    const drawScatterPoints = (group, points, xSc, ySc, color, size = 2, opacity) => {
       if (!points || points.length === 0) return;
       group.selectAll(null)
         .data(points)
@@ -1245,8 +1245,9 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         })
         .attr("r", size)
         .style("fill", color)
-        .style("fill-opacity", Math.max(0.88, opacity))
+        .style("fill-opacity",  opacity)
         .style("stroke", darkenColor(color, 0.35))
+        .style("stroke-opacity",  opacity)
         .style("stroke-width", Math.max(1, size * 0.18));
     };
 
@@ -1424,7 +1425,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
               const datasetColorForDraw = getPointColor(pair.key, ds.name);
               drawLinesAndAreas(plotGroup, pts, xScale, yScale, datasetColorForDraw, getPairBaseColor(pair.key), ds.name, pair.key);
               if (datasetView === "individual") {
-                if (!useCanvasForPoints) drawScatterPoints(plotGroup, pts, xScale, yScale, getPointColor(pair.key, ds.name), chartSettings.pointSize || 3, chartSettings.opacity || 0.85);
+                if (!useCanvasForPoints) drawScatterPoints(plotGroup, pts, xScale, yScale, getPointColor(pair.key, ds.name), chartSettings.pointSize || 3, chartSettings.opacity );
               }
             });
           }
@@ -1433,10 +1434,10 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         if (chartSettings.showGrid) {
           gridGroup.append("g").attr("class", "grid-x").attr("transform", `translate(0,${plotHeight})`)
             .call(d3.axisBottom(xScale).ticks(tickCount).tickSize(-plotHeight).tickFormat(""))
-            .selectAll("line").style("stroke-dasharray", "3,3").style("opacity", 0.3);
-          gridGroup.append("g").attr("class", "grid-y")
+            .selectAll("line").style("stroke-dasharray", "3,3").style("opacity");
+          gridGroup.append("g").attr("class", "grid-y")   
             .call(d3.axisLeft(yScale).ticks(tickCount).tickSize(-plotWidth).tickFormat(""))
-            .selectAll("line").style("stroke-dasharray", "3,3").style("opacity", 0.3);
+            .selectAll("line").style("stroke-dasharray", "3,3").style("opacity");
         }
 
         const drawTrendLines = (xSc, ySc) => {
@@ -1674,7 +1675,6 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       ctx.fillStyle = color;
       ctx.globalAlpha = opacity;
       ctx.fill();
-      ctx.globalAlpha = 1;
       ctx.lineWidth = Math.max(1, size * 0.18);
       ctx.strokeStyle = strokeColor;
       ctx.stroke();
@@ -1686,7 +1686,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
       : allPoints.filter(pt => activePairs.includes(pt.pairKey) && visibleDatasetNames.includes(pt.dataset));
     const nPoints = pointsToDraw.length;
     const perfPointSize = nPoints > 1200 ? Math.max(2, Math.min(chartSettings.pointSize, 6)) : chartSettings.pointSize;
-    const perfOpacity = nPoints > 1200 ? Math.min(0.45, chartSettings.opacity) : Math.max(0.75, chartSettings.opacity);
+    const perfOpacity = nPoints > 1200 ? chartSettings.opacity : chartSettings.opacity;
 
     for (let i = 0; i < pointsToDraw.length; i++) {
       const d = pointsToDraw[i];
@@ -1727,7 +1727,7 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
           yPos + offset.dy,
           fillColor,
           perfPointSize,
-          Math.max(0.9, perfOpacity)
+          perfOpacity
         );
       }
     }
@@ -2142,8 +2142,8 @@ const MultiVariateScatterPlotTab = ({ withProductData = [], withoutProductData =
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}><FormControlLabel control={<Switch checked={!!draftSettings?.showGrid} onChange={e => setDraftSettings(ds => ({ ...ds, showGrid: e.target.checked }))} />} label="Show Grid" /></Grid>
           <Grid item xs={12} sm={6}><FormControlLabel control={<Switch checked={!!draftSettings?.showTrendLines} onChange={e => setDraftSettings(ds => ({ ...ds, showTrendLines: e.target.checked }))} />} label="Show Trend Lines" /></Grid>
-          <Grid item xs={12} sm={6}><CustomSlider value={draftSettings?.pointSize ?? 8} onChange={(value) => setDraftSettings(ds => ({ ...ds, pointSize: value }))} min={4} max={16} step={1} label="Point Size" formatValue={(val) => `${val}px`} /></Grid>
-          <Grid item xs={12} sm={6}><CustomSlider value={draftSettings?.opacity ?? 0.7} onChange={(value) => setDraftSettings(ds => ({ ...ds, opacity: value }))} min={0.3} max={1} step={0.1} label="Opacity" formatValue={(val) => `${Math.round(val * 100)}%`} /></Grid>
+          <Grid item xs={12} sm={6}><CustomSlider value={draftSettings?.pointSize ?? 8} onChange={(value) => setDraftSettings(ds => ({ ...ds, pointSize: value }))} min={0} max={16} step={1} label="Point Size" formatValue={(val) => `${val}px`} /></Grid>
+          <Grid item xs={12} sm={6}><CustomSlider value={draftSettings?.opacity ?? 0} onChange={(value) => setDraftSettings(ds => ({ ...ds, opacity: value }))} min={0} max={1} step={0.1} label="Opacity" formatValue={(val) => `${Math.round(val * 100)}%`} /></Grid>
         </Grid>
       </Box>,
       <Box key="line-area-features" sx={{ mt: 3 }}>
