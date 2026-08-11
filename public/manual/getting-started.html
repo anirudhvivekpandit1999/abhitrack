@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
     <link rel="stylesheet" href="assets/css/print.css">
+    <link rel="stylesheet" href="assets/css/feedback.css">
 </head>
 <body>
     <div class="container">
@@ -91,13 +92,20 @@
         </nav>
 
         <main class="main-content" id="mainContent">
-            <header class="page-header">
+            <div class="breadcrumb-container">
+                <nav class="breadcrumb" id="breadcrumbs">
+                    <a href="index.html" class="breadcrumb-item">Home</a>
+                    <span class="breadcrumb-separator">></span>
+                    <span class="breadcrumb-item active">Getting Started</span>
+                </nav>
+            </div>
+            
+            <div id="content-area">
                 <h1>Getting Started with AbhiStat</h1>
-                <p class="subtitle">Your comprehensive guide to accessing and navigating the statistical analysis platform</p>
-            </header>
+                <p class="lead">Your comprehensive guide to accessing and navigating the statistical analysis platform</p>
 
-            <section class="section">
-                <h2 id="authentication">1. Authentication and Account Creation</h2>
+                <section id="authentication" class="content-section">
+                <h2>1. Authentication and Account Creation</h2>
                 
                 <div class="subsection">
                     <h3 id="user-types">1.1 Understanding User Types</h3>
@@ -298,8 +306,8 @@
                 </div>
             </section>
 
-            <section class="section">
-                <h2 id="platform-overview">2. Platform Overview and Navigation</h2>
+            <section id="platform-overview" class="content-section">
+                <h2>2. Platform Overview and Navigation</h2>
                 
                 <div class="subsection">
                     <h3 id="workflow-overview">2.1 Four-Step Analysis Workflow</h3>
@@ -485,9 +493,11 @@
                 <a href="index.html" class="nav-button prev">← Home</a>
                 <a href="data-management.html" class="nav-button next">Data Management →</a>
             </div>
+            </div>
         </main>
     </div>
 
     <script src="assets/js/navigation.js"></script>
+    <script src="assets/js/feedback.js"></script>
 </body>
 </html>

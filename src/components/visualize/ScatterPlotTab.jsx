@@ -47,21 +47,21 @@ import ChartSettingsModal from '../ChartSettingsModal'
 import SaveVisualizationButton from '../SaveVisualizationButton'
 
 const SCATTER_DEFAULT_COLORS = {
-  withProduct: '#2563EB',
-  withoutProduct: '#DC2626',
+  withProduct: '#6366F1',
+  withoutProduct: '#EC4899',
 }
 
 const SCATTER_COLOR_OPTIONS = [
-  '#2563EB',
-  '#DC2626',
-  '#059669',
-  '#D97706',
-  '#7C3AED',
-  '#DB2777',
-  '#0891B2',
-  '#EA580C',
-  '#4338CA',
-  '#0D9488',
+  '#6366F1',
+  '#EC4899',
+  '#10B981',
+  '#F59E0B',
+  '#8B5CF6',
+  '#EF4444',
+  '#06B6D4',
+  '#F97316',
+  '#3B82F6',
+  '#14B8A6',
 ]
 
 const ScatterPlotTab = ({ withProductData, withoutProductData, clientName = '', plantName = '', productName = '' }) => {

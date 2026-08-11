@@ -9,9 +9,7 @@ import {
 
 import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
 
-/* ============================================================================
-   DEBOUNCED TEXT FIELD
-============================================================================ */
+
 
 const DebouncedTextField = ({
   value = '',
@@ -19,10 +17,7 @@ const DebouncedTextField = ({
   onBlur,
   debounceTime = 300,
 
-  /*
-   * Optional convenience feature.
-   * Set clearable={true} when you want the field to show a clear button.
-   */
+  
   clearable = false,
 
   sx,
@@ -31,25 +26,19 @@ const DebouncedTextField = ({
 
   ...props
 }) => {
-  /* ==========================================================================
-     STATE
-  ========================================================================== */
+  
 
   const [localValue, setLocalValue] = useState(value ?? '');
 
   const debounceRef = useRef(null);
 
-  /* ==========================================================================
-     SYNC EXTERNAL VALUE
-  ========================================================================== */
+  
 
   useEffect(() => {
     setLocalValue(value ?? '');
   }, [value]);
 
-  /* ==========================================================================
-     CLEANUP
-  ========================================================================== */
+
 
   useEffect(() => {
     return () => {
@@ -59,10 +48,7 @@ const DebouncedTextField = ({
     };
   }, []);
 
-  /* ==========================================================================
-     HELPERS
-  ========================================================================== */
-
+ 
   const clearDebounce = useCallback(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -83,9 +69,7 @@ const DebouncedTextField = ({
     [onChange]
   );
 
-  /* ==========================================================================
-     CHANGE
-  ========================================================================== */
+  
 
   const handleChange = (event) => {
     const newValue = event.target.value;
@@ -101,37 +85,25 @@ const DebouncedTextField = ({
     }, debounceTime);
   };
 
-  /* ==========================================================================
-     BLUR
-  ========================================================================== */
+  
 
   const handleBlur = (event) => {
     clearDebounce();
 
-    /*
-     * Immediately commit the latest value when the user leaves the field.
-     */
+    
     if (localValue !== value) {
       emitChange(localValue);
     }
 
-    /*
-     * Preserve any onBlur handler supplied by the parent.
-     */
+    
     if (typeof onBlur === 'function') {
       onBlur(event);
     }
   };
 
-  /* ==========================================================================
-     CLEAR
-  ========================================================================== */
 
   const handleClear = (event) => {
-    /*
-     * Prevent the clear button from stealing focus before
-     * the value is processed.
-     */
+    
     event.preventDefault();
     event.stopPropagation();
 
@@ -142,9 +114,7 @@ const DebouncedTextField = ({
     emitChange('');
   };
 
-  /* ==========================================================================
-     END ADORNMENT
-  ========================================================================== */
+  
 
   const existingEndAdornment = InputProps?.endAdornment;
 
@@ -170,26 +140,26 @@ const DebouncedTextField = ({
               aria-label="Clear field"
               tabIndex={-1}
               sx={{
-                width: 28,
-                height: 28,
+                width: 30,
+                height: 30,
 
                 ml: existingEndAdornment ? 0.5 : 0,
 
                 color: '#94A3B8',
 
-                borderRadius: 1.5,
+                borderRadius: 2,
 
                 transition: 'all 150ms ease',
 
                 '&:hover': {
-                  bgcolor: '#F1F5F9',
-                  color: '#475569',
+                  bgcolor: 'rgba(99, 102, 241, 0.08)',
+                  color: '#6366F1',
                 },
               }}
             >
               <ClearRoundedIcon
                 sx={{
-                  fontSize: 17,
+                  fontSize: 18,
                 }}
               />
             </IconButton>
@@ -198,23 +168,20 @@ const DebouncedTextField = ({
       </InputAdornment>
     ) : undefined;
 
-  /* ==========================================================================
-     DEFAULT STYLING
-  ========================================================================== */
+  
 
   const defaultSx = {
-    /*
-     * Label
-     */
+    
     '& .MuiInputLabel-root': {
       color: '#64748B',
 
       fontSize: '0.875rem',
+      fontWeight: 500,
 
       transition: 'color 150ms ease',
 
       '&.Mui-focused': {
-        color: '#2563EB',
+        color: '#6366F1',
       },
 
       '&.Mui-disabled': {
@@ -222,13 +189,11 @@ const DebouncedTextField = ({
       },
     },
 
-    /*
-     * Input container
-     */
+   
     '& .MuiOutlinedInput-root': {
-      borderRadius: 2,
+      borderRadius: 2.5,
 
-      bgcolor: '#FFFFFF',
+      bgcolor: 'rgba(255, 255, 255, 0.9)',
 
       color: '#334155',
 
@@ -237,40 +202,34 @@ const DebouncedTextField = ({
       transition:
         'border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease',
 
-      /*
-       * Default border
-       */
+     
       '& .MuiOutlinedInput-notchedOutline': {
         borderColor: '#D8E0EA',
+        borderWidth: '1.5px',
 
         transition: 'border-color 150ms ease',
       },
 
-      /*
-       * Hover
-       */
+      
       '&:hover:not(.Mui-disabled) .MuiOutlinedInput-notchedOutline': {
         borderColor: '#AEBACA',
+        backgroundColor: 'rgba(255, 255, 255, 1)',
       },
 
-      /*
-       * Focus
-       */
+      
       '&.Mui-focused': {
-        bgcolor: '#FFFFFF',
+        bgcolor: 'rgba(255, 255, 255, 1)',
 
         boxShadow:
-          '0 0 0 4px rgba(37, 99, 235, 0.07)',
+          '0 0 0 4px rgba(99, 102, 241, 0.1)',
       },
 
       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-        borderColor: '#2563EB',
-        borderWidth: '1.5px',
+        borderColor: '#6366F1',
+        borderWidth: '2px',
       },
 
-      /*
-       * Disabled
-       */
+      
       '&.Mui-disabled': {
         bgcolor: '#F8FAFC',
 
@@ -283,25 +242,21 @@ const DebouncedTextField = ({
         borderColor: '#E2E8F0',
       },
 
-      /*
-       * Error
-       */
+      
       '&.Mui-error .MuiOutlinedInput-notchedOutline': {
         borderColor: '#EF4444',
       },
 
       '&.Mui-error.Mui-focused': {
         boxShadow:
-          '0 0 0 4px rgba(239, 68, 68, 0.07)',
+          '0 0 0 4px rgba(239, 68, 68, 0.1)',
       },
 
       '&.Mui-error.Mui-focused .MuiOutlinedInput-notchedOutline': {
         borderColor: '#EF4444',
       },
 
-      /*
-       * Input
-       */
+      
       '& input': {
         py: 1.35,
 
@@ -311,9 +266,7 @@ const DebouncedTextField = ({
         },
       },
 
-      /*
-       * Multiline
-       */
+      
       '& textarea': {
         lineHeight: 1.6,
 
@@ -324,9 +277,7 @@ const DebouncedTextField = ({
       },
     },
 
-    /*
-     * Helper text
-     */
+    
     '& .MuiFormHelperText-root': {
       mx: 0.25,
       mt: 0.65,
@@ -342,9 +293,7 @@ const DebouncedTextField = ({
     },
   };
 
-  /* ==========================================================================
-     RENDER
-  ========================================================================== */
+  
 
   return (
     <TextField

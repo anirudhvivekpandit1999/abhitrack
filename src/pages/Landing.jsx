@@ -39,6 +39,10 @@ const COLORS = {
     border: '#E4E7EC',
     surface: '#F7F9FC',
     success: '#059669',
+    purple: '#7C3AED',
+    purpleLight: '#A78BFA',
+    gradientStart: '#6366F1',
+    gradientEnd: '#8B5CF6',
 };
 
 const fadeUp = {
@@ -168,21 +172,27 @@ function MetricCard({ label, value, helper, icon }) {
     return (
         <Box
             sx={{
-                p: 2.2,
-                borderRadius: 2.5,
+                p: 2.5,
+                borderRadius: 3,
                 border: `1px solid ${COLORS.border}`,
                 bgcolor: '#FFFFFF',
                 minWidth: 0,
+                boxShadow: '0 2px 12px rgba(15, 23, 42, 0.06)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
+                    transform: 'translateY(-2px)',
+                }
             }}
         >
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1.2}>
                 <Box>
                     <Typography
                         sx={{
                             color: COLORS.muted,
                             fontSize: 11,
                             fontWeight: 800,
-                            letterSpacing: '.06em',
+                            letterSpacing: '.08em',
                             textTransform: 'uppercase',
                         }}
                     >
@@ -191,10 +201,14 @@ function MetricCard({ label, value, helper, icon }) {
                     <Typography
                         sx={{
                             color: COLORS.text,
-                            fontSize: { xs: 22, sm: 26 },
+                            fontSize: { xs: 24, sm: 28 },
                             fontWeight: 800,
-                            lineHeight: 1.15,
-                            mt: 0.7,
+                            lineHeight: 1.1,
+                            mt: 0.8,
+                            background: 'linear-gradient(135deg, #1E293B 0%, #475569 100%)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            backgroundClip: 'text'
                         }}
                     >
                         {value}
@@ -202,21 +216,22 @@ function MetricCard({ label, value, helper, icon }) {
                 </Box>
                 <Box
                     sx={{
-                        width: 34,
-                        height: 34,
+                        width: 40,
+                        height: 40,
                         display: 'grid',
                         placeItems: 'center',
-                        borderRadius: 2,
-                        bgcolor: '#EFF6FF',
+                        borderRadius: 2.5,
+                        background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
                         color: COLORS.blue,
                         flexShrink: 0,
-                        '& svg': { fontSize: 19 },
+                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)',
+                        '& svg': { fontSize: 20 },
                     }}
                 >
                     {icon}
                 </Box>
             </Stack>
-            <Typography sx={{ mt: 0.8, color: COLORS.muted, fontSize: 12 }}>
+            <Typography sx={{ mt: 1, color: COLORS.muted, fontSize: 12.5, lineHeight: 1.5 }}>
                 {helper}
             </Typography>
         </Box>
@@ -300,9 +315,10 @@ function Landing() {
                     alignItems: 'center',
                     overflow: 'hidden',
                     background: `
-                        radial-gradient(circle at 82% 18%, rgba(56,189,248,.17), transparent 24rem),
-                        radial-gradient(circle at 18% 85%, rgba(37,99,235,.12), transparent 28rem),
-                        linear-gradient(135deg, #081A2C 0%, #0B2339 52%, #0C2C49 100%)
+                        radial-gradient(circle at 82% 18%, rgba(99, 102, 241, 0.15), transparent 28rem),
+                        radial-gradient(circle at 18% 85%, rgba(139, 92, 246, 0.12), transparent 32rem),
+                        radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.08), transparent 40rem),
+                        linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)
                     `,
                     color: '#fff',
                     pt: { xs: 8, md: 5 },

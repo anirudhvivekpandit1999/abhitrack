@@ -46,6 +46,9 @@ const COLORS = {
   surface: "#F7F9FC",
   success: "#059669",
   white: "#FFFFFF",
+  purple: "#7C3AED",
+  gradientStart: "#6366F1",
+  gradientEnd: "#8B5CF6",
 };
 
 const Login = () => {
@@ -104,7 +107,8 @@ const Login = () => {
     "& .MuiInputLabel-root": {
       fontFamily: "'Inter', sans-serif",
       color: COLORS.muted,
-      fontSize: "0.95rem",
+      fontSize: "0.9rem",
+      fontWeight: 500,
     },
 
     "& .MuiInputLabel-root.Mui-focused": {
@@ -112,26 +116,30 @@ const Login = () => {
     },
 
     "& .MuiOutlinedInput-root": {
-      borderRadius: "12px",
-      backgroundColor: "#FFFFFF",
-      minHeight: "54px",
+      borderRadius: "14px",
+      backgroundColor: "rgba(255, 255, 255, 0.9)",
+      minHeight: "56px",
       fontFamily: "'Inter', sans-serif",
+      transition: 'all 0.2s ease',
 
       "& fieldset": {
         borderColor: COLORS.border,
+        borderWidth: "1.5px",
       },
 
       "&:hover fieldset": {
         borderColor: "#B9C1CC",
+        backgroundColor: "rgba(255, 255, 255, 1)",
       },
 
       "&.Mui-focused fieldset": {
         borderColor: COLORS.blue,
-        borderWidth: "1.5px",
+        borderWidth: "2px",
       },
 
       "&.Mui-focused": {
-        boxShadow: `0 0 0 4px ${alpha(COLORS.blue, 0.08)}`,
+        backgroundColor: "rgba(255, 255, 255, 1)",
+        boxShadow: `0 0 0 4px ${alpha(COLORS.blue, 0.1)}`,
       },
     },
   };
@@ -199,9 +207,7 @@ const Login = () => {
           },
         }}
       >
-        {/* =========================================================
-            LEFT PANEL
-        ========================================================= */}
+        
 
         <Box
           sx={{
@@ -243,7 +249,6 @@ const Login = () => {
             `,
           }}
         >
-          {/* Background grid */}
 
           <Box
             sx={{
@@ -270,7 +275,6 @@ const Login = () => {
             }}
           />
 
-          {/* Decorative glow */}
 
           <Box
             sx={{
@@ -284,7 +288,6 @@ const Login = () => {
             }}
           />
 
-          {/* Content */}
 
           <Box
             sx={{
@@ -292,7 +295,6 @@ const Login = () => {
               zIndex: 1,
             }}
           >
-            {/* Product tag */}
 
             <Box
               sx={{
@@ -375,7 +377,6 @@ const Login = () => {
               optimization results.
             </Typography>
 
-            {/* Benefits */}
 
             <Stack
               spacing={2.2}
@@ -443,7 +444,6 @@ const Login = () => {
             </Stack>
           </Box>
 
-          {/* Illustration */}
 
           <Box
             sx={{
@@ -486,7 +486,6 @@ const Login = () => {
             </Box>
           </Box>
 
-          {/* Footer */}
 
           <Stack
             direction="row"
@@ -532,9 +531,7 @@ const Login = () => {
           </Stack>
         </Box>
 
-        {/* =========================================================
-            LOGIN PANEL
-        ========================================================= */}
+        
 
         <Box
           sx={{
@@ -563,7 +560,6 @@ const Login = () => {
               maxWidth: "430px",
             }}
           >
-            {/* Logo */}
 
             <Box
               sx={{
@@ -601,7 +597,6 @@ const Login = () => {
               </Box>
             </Box>
 
-            {/* Mobile badge */}
 
             <Box
               sx={{
@@ -639,7 +634,6 @@ const Login = () => {
               </Typography>
             </Box>
 
-            {/* Heading */}
 
             <Typography
               component="h2"
@@ -682,7 +676,6 @@ const Login = () => {
               your analysis workspace.
             </Typography>
 
-            {/* Employee badge */}
 
             <Box
               sx={{
@@ -745,7 +738,6 @@ const Login = () => {
               </Box>
             </Box>
 
-            {/* Form */}
 
             <Box
               component="form"
@@ -754,7 +746,6 @@ const Login = () => {
                 mt: 4,
               }}
             >
-              {/* Email */}
 
               <Typography
                 component="label"
@@ -797,7 +788,6 @@ const Login = () => {
                 sx={fieldStyles}
               />
 
-              {/* Password */}
 
               <Typography
                 component="label"
@@ -870,7 +860,6 @@ const Login = () => {
                 sx={fieldStyles}
               />
 
-              {/* Login */}
 
               <Button
                 variant="contained"
@@ -944,7 +933,6 @@ const Login = () => {
               </Button>
             </Box>
 
-            {/* Divider */}
 
             <Divider
               sx={{
@@ -969,7 +957,6 @@ const Login = () => {
               </Typography>
             </Divider>
 
-            {/* External user */}
 
             <Button
               fullWidth
@@ -1003,7 +990,6 @@ const Login = () => {
               Continue as external user
             </Button>
 
-            {/* Help */}
 
             <Box
               sx={{
@@ -1039,7 +1025,6 @@ const Login = () => {
               </Typography>
             </Box>
 
-            {/* Security note */}
 
             <Stack
               direction="row"

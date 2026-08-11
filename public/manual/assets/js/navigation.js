@@ -1015,7 +1015,7 @@ function smoothScrollToElement(element, offset = 80) {
 }
 
 function loadPage(page, section) {
-    
+
     console.log(`Loading page: ${page}, section: ${section}`);
 }
 
@@ -1095,6 +1095,7 @@ function filterTocItems(query) {
         
         if (text.includes(query)) {
             item.style.display = 'block';
+            // Expand parent if this is a sub-item
             const parentList = item.closest('.toc-sublist');
             if (parentList) {
                 parentList.style.display = 'block';
@@ -1637,7 +1638,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeExpandableToC();
     initializeHashNavigation(); 
 });
- function to create interactive code examples
 function createInteractiveCodeExample(code, title = 'Code Example', language = '') {
     return `
         <div class="code-example">

@@ -15,7 +15,7 @@ class PDFGenerator {
         ];
     }
 
-    
+   
     async generateCompletePDF() {
         try {
             const printWindow = window.open('', '_blank');
@@ -36,7 +36,7 @@ class PDFGenerator {
         }
     }
 
-    
+   
     async buildCompleteHTML() {
         let completeHTML = `
 <!DOCTYPE html>
@@ -166,7 +166,7 @@ class PDFGenerator {
         }
     }
 
-   
+    
     waitForContentLoad(printWindow) {
         return new Promise((resolve) => {
             const checkLoad = () => {

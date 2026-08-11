@@ -4,6 +4,8 @@ class FeedbackSystem {
     constructor() {
         this.feedbackData = [];
         this.currentPage = this.getCurrentPageName();
+        this.isPanelOpen = false;
+        this.isSubmitting = false;
         this.init();
     }
 
@@ -14,39 +16,50 @@ class FeedbackSystem {
         this.bindEvents();
     }
 
-    
     getCurrentPageName() {
         const path = window.location.pathname;
         const filename = path.split('/').pop();
         return filename || 'index.html';
     }
 
-    
+
     createFeedbackWidget() {
         const feedbackHTML = `
-            <div id="feedback-widget" class="feedback-widget">
-                <button id="feedback-toggle" class="feedback-toggle" aria-label="Provide feedback">
-                    💬 Feedback
+            <div id="feedback-widget" class="feedback-widget" role="region" aria-label="Feedback">
+                <button id="feedback-toggle" class="feedback-toggle" aria-label="Provide feedback" aria-expanded="false" aria-controls="feedback-panel">
+                    <span class="icon" aria-hidden="true">💬</span>
+                    <span>Feedback</span>
                 </button>
-                
-                <div id="feedback-panel" class="feedback-panel" style="display: none;">
+
+                <div id="feedback-panel" class="feedback-panel" role="dialog" aria-modal="true" aria-labelledby="feedback-title" hidden>
                     <div class="feedback-header">
-                        <h3>Help us improve this page</h3>
-                        <button id="feedback-close" class="feedback-close" aria-label="Close feedback">&times;</button>
+                        <h3 id="feedback-title">Help us improve this page</h3>
+                        <button id="feedback-close" class="feedback-close" aria-label="Close feedback panel">&times;</button>
                     </div>
-                    
-                    <form id="feedback-form" class="feedback-form">
+
+                    <div id="feedback-error" class="feedback-error" role="alert" aria-live="polite"></div>
+
+                    <form id="feedback-form" class="feedback-form" novalidate>
                         <div class="feedback-section">
-                            <label>How helpful was this page?</label>
-                            <div class="rating-buttons">
-                                <button type="button" class="rating-btn" data-rating="1">😞 Not helpful</button>
-                                <button type="button" class="rating-btn" data-rating="2">😐 Somewhat helpful</button>
-                                <button type="button" class="rating-btn" data-rating="3">😊 Very helpful</button>
+                            <label>How helpful was this page? <span class="required">*</span></label>
+                            <div class="rating-buttons" role="radiogroup" aria-label="Rating">
+                                <button type="button" class="rating-btn" data-rating="1" role="radio" aria-label="Not helpful">
+                                    <span class="rating-icon" aria-hidden="true">😞</span>
+                                    <span>Not helpful</span>
+                                </button>
+                                <button type="button" class="rating-btn" data-rating="2" role="radio" aria-label="Somewhat helpful">
+                                    <span class="rating-icon" aria-hidden="true">😐</span>
+                                    <span>Somewhat helpful</span>
+                                </button>
+                                <button type="button" class="rating-btn" data-rating="3" role="radio" aria-label="Very helpful">
+                                    <span class="rating-icon" aria-hidden="true">😊</span>
+                                    <span>Very helpful</span>
+                                </button>
                             </div>
                         </div>
-                        
+
                         <div class="feedback-section">
-                            <label for="feedback-category">What type of feedback?</label>
+                            <label for="feedback-category">What type of feedback? <span class="required">*</span></label>
                             <select id="feedback-category" name="category" required>
                                 <option value="">Select category...</option>
                                 <option value="content-error">Content Error</option>
@@ -57,253 +70,47 @@ class FeedbackSystem {
                                 <option value="other">Other</option>
                             </select>
                         </div>
-                        
+
                         <div class="feedback-section">
-                            <label for="feedback-text">Your feedback:</label>
-                            <textarea id="feedback-text" name="feedback" rows="4" 
+                            <label for="feedback-text">Your feedback: <span class="required">*</span></label>
+                            <textarea id="feedback-text" name="feedback" rows="4"
                                 placeholder="Please describe your feedback in detail..." required></textarea>
                         </div>
-                        
+
                         <div class="feedback-section">
                             <label for="feedback-email">Email (optional):</label>
-                            <input type="email" id="feedback-email" name="email" 
+                            <input type="email" id="feedback-email" name="email"
                                 placeholder="your.email@company.com">
                             <small>Provide email if you'd like a response</small>
                         </div>
-                        
+
+                        <div class="feedback-loading" id="feedback-loading">
+                            <span class="spinner" aria-hidden="true"></span>
+                            <span>Submitting your feedback...</span>
+                        </div>
+
                         <div class="feedback-actions">
-                            <button type="submit" class="btn btn-primary">Submit Feedback</button>
-                            <button type="button" id="feedback-cancel" class="btn btn-secondary">Cancel</button>
+                            <button type="submit" class="feedback-btn feedback-btn-primary" id="feedback-submit">
+                                <span>Submit Feedback</span>
+                            </button>
+                            <button type="button" id="feedback-cancel" class="feedback-btn feedback-btn-secondary">
+                                Cancel
+                            </button>
                         </div>
                     </form>
-                    
-                    <div id="feedback-success" class="feedback-success" style="display: none;">
+
+                    <div id="feedback-success" class="feedback-success" hidden>
+                        <div class="success-icon" aria-hidden="true">✅</div>
                         <h4>Thank you for your feedback!</h4>
                         <p>Your input helps us improve the documentation.</p>
-                        <button id="feedback-new" class="btn btn-primary">Submit More Feedback</button>
+                        <button id="feedback-new" class="feedback-btn feedback-btn-primary">
+                            <span>Submit More Feedback</span>
+                        </button>
                     </div>
                 </div>
             </div>
         `;
 
-        const feedbackCSS = `
-            <style>
-                .feedback-widget {
-                    position: fixed;
-                    bottom: 20px;
-                    right: 20px;
-                    z-index: 1000;
-                    font-family: var(--font-family, 'Segoe UI', sans-serif);
-                }
-                
-                .feedback-toggle {
-                    background: #3498db;
-                    color: white;
-                    border: none;
-                    padding: 12px 20px;
-                    border-radius: 25px;
-                    cursor: pointer;
-                    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-                    font-size: 14px;
-                    font-weight: 500;
-                    transition: all 0.3s ease;
-                }
-                
-                .feedback-toggle:hover {
-                    background: #2980b9;
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 16px rgba(52, 152, 219, 0.4);
-                }
-                
-                .feedback-panel {
-                    position: absolute;
-                    bottom: 60px;
-                    right: 0;
-                    width: 400px;
-                    max-width: 90vw;
-                    background: white;
-                    border-radius: 12px;
-                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-                    border: 1px solid #e1e8ed;
-                    max-height: 80vh;
-                    overflow-y: auto;
-                }
-                
-                .feedback-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 20px 20px 10px;
-                    border-bottom: 1px solid #e1e8ed;
-                }
-                
-                .feedback-header h3 {
-                    margin: 0;
-                    color: #2c3e50;
-                    font-size: 16px;
-                }
-                
-                .feedback-close {
-                    background: none;
-                    border: none;
-                    font-size: 24px;
-                    cursor: pointer;
-                    color: #95a5a6;
-                    padding: 0;
-                    width: 30px;
-                    height: 30px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                
-                .feedback-close:hover {
-                    color: #e74c3c;
-                }
-                
-                .feedback-form {
-                    padding: 20px;
-                }
-                
-                .feedback-section {
-                    margin-bottom: 20px;
-                }
-                
-                .feedback-section label {
-                    display: block;
-                    margin-bottom: 8px;
-                    font-weight: 500;
-                    color: #2c3e50;
-                    font-size: 14px;
-                }
-                
-                .rating-buttons {
-                    display: flex;
-                    gap: 8px;
-                    flex-wrap: wrap;
-                }
-                
-                .rating-btn {
-                    background: #f8f9fa;
-                    border: 1px solid #dee2e6;
-                    padding: 8px 12px;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    font-size: 12px;
-                    transition: all 0.2s ease;
-                    flex: 1;
-                    min-width: 100px;
-                }
-                
-                .rating-btn:hover {
-                    background: #e9ecef;
-                }
-                
-                .rating-btn.selected {
-                    background: #3498db;
-                    color: white;
-                    border-color: #3498db;
-                }
-                
-                .feedback-section select,
-                .feedback-section input,
-                .feedback-section textarea {
-                    width: 100%;
-                    padding: 10px;
-                    border: 1px solid #dee2e6;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    font-family: inherit;
-                }
-                
-                .feedback-section textarea {
-                    resize: vertical;
-                    min-height: 80px;
-                }
-                
-                .feedback-section small {
-                    color: #6c757d;
-                    font-size: 12px;
-                    margin-top: 4px;
-                    display: block;
-                }
-                
-                .feedback-actions {
-                    display: flex;
-                    gap: 10px;
-                    justify-content: flex-end;
-                    margin-top: 20px;
-                }
-                
-                .btn {
-                    padding: 10px 20px;
-                    border: none;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    font-weight: 500;
-                    transition: all 0.2s ease;
-                }
-                
-                .btn-primary {
-                    background: #3498db;
-                    color: white;
-                }
-                
-                .btn-primary:hover {
-                    background: #2980b9;
-                }
-                
-                .btn-secondary {
-                    background: #6c757d;
-                    color: white;
-                }
-                
-                .btn-secondary:hover {
-                    background: #5a6268;
-                }
-                
-                .feedback-success {
-                    padding: 20px;
-                    text-align: center;
-                }
-                
-                .feedback-success h4 {
-                    color: #27ae60;
-                    margin-bottom: 10px;
-                }
-                
-                .feedback-success p {
-                    color: #6c757d;
-                    margin-bottom: 20px;
-                }
-                
-                @media (max-width: 768px) {
-                    .feedback-panel {
-                        width: 350px;
-                        bottom: 70px;
-                        right: -10px;
-                    }
-                    
-                    .rating-buttons {
-                        flex-direction: column;
-                    }
-                    
-                    .rating-btn {
-                        min-width: auto;
-                    }
-                }
-                
-                @media print {
-                    .feedback-widget {
-                        display: none !important;
-                    }
-                }
-            </style>
-        `;
-
-        document.head.insertAdjacentHTML('beforeend', feedbackCSS);
-        
         document.body.insertAdjacentHTML('beforeend', feedbackHTML);
     }
 
@@ -316,23 +123,16 @@ class FeedbackSystem {
         const form = document.getElementById('feedback-form');
         const ratingBtns = document.querySelectorAll('.rating-btn');
         const newFeedback = document.getElementById('feedback-new');
+        const submitBtn = document.getElementById('feedback-submit');
 
-        toggle.addEventListener('click', () => {
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-        });
+        toggle.addEventListener('click', () => this.togglePanel());
 
         [close, cancel].forEach(btn => {
-            btn.addEventListener('click', () => {
-                panel.style.display = 'none';
-                this.resetForm();
-            });
+            btn.addEventListener('click', () => this.closePanel());
         });
 
         ratingBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                ratingBtns.forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-            });
+            btn.addEventListener('click', () => this.selectRating(btn));
         });
 
         form.addEventListener('submit', (e) => {
@@ -340,23 +140,97 @@ class FeedbackSystem {
             this.submitFeedback();
         });
 
-        newFeedback.addEventListener('click', () => {
-            this.showForm();
+        newFeedback.addEventListener('click', () => this.showForm());
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isPanelOpen) {
+                this.closePanel();
+            }
         });
 
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.feedback-widget')) {
-                panel.style.display = 'none';
+            if (this.isPanelOpen && !e.target.closest('.feedback-widget')) {
+                this.closePanel();
+            }
+        });
+
+        panel.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        submitBtn.addEventListener('click', () => {
+            if (this.isSubmitting) {
+                e.preventDefault();
             }
         });
     }
 
     
+    togglePanel() {
+        if (this.isPanelOpen) {
+            this.closePanel();
+        } else {
+            this.openPanel();
+        }
+    }
+
+    openPanel() {
+        const panel = document.getElementById('feedback-panel');
+        const toggle = document.getElementById('feedback-toggle');
+
+        panel.classList.add('open');
+        panel.hidden = false;
+        panel.setAttribute('aria-hidden', 'false');
+        toggle.setAttribute('aria-expanded', 'true');
+        this.isPanelOpen = true;
+
+        const firstFocusable = panel.querySelector('button, input, select, textarea');
+        if (firstFocusable) {
+            firstFocusable.focus();
+        }
+    }
+
+    closePanel() {
+        const panel = document.getElementById('feedback-panel');
+        const toggle = document.getElementById('feedback-toggle');
+
+        panel.classList.remove('open');
+        panel.setAttribute('aria-hidden', 'true');
+        toggle.setAttribute('aria-expanded', 'false');
+        this.isPanelOpen = false;
+
+        this.resetForm();
+    }
+
+    
+    selectRating(btn) {
+        const ratingBtns = document.querySelectorAll('.rating-btn');
+        ratingBtns.forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    
     async submitFeedback() {
         const form = document.getElementById('feedback-form');
-        const formData = new FormData(form);
+        const submitBtn = document.getElementById('feedback-submit');
+        const loading = document.getElementById('feedback-loading');
+        const errorBox = document.getElementById('feedback-error');
+
         const selectedRating = document.querySelector('.rating-btn.selected');
-        
+        const category = form.querySelector('#feedback-category').value;
+        const feedbackText = form.querySelector('#feedback-text').value.trim();
+
+        if (!selectedRating || !category || !feedbackText) {
+            this.showError('Please complete all required fields (rating, category, and feedback).');
+            return;
+        }
+
+        this.isSubmitting = true;
+        submitBtn.disabled = true;
+        loading.classList.add('active');
+        errorBox.classList.remove('active');
+
+        const formData = new FormData(form);
         const feedback = {
             id: Date.now(),
             timestamp: new Date().toISOString(),
@@ -370,31 +244,36 @@ class FeedbackSystem {
         };
 
         try {
-            this.storeFeedback(feedback);
-            
-            
+            await this.storeFeedback(feedback);
+            await this.sendToServer(feedback);
+
             this.showSuccess();
-            
         } catch (error) {
             console.error('Error submitting feedback:', error);
-            alert('There was an error submitting your feedback. Please try again.');
+            this.showError('There was an error submitting your feedback. Please try again.');
+        } finally {
+            this.isSubmitting = false;
+            submitBtn.disabled = false;
+            loading.classList.remove('active');
         }
     }
 
     
     storeFeedback(feedback) {
-        let storedFeedback = JSON.parse(localStorage.getItem('abhistat-feedback') || '[]');
-        storedFeedback.push(feedback);
-        
-        if (storedFeedback.length > 100) {
-            storedFeedback = storedFeedback.slice(-100);
-        }
-        
-        localStorage.setItem('abhistat-feedback', JSON.stringify(storedFeedback));
-        this.feedbackData = storedFeedback;
+        return new Promise((resolve) => {
+            let storedFeedback = JSON.parse(localStorage.getItem('abhistat-feedback') || '[]');
+            storedFeedback.push(feedback);
+
+            if (storedFeedback.length > 100) {
+                storedFeedback = storedFeedback.slice(-100);
+            }
+
+            localStorage.setItem('abhistat-feedback', JSON.stringify(storedFeedback));
+            this.feedbackData = storedFeedback;
+            resolve();
+        });
     }
 
-   
     loadStoredFeedback() {
         this.feedbackData = JSON.parse(localStorage.getItem('abhistat-feedback') || '[]');
     }
@@ -403,24 +282,37 @@ class FeedbackSystem {
     async sendToServer(feedback) {
         
         console.log('Feedback to be sent to server:', feedback);
-        
-        
     }
 
     
     showSuccess() {
-        document.getElementById('feedback-form').style.display = 'none';
-        document.getElementById('feedback-success').style.display = 'block';
+        const form = document.getElementById('feedback-form');
+        const success = document.getElementById('feedback-success');
+        const errorBox = document.getElementById('feedback-error');
+
+        form.style.display = 'none';
+        errorBox.classList.remove('active');
+        success.hidden = false;
+        success.style.display = 'block';
     }
 
-    
     showForm() {
-        document.getElementById('feedback-form').style.display = 'block';
-        document.getElementById('feedback-success').style.display = 'none';
+        const form = document.getElementById('feedback-form');
+        const success = document.getElementById('feedback-success');
+        const errorBox = document.getElementById('feedback-error');
+
+        success.style.display = 'none';
+        errorBox.classList.remove('active');
+        form.style.display = 'block';
         this.resetForm();
     }
 
-    
+    showError(message) {
+        const errorBox = document.getElementById('feedback-error');
+        errorBox.textContent = message;
+        errorBox.classList.add('active');
+    }
+
     resetForm() {
         const form = document.getElementById('feedback-form');
         form.reset();
@@ -443,16 +335,19 @@ class FeedbackSystem {
             return analytics;
         }
 
-        const ratings = this.feedbackData.filter(f => f.rating).map(f => parseInt(f.rating));
+        const ratings = this.feedbackData
+            .filter(f => f.rating)
+            .map(f => parseInt(f.rating));
+
         if (ratings.length > 0) {
             analytics.averageRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
         }
 
         this.feedbackData.forEach(feedback => {
-            analytics.categoryBreakdown[feedback.category] = 
+            analytics.categoryBreakdown[feedback.category] =
                 (analytics.categoryBreakdown[feedback.category] || 0) + 1;
-            
-            analytics.pageBreakdown[feedback.page] = 
+
+            analytics.pageBreakdown[feedback.page] =
                 (analytics.pageBreakdown[feedback.page] || 0) + 1;
         });
 
@@ -483,9 +378,11 @@ class FeedbackSystem {
     }
 }
 
+
 document.addEventListener('DOMContentLoaded', () => {
     window.feedbackSystem = new FeedbackSystem();
 });
+
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = FeedbackSystem;

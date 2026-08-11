@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
     <link rel="stylesheet" href="assets/css/print.css">
+    <link rel="stylesheet" href="assets/css/feedback.css">
 </head>
 <body>
     <div class="container">
@@ -91,17 +92,19 @@
         </nav>
 
         <main class="main-content" id="mainContent">
-            <div class="breadcrumb">
-                <a href="index.html">Home</a> > <span>Data Management</span>
+            <div class="breadcrumb-container">
+                <nav class="breadcrumb" id="breadcrumbs">
+                    <a href="index.html" class="breadcrumb-item">Home</a>
+                    <span class="breadcrumb-separator">></span>
+                    <span class="breadcrumb-item active">Data Management</span>
+                </nav>
             </div>
+            
+            <div id="content-area">
+                <h1>Data Management</h1>
+                <p class="lead">Learn how to upload, validate, and manage your data files in AbhiStat for statistical analysis.</p>
 
-            <article>
-                <header>
-                    <h1>Data Management</h1>
-                    <p class="lead">Learn how to upload, validate, and manage your data files in AbhiStat for statistical analysis.</p>
-                </header>
-
-                <section id="overview">
+                <section id="overview" class="content-section">
                     <h2>Overview</h2>
                     <p>Data management is the first and most crucial step in your AbhiStat workflow. This section covers everything you need to know about uploading files, understanding validation processes, and managing your data sessions effectively.</p>
                     
@@ -118,7 +121,7 @@
                     </div>
                 </section>
 
-                <section id="supported-formats">
+                <section id="supported-formats" class="content-section">
                     <h2>Supported File Formats</h2>
                     <p>AbhiStat supports three main file formats for data upload:</p>
 
@@ -164,7 +167,7 @@
                     </div>
                 </section>
 
-                <section id="upload-process">
+                <section id="upload-process" class="content-section">
                     <h2>File Upload Process</h2>
                     <p>AbhiStat requires two data files for comparative statistical analysis:</p>
 
@@ -229,7 +232,7 @@
                     </div>
                 </section>
 
-                <section id="excel-sheets">
+                <section id="excel-sheets" class="content-section">
                     <h2>Excel Sheet Selection</h2>
                     <p>When uploading Excel files with multiple worksheets, AbhiStat provides an interactive sheet selection interface:</p>
 
@@ -254,7 +257,7 @@
                     </div>
                 </section>
 
-                <section id="data-validation">
+                <section id="data-validation" class="content-section">
                     <h2>Data Validation and Preview</h2>
                     <p>AbhiStat performs comprehensive validation to ensure your data is ready for analysis:</p>
 
@@ -293,7 +296,7 @@
                     </ul>
                 </section>
 
-                <section id="common-errors">
+                <section id="common-errors" class="content-section">
                     <h2>Common Validation Errors</h2>
                     <p>Understanding and resolving common validation errors:</p>
 
@@ -338,10 +341,11 @@
                     <a href="getting-started.html" class="nav-button prev">← Getting Started</a>
                     <a href="calculated-columns.html" class="nav-button next">Calculated Columns →</a>
                 </div>
-            </article>
+            </div>
         </main>
     </div>
 
     <script src="assets/js/navigation.js"></script>
+    <script src="assets/js/feedback.js"></script>
 </body>
 </html>

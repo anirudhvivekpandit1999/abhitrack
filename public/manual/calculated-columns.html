@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
     <link rel="stylesheet" href="assets/css/print.css">
+    <link rel="stylesheet" href="assets/css/feedback.css">
 </head>
 <body>
     <div class="container">
@@ -91,17 +92,19 @@
         </nav>
 
         <main class="main-content" id="mainContent">
-            <div class="breadcrumb">
-                <a href="index.html">Home</a> > <span>Calculated Columns</span>
+            <div class="breadcrumb-container">
+                <nav class="breadcrumb" id="breadcrumbs">
+                    <a href="index.html" class="breadcrumb-item">Home</a>
+                    <span class="breadcrumb-separator">></span>
+                    <span class="breadcrumb-item active">Calculated Columns</span>
+                </nav>
             </div>
+            
+            <div id="content-area">
+                <h1>Calculated Columns</h1>
+                <p class="lead">Create custom calculated columns using formulas to enhance your data analysis with derived parameters and statistical calculations.</p>
 
-            <article>
-                <header>
-                    <h1>Calculated Columns</h1>
-                    <p class="lead">Create custom calculated columns using formulas to enhance your data analysis with derived parameters and statistical calculations.</p>
-                </header>
-
-                <section id="overview">
+                <section id="overview" class="content-section">
                     <h2>Overview</h2>
                     <p>The Calculated Columns feature is Step 2 in the AbhiStat workflow, allowing you to create customized parameters by building formulas that combine existing columns with mathematical operations. This powerful feature enables you to derive new insights from your data before proceeding to dependency modeling and visualization.</p>
                     
@@ -129,7 +132,7 @@
                     </div>
                 </section>
 
-                <section id="interface-overview">
+                <section id="interface-overview" class="content-section">
                     <h2>Formula Builder Interface</h2>
                     <p>The Formula Builder provides two main approaches for creating calculated columns:</p>
 
@@ -158,7 +161,7 @@
                     </div>
                 </section>
 
-                <section id="step-by-step-guide">
+                <section id="step-by-step-guide" class="content-section">
                     <h2>Step-by-Step Formula Creation</h2>
                     <p>Follow these steps to create your first calculated column:</p>
 
@@ -253,7 +256,7 @@
                     </div>
                 </section>
 
-                <section id="operators-reference">
+                <section id="operators-reference" class="content-section">
                     <h2>Available Operators and Functions</h2>
                     <p>AbhiStat provides a comprehensive set of mathematical operators and statistical functions for creating calculated columns. This reference guide covers all available operations with detailed explanations and examples.</p>
                     
@@ -514,7 +517,7 @@
                     </div>
                 </section>
 
-                <section id="formula-examples">
+                <section id="formula-examples" class="content-section">
                     <h2>Real-World Statistical Formula Examples</h2>
                     <p>This section provides practical examples of calculated columns commonly used in statistical analysis. Each example includes the business context, step-by-step creation process, and interpretation guidelines.</p>
 
@@ -853,7 +856,7 @@
                     </div>
                 </section>
 
-                <section id="validation-errors">
+                <section id="validation-errors" class="content-section">
                     <h2>Formula Validation and Error Messages</h2>
                     <p>AbhiStat provides real-time validation to ensure your formulas are syntactically correct:</p>
 
@@ -928,7 +931,7 @@
                     </div>
                 </section>
 
-                <section id="preview-feature">
+                <section id="preview-feature" class="content-section">
                     <h2>Formula Preview Feature</h2>
                     <p>The Preview Results feature allows you to see how your formula will be applied to your actual data before saving:</p>
 
@@ -959,7 +962,7 @@
                     </div>
                 </section>
 
-                <section id="column-management">
+                <section id="column-management" class="content-section">
                     <h2>Managing Calculated Columns</h2>
                     <p>The Calculated Columns List on the left side of the interface helps you manage your created columns:</p>
 
@@ -1000,7 +1003,7 @@
                     </div>
                 </section>
 
-                <section id="troubleshooting">
+                <section id="troubleshooting" class="content-section">
                     <h2>Troubleshooting Common Issues</h2>
 
                     <div class="troubleshooting-section">
@@ -1078,10 +1081,11 @@
                     <a href="data-management.html" class="nav-button prev">← Data Management</a>
                     <a href="dependency-modeling.html" class="nav-button next">Dependency Modeling →</a>
                 </div>
-            </article>
+            </div>
         </main>
     </div>
 
     <script src="assets/js/navigation.js"></script>
+    <script src="assets/js/feedback.js"></script>
 </body>
 </html>

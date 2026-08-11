@@ -26,43 +26,43 @@ import SaveVisualizationButton from '../SaveVisualizationButton';
 
 
 const COLOR_PAIRS = [
-    { with: '#2563EB', without: '#93C5FD' },  
-    { with: '#DC2626', without: '#FCA5A5' },  
-    { with: '#059669', without: '#6EE7B7' },  
-    { with: '#D97706', without: '#FCD34D' },  
-    { with: '#7C3AED', without: '#C4B5FD' }, 
-    { with: '#DB2777', without: '#F9A8D4' },  
-    { with: '#0891B2', without: '#67E8F9' },  
-    { with: '#EA580C', without: '#FDBA74' },  
-    { with: '#4338CA', without: '#A5B4FC' },  
-    { with: '#0D9488', without: '#5EEAD4' },  
+    { with: '#6366F1', without: '#A5B4FC' },  
+    { with: '#EC4899', without: '#F9A8D4' },  
+    { with: '#10B981', without: '#6EE7B7' },  
+    { with: '#F59E0B', without: '#FCD34D' },  
+    { with: '#8B5CF6', without: '#DDD6FE' }, 
+    { with: '#EF4444', without: '#FCA5A5' },  
+    { with: '#06B6D4', without: '#67E8F9' },  
+    { with: '#F97316', without: '#FDBA74' },  
+    { with: '#3B82F6', without: '#93C5FD' },  
+    { with: '#14B8A6', without: '#5EEAD4' },  
 ];
 
 const SINGLE_COLORS = {
-    withProduct:    { area: '#2563EB', bar: '#93C5FD' },   
-    withoutProduct: { area: '#DC2626', bar: '#FCA5A5' },   
+    withProduct:    { area: '#6366F1', bar: '#A5B4FC' },   
+    withoutProduct: { area: '#EC4899', bar: '#F9A8D4' },   
 };
 const DATASET_COLORS = [
-    { area: '#2563EB', bar: '#93C5FD' },  
-    { area: '#DC2626', bar: '#FCA5A5' },  
+    { area: '#6366F1', bar: '#A5B4FC' },  
+    { area: '#EC4899', bar: '#F9A8D4' },  
+    { area: '#10B981', bar: '#6EE7B7' },  
+    { area: '#F59E0B', bar: '#FCD34D' },  
+    { area: '#8B5CF6', bar: '#DDD6FE' },  
+    { area: '#EF4444', bar: '#FCA5A5' },  
+    { area: '#06B6D4', bar: '#67E8F9' },  
+    { area: '#F97316', bar: '#FDBA74' },  
     { area: '#059669', bar: '#6EE7B7' },  
-    { area: '#D97706', bar: '#FCD34D' },  
-    { area: '#7C3AED', bar: '#C4B5FD' },  
-    { area: '#DB2777', bar: '#F9A8D4' },  
-    { area: '#0891B2', bar: '#67E8F9' },  
     { area: '#EA580C', bar: '#FDBA74' },  
-    { area: '#065F46', bar: '#6EE7B7' },  
-    { area: '#7C2D12', bar: '#FDBA74' },  
-    { area: '#1E1B4B', bar: '#A5B4FC' },  
-    { area: '#134E4A', bar: '#5EEAD4' },  
-    { area: '#4A1D96', bar: '#DDD6FE' },  
-    { area: '#831843', bar: '#FBCFE8' },  
-    { area: '#713F12', bar: '#FDE68A' },  
-    { area: '#1C1917', bar: '#D6D3D1' },  
+    { area: '#4338CA', bar: '#A5B4FC' },  
+    { area: '#0D9488', bar: '#5EEAD4' },  
+    { area: '#7C3AED', bar: '#DDD6FE' },  
+    { area: '#DB2777', bar: '#FBCFE8' },  
+    { area: '#D97706', bar: '#FDE68A' },  
+    { area: '#64748B', bar: '#D6D3D1' },  
 ];
 
 const DEFAULT_COMBINED_COLOR_OPTIONS = [
-    '#2563EB', '#DC2626', '#059669', '#D97706', '#7C3AED', '#DB2777', '#0891B2', '#EA580C', '#4338CA', '#0D9488'
+    '#6366F1', '#EC4899', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#F97316', '#3B82F6', '#14B8A6'
 ];
 
 const AxisControlPanel = ({
